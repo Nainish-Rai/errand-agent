@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Summarise the last N days of local AI coding sessions (Claude Code + Codex).
+"""Summarise errand-agent run traces, and optionally this repo's Claude Code build sessions.
+
+Copied from harness-observatory (MIT, see LICENSE and README.md) and adapted: an errand-agent
+source reads `errand.trace/1` JSONL traces, Claude Code sessions are limited to the folders of
+this repo, Codex is opt-in, and model cost is carried through.
 
 Stdlib only, read-only on the logs. Writes harness-summary.json.
 Never stores prompt text: only sanitised snippets of at most 10 words.
 
-    python3 -I harness_summary.py [--days 7] [--out harness-summary.json] [--max-traces 200]
+    python3 -I harness_summary.py [--traces DIR ...] [--claude-sessions] [--codex]
+                                  [--days N] [--out harness-summary.json] [--max-traces 200]
 """
 import argparse
 import collections
@@ -21,6 +26,9 @@ CLAUDE_ROOT = os.path.join(HOME, ".claude", "projects")
 CODEX_ROOT = os.path.join(HOME, ".codex", "sessions")
 CODEX_HISTORY = os.path.join(HOME, ".codex", "history.jsonl")
 CODEX_INDEX = os.path.join(HOME, ".codex", "session_index.jsonl")
+# Claude Code keeps one folder per working directory; these hold the sessions that built this repo.
+CLAUDE_PROJECT_MATCH = ("errand-agent", "larp-about-https-www-orangeinvest")
+ERRAND_SCHEMA = "errand.trace/1"
 NOT_LOGGED = "not logged"
 MAX_SPANS = 1600  # turns and tool calls always kept; LLM spans dropped first when over
 
@@ -494,6 +502,177 @@ def parse_codex(path, since):
     return finish_session(s)
 
 
+# ---------------------------------------------------------------- errand-agent
+
+# A tool may report a transient failure as a typed outcome instead of throwing ("expected failures
+# are values"); such a call still counts as failed, so a retry after it is visible.
+ERRAND_FAILED_KINDS = {"timeout", "service_unavailable", "unavailable", "rate_limited", "internal_error"}
+ERRAND_STATUS_TOOL = re.compile(r"status", re.I)
+
+
+def read_errand_records(path):
+    """The latest record of each span (a late "running" record never reopens an ended span) and every event."""
+    spans = collections.OrderedDict()
+    events = []
+    with open(path, "r", errors="replace") as fh:
+        for line in fh:
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue  # a line cut short by a crash mid-write
+            if not isinstance(o, dict) or o.get("schema") != ERRAND_SCHEMA:
+                continue
+            if o.get("type") == "event":
+                events.append(o)
+            elif o.get("type") == "span" and o.get("spanId"):
+                cur = spans.get(o["spanId"])
+                if cur is None or cur.get("status") == "running" or o.get("status") != "running":
+                    spans[o["spanId"]] = o
+    return list(spans.values()), events
+
+
+def _num(attrs, key):
+    v = attrs.get(key)
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _ms(v):
+    return v / 1000.0 if isinstance(v, (int, float)) else None
+
+
+def errand_error_type(span):
+    """`error.type` of a failed span, or the failure `kind` a settled tool returned as a value."""
+    a = span.get("attributes") or {}
+    if span.get("status") == "error":
+        return re.sub(r"\W+", "_", str(a.get("error.type") or "error")).strip("_") or "error"
+    res = a.get("gen_ai.tool.call.result")
+    if isinstance(res, dict) and res.get("kind") in ERRAND_FAILED_KINDS:
+        return res["kind"]
+    return None
+
+
+def errand_target(name, args):
+    """Calls with the same idempotency key act on the same thing, whatever else changed."""
+    if isinstance(args, dict):
+        for k in ("idempotency_key", "idempotencyKey", "proposal_id", "proposalId", "booking_id", "bookingId"):
+            if args.get(k):
+                return k + ":" + h(args[k])
+    return target_key(name, args)
+
+
+def parse_errand(path, project):
+    spans, events = read_errand_records(path)
+    if not spans:
+        return []
+    root = spans[0].get("traceId") or os.path.splitext(os.path.basename(path))[0]
+    by_id = {x["spanId"]: x for x in spans}
+    sessions = collections.OrderedDict()
+
+    def session_for(sid):
+        s = sessions.get(sid)
+        if s is None:
+            s = sessions[sid] = new_session("errand-agent", sid, path)
+            s["project"] = project
+            s["cost_usd"] = None
+            s["cost_sources"] = collections.Counter()
+            s["events"] = collections.Counter()
+            if sid != root:
+                s["subagent"] = True
+                s["parent"] = root
+        return s
+
+    session_for(root)
+    for x in sorted(spans, key=lambda x: x.get("startTimeMs") or 0):
+        s = session_for(x.get("sessionId") or root)
+        a = x.get("attributes") or {}
+        start = _ms(x.get("startTimeMs"))
+        end = _ms(x.get("endTimeMs"))
+        running = x.get("status") == "running"
+        touch(s, start)
+        touch(s, end)
+        kind = x.get("kind")
+        if kind == "agent":
+            seq = _num(a, "errand.turn.sequence")
+            s["turns"].append({"start": start, "end": end, "id": "turn-%d" % ((seq if seq is not None else len(s["turns"])) + 1),
+                               "aborted": x.get("status") == "error"})
+            if s["subagent"] and a.get("errand.subagent.name"):
+                s["title"] = s["title"] or "subagent " + str(a["errand.subagent.name"])
+                s["agent_type"] = a["errand.subagent.name"]
+            elif not s["subagent"]:
+                s["prompts"].append({"ts": start, "type": "turn", "snippet": "", "slash": False})
+        elif kind == "model":
+            model = a.get("gen_ai.response.model") or a.get("gen_ai.request.model") or "unknown"
+            inp, out = _num(a, "gen_ai.usage.input_tokens"), _num(a, "gen_ai.usage.output_tokens")
+            cr = _num(a, "gen_ai.usage.cache_read.input_tokens") or 0
+            cw = _num(a, "gen_ai.usage.cache_creation.input_tokens") or 0
+            tok = None
+            if inp is not None or out is not None:
+                # AI SDK input tokens include cached ones; the dashboard counts them apart.
+                tok = {"input": max((inp or 0) - cr - cw, 0), "output": out or 0, "cache_read": cr, "cache_write": cw}
+                model_tokens(s, model, tok, end or start)
+                s["llm_calls"] = s.get("llm_calls", 0) + 1
+            cost = _num(a, "errand.cost.usd")
+            if cost is not None:
+                s["cost_usd"] = (s["cost_usd"] or 0) + cost
+                s["cost_sources"][a.get("errand.cost.source") or "unknown"] += 1
+            s["generations"].append({"start": start, "end": end or start, "model": model,
+                                     "tokens": total_tokens(tok) if tok else None, "ok": x.get("status") != "error",
+                                     "error_type": errand_error_type(x), "cost": cost,
+                                     "cost_source": a.get("errand.cost.source"), "provider": a.get("gen_ai.provider.name")})
+        elif kind == "tool":
+            name = a.get("gen_ai.tool.name") or re.sub(r"^execute_tool\s+", "", x.get("name") or "") or "unknown"
+            args = a.get("gen_ai.tool.call.arguments")
+            err = None if running else errand_error_type(x)
+            step = by_id.get(x.get("parentSpanId") or "") or {}
+            s["tool_calls"].append({
+                "name": name, "start": start, "end": end, "ok": None if running else err is None,
+                "error_type": err, "input_hash": h(args), "target": errand_target(name, args),
+                "model": (step.get("attributes") or {}).get("gen_ai.request.model"),
+            })
+    for e in events:
+        s = sessions.get(e.get("sessionId")) or sessions[root]
+        s["events"][e.get("kind") or "event"] += 1
+        s.setdefault("event_marks", []).append({"ts": _ms(e.get("timeMs")), "kind": e.get("kind") or "event", "name": e.get("name") or ""})
+    out = []
+    for s in sessions.values():
+        # turns come from the trace's own turn spans, not from prompts as for Claude Code
+        s["turns"].sort(key=lambda t: t["start"] or 0)
+        for t in s["turns"]:
+            t["end"] = t["end"] or s["last"]
+        tools = []
+        for c in sorted(s["tool_calls"], key=lambda c: c["start"] or 0):
+            if c["name"] not in tools:
+                tools.append(c["name"])
+        if not s["title"]:
+            s["title"] = "%d turn%s · %s" % (len(s["turns"]), "" if len(s["turns"]) == 1 else "s",
+                                             " → ".join(tools[:4]) + (" …" if len(tools) > 4 else "") if tools else "no tool calls")
+        fin = finish_session(s)
+        if fin:
+            mark_verifications(fin["tool_calls"])
+            mark_model_retries(fin)
+            out.append(fin)
+    return out
+
+
+def mark_verifications(calls):
+    """A status check right after a timeout is how the agent learns whether the call took effect."""
+    for i, c in enumerate(calls):
+        if c["ok"] is False and c["error_type"] == "timeout":
+            for d in calls[i + 1:i + 4]:
+                if ERRAND_STATUS_TOOL.search(d["name"]):
+                    d["verify"] = True
+                    break
+
+
+def mark_model_retries(s):
+    gens = sorted(s["generations"], key=lambda g: g["start"] or 0)
+    for i, g in enumerate(gens[:-1]):
+        if g.get("ok") is False:
+            gens[i + 1]["retry"] = True
+            s["retries"].append({"tool": "llm:" + g["model"], "error_type": g.get("error_type") or "error",
+                                 "kind": "exact", "recovered": gens[i + 1].get("ok") is not False})
+
+
 # ---------------------------------------------------------------- per session
 
 def pct(vals, q):
@@ -605,12 +784,27 @@ def collect_files(root, since_mtime):
     return out
 
 
+def collect_claude_files(root, since_mtime, match):
+    """Claude Code sessions whose project folder name contains one of `match` (all when empty)."""
+    out = []
+    if not os.path.isdir(root):
+        return out
+    for d in sorted(os.listdir(root)):
+        if match and not any(m in d for m in match):
+            continue
+        out += collect_files(os.path.join(root, d), since_mtime)
+    return out
+
+
 def run_parse(args):
-    kind, path, since = args
+    kind, path, extra = args
     try:
-        return (parse_claude if kind == "claude" else parse_codex)(path, since)
+        if kind == "errand":
+            return parse_errand(path, extra)
+        res = (parse_claude if kind == "claude" else parse_codex)(path, extra)
+        return [res] if res else []
     except Exception as e:  # one bad file never kills the run
-        return {"_error": "%s: %s" % (os.path.basename(path), type(e).__name__)}
+        return [{"_error": "%s: %s" % (os.path.basename(path), type(e).__name__)}]
 
 
 def health(s):
@@ -622,9 +816,9 @@ def health(s):
     return round(score), round(sr, 4)
 
 
-def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_traces):
+def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_traces, tool_names=("claude-code", "codex")):
     tools = {}
-    for name in ("claude-code", "codex"):
+    for name in tool_names:
         ss = [s for s in sessions if s["tool"] == name]
         main = [s for s in ss if not s["subagent"]]
         calls = [c for s in ss for c in s["tool_calls"]]
@@ -712,6 +906,24 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
                                                  "note": "Codex 'exec' script wrappers; their inner shell/MCP/patch items are counted as tool calls"}
             tools[name]["history_prompts"] = codex_history_prompts
             tools[name]["cost_usd"] = NOT_LOGGED
+        elif name == "errand-agent":
+            costs = [s["cost_usd"] for s in ss if s.get("cost_usd") is not None]
+            tools[name]["cost_usd"] = round(sum(costs), 6) if costs else NOT_LOGGED
+            src = collections.Counter()
+            for s in ss:
+                src.update(s.get("cost_sources") or {})
+            tools[name]["cost_sources"] = dict(src.most_common())
+            by_model = collections.defaultdict(float)
+            for s in ss:
+                for g in s["generations"]:
+                    if g.get("cost") is not None:
+                        by_model[g["model"]] += g["cost"]
+            tools[name]["cost_by_model"] = {m: round(v, 6) for m, v in by_model.items()}
+            ev = collections.Counter()
+            for s in ss:
+                ev.update(s.get("events") or {})
+            tools[name]["events"] = dict(ev)
+            tools[name]["failed_llm_calls"] = sum(1 for s in ss for g in s["generations"] if g.get("ok") is False)
         else:
             tools[name]["cost_usd"] = NOT_LOGGED
 
@@ -720,8 +932,9 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
         sc, sr = health(s)
         n_err = sum(1 for c in s["tool_calls"] if c["ok"] is False)
         rows.append({
-            "id": s["id"], "short": str(s["id"])[:8], "tool": s["tool"], "project": project_name(s["cwd"]),
-            "title": snippet(s["title"]) if s["title"] else (snippet(s["task"], 8) or None) if s.get("task") else None,
+            "id": s["id"], "short": str(s["id"])[:8], "tool": s["tool"], "project": s.get("project") or project_name(s["cwd"]),
+            # errand titles are built from tool names only, so they need no snippet
+            "title": s["title"] if s["tool"] == "errand-agent" else snippet(s["title"]) if s["title"] else (snippet(s["task"], 8) or None) if s.get("task") else None,
             "subagent": s["subagent"], "parent": s["parent"], "agent_type": s.get("agent_type"),
             "start": dt.datetime.fromtimestamp(s["first"]).isoformat(timespec="seconds"),
             "start_ts": s["first"], "wall_s": s["wall_s"], "active_s": s["active_s"],
@@ -733,6 +946,10 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
             "avg_context": round((s["tokens"]["input"] + s["tokens"]["cache_read"] + s["tokens"]["cache_write"]) / s["llm_calls"]) if s.get("llm_calls") else None,
             "retries": len(s["retries"]), "interrupts": s["interrupts"], "compactions": s["compactions"],
             "health": sc, "tool_success_rate": sr,
+            "cost_usd": round(s["cost_usd"], 6) if s.get("cost_usd") is not None else None,
+            "cost_source": "+".join(sorted(s["cost_sources"])) if s.get("cost_sources") else None,
+            "llm_errors": sum(1 for g in s["generations"] if g.get("ok") is False),
+            "events": dict(s["events"]) if s.get("events") else None,
         })
     rows.sort(key=lambda r: -r["tokens_total"])
     by_id = {s["id"]: s for s in sessions}
@@ -743,10 +960,21 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
         for tr in s["turns"]:
             spans.append({"k": "turn", "n": tr["id"], "s": tr["start"], "e": tr["end"], "ok": not tr.get("aborted")})
         for g in s["generations"]:
-            spans.append({"k": "llm", "n": g["model"], "s": g["start"], "e": g["end"], "ok": True, "t": g["tokens"]})
+            sp = {"k": "llm", "n": g["model"], "s": g["start"], "e": g["end"], "ok": g.get("ok", True), "t": g["tokens"]}
+            if g.get("error_type"):
+                sp["err"] = g["error_type"]
+            if g.get("retry"):
+                sp["r"] = 1
+            if g.get("cost") is not None:
+                sp["c"] = g["cost"]
+                sp["cs"] = g.get("cost_source")
+            spans.append(sp)
         for c in s["tool_calls"]:
             spans.append({"k": "tool", "n": c["name"], "s": c["start"], "e": c["end"] or c["start"], "ok": c["ok"] is not False,
-                          "err": c["error_type"], "pending": c["ok"] is None, "r": 1 if c.get("retry") else None})
+                          "err": c["error_type"], "pending": c["ok"] is None, "r": 1 if c.get("retry") else None,
+                          "v": 1 if c.get("verify") else None})
+        for m in s.get("event_marks", []):
+            spans.append({"k": "ev", "n": m["kind"] + " · " + snippet(m["name"], 6), "s": m["ts"], "e": m["ts"], "ok": True})
         spans.sort(key=lambda x: (x["s"] or 0, x["k"] != "turn"))
         truncated = False
         if len(spans) > MAX_SPANS:
@@ -801,6 +1029,9 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
         "traces_embedded": len(traces),
         "parse_errors": parse_errors,
         "notes": {
+            "errand_traces": "errand-agent: one errand.trace/1 file per root session; the latest finished record of each span wins. Turns are invoke_agent spans, LLM calls chat spans (tokens, latency, errand.cost.usd), tool calls execute_tool spans. Prompt and tool text is not embedded.",
+            "errand_cost": "errand-agent cost per model call as the trace records it: price_table = estimated from src/adapters/tracing/prices.json (MiniMax), provider_reported = the cost the Claude Code CLI reports. Claude Code build sessions do not log cost.",
+            "errand_failures": "an errand tool call fails when its span has status error, or when it returns a transient failure as a value (kind timeout or service_unavailable). A status check after a timeout is marked verify.",
             "tokens": "input excludes cache reads for both tools (Codex input_tokens minus cached_input_tokens). total = input+output+cache_read+cache_write.",
             "claude_tokens": "Claude Code repeats usage on every content block of one API message; counted once per message.id.",
             "latency": "Claude Code tool latency = tool_result timestamp minus tool_use timestamp, so it includes time waiting on a permission prompt. Codex uses item started/completed ms or call/output timestamps.",
@@ -810,7 +1041,7 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
             "prompts": "Claude Code: human-origin user text, excluding meta, sidechain, task notifications and local command output. Codex: UserMessage items in non-subagent sessions that do not start with an injected tag.",
             "task_types": "keyword heuristic per prompt; session task type = most common non-'other' prompt type. 'other' includes continuations like 'ok', 'continue'.",
             "health": "heuristic: 60% tool success rate + 20% (1 - retries/5) + 20% (1 - interrupts/3), 0-100.",
-            "retries": "a failed call followed within the next 3 calls by the same tool; 'exact' when the input hash matches.",
+            "retries": "a failed call followed within the next 3 calls by the same tool, matched on input hash or target (for errand-agent, the idempotency key); 'exact' when the input hash matches. A failed LLM call followed by another counts as an LLM retry.",
             "cost_usd": NOT_LOGGED,
             "codex_history_jsonl": "history.jsonl prompt count in the window, a cross-check for Codex user_prompts.",
         },
@@ -818,26 +1049,53 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
 
 
 def main():
+    global CLAUDE_ROOT
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=float, default=7)
+    ap.add_argument("--traces", action="append", default=[], metavar="DIR",
+                    help="errand-agent trace directory (repeatable); default traces/ when it exists")
+    ap.add_argument("--claude-sessions", action="store_true",
+                    help="add the Claude Code sessions that built this repo (folders matching --claude-match)")
+    ap.add_argument("--claude-root", default=CLAUDE_ROOT)
+    ap.add_argument("--claude-match", action="append", default=None, metavar="TEXT",
+                    help="project folder substring (repeatable); default: %s" % ", ".join(CLAUDE_PROJECT_MATCH))
+    ap.add_argument("--codex", action="store_true", help="add Codex sessions from ~/.codex (the original source)")
+    ap.add_argument("--days", type=float, default=None,
+                    help="window for Claude Code and Codex sessions; default: all of this repo's sessions, 7 days for Codex")
     ap.add_argument("--out", default="harness-summary.json")
     ap.add_argument("--max-traces", type=int, default=200)
     a = ap.parse_args()
+    CLAUDE_ROOT = os.path.abspath(os.path.expanduser(a.claude_root))
     now = dt.datetime.now().timestamp()
-    since = now - a.days * 86400
-    jobs = [("claude", f, since) for f in collect_files(CLAUDE_ROOT, since)]
-    jobs += [("codex", f, since) for f in collect_files(CODEX_ROOT, since)]
+    since = now - a.days * 86400 if a.days is not None else 0
+    trace_dirs = a.traces or (["traces"] if os.path.isdir("traces") else [])
+    jobs, tool_names = [], []
+    for d in trace_dirs:
+        if not os.path.isdir(d):
+            ap.error("no trace directory %s" % d)
+        label = os.path.relpath(os.path.abspath(d))
+        label = label if not label.startswith("..") else os.path.basename(os.path.abspath(d))
+        jobs += [("errand", os.path.join(d, f), label) for f in sorted(os.listdir(d)) if f.endswith(".jsonl")]
+    if trace_dirs:
+        tool_names.append("errand-agent")
+    if a.claude_sessions:
+        jobs += [("claude", f, since) for f in collect_claude_files(CLAUDE_ROOT, since, a.claude_match or CLAUDE_PROJECT_MATCH)]
+        tool_names.append("claude-code")
+    if a.codex:
+        codex_since = since or now - 7 * 86400
+        jobs += [("codex", f, codex_since) for f in collect_files(CODEX_ROOT, codex_since)]
+        tool_names.append("codex")
+    if not tool_names:
+        ap.error("nothing to read: no traces/ directory; pass --traces DIR or --claude-sessions")
     sessions, errors = [], []
     with cf.ProcessPoolExecutor() as ex:
         for res in ex.map(run_parse, jobs, chunksize=1):
-            if res is None:
-                continue
-            if "_error" in res:
-                errors.append(res["_error"])
-            else:
-                sessions.append(res)
+            for r in res:
+                if "_error" in r:
+                    errors.append(r["_error"])
+                else:
+                    sessions.append(r)
     hist = 0
-    if os.path.exists(CODEX_HISTORY):
+    if a.codex and os.path.exists(CODEX_HISTORY):
         with open(CODEX_HISTORY, errors="replace") as fh:
             for line in fh:
                 try:
@@ -847,7 +1105,7 @@ def main():
                 if ts and ts >= since:
                     hist += 1
     names = {}
-    if os.path.exists(CODEX_INDEX):
+    if a.codex and os.path.exists(CODEX_INDEX):
         with open(CODEX_INDEX, errors="replace") as fh:
             for line in fh:
                 try:
@@ -858,14 +1116,18 @@ def main():
     for s in sessions:
         if s["tool"] == "codex" and not s["title"]:
             s["title"] = names.get(s["id"])
-    out = summarise(sessions, since, now, hist, errors, a.max_traces)
-    out["files_scanned"] = {"claude-code": sum(1 for j in jobs if j[0] == "claude"), "codex": sum(1 for j in jobs if j[0] == "codex")}
+    # the window opens at the oldest session read, so old eval traces still show
+    start = min([s["first"] for s in sessions] + ([since] if since else []) or [now])
+    out = summarise(sessions, start, now, hist, errors, a.max_traces, tool_names)
+    kinds = {"errand": "errand-agent", "claude": "claude-code", "codex": "codex"}
+    out["files_scanned"] = {t: sum(1 for j in jobs if kinds[j[0]] == t) for t in tool_names}
     with open(a.out, "w") as fh:
         json.dump(out, fh, separators=(",", ":"), default=str)
     hd = out["headline"]
-    print("sessions %d (+%d subagent runs), prompts %d, tool calls %d, error rate %s, tokens %d, p95 latency %ss -> %s (%.1f MB)" % (
+    cost = out["tools"].get("errand-agent", {}).get("cost_usd")
+    print("sessions %d (+%d subagent runs), prompts/turns %d, tool calls %d, error rate %s, tokens %d, p95 latency %ss, errand cost %s -> %s (%.1f MB)" % (
         hd["sessions"], hd["subagent_runs"], hd["user_prompts"], hd["tool_calls"], hd["error_rate"], hd["tokens"],
-        hd["p95_tool_latency_s"], a.out, os.path.getsize(a.out) / 1e6))
+        hd["p95_tool_latency_s"], ("$%.6f" % cost) if isinstance(cost, (int, float)) else "not logged", a.out, os.path.getsize(a.out) / 1e6))
     if errors:
         print("parse errors:", len(errors), file=sys.stderr)
 
