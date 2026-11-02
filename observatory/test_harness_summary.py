@@ -11,6 +11,7 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.dont_write_bytecode = True  # no __pycache__ beside the analyzer
 sys.path.insert(0, HERE)  # -I leaves the script's folder off the path; the analyzer sits beside it
 
 import harness_summary as hs  # noqa: E402

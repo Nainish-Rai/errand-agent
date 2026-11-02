@@ -16,3 +16,4 @@ next-env.d.ts
 *.tsbuildinfo
 # generated dashboards and summaries hold run and session data (see observatory/README.md)
 observatory/out/
+__pycache__/
