@@ -1,5 +1,6 @@
 import {
   API_PREFIX,
+  SessionIdSchema,
   SwitchScenarioRequestSchema,
   type ApiError,
   type GetProviderResponse,
@@ -10,6 +11,8 @@ import { defineChannel, GET, POST } from "eve/channels";
 
 import { container } from "../../src/composition/container";
 import { getProviders } from "../../src/core/use-cases/get-providers";
+import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
+import { presentSessionTrace } from "../lib/trace-presenter";
 import { presentProviderDetails } from "../lib/world-presenter";
 
 // The app API: everything a client needs besides chat, at /api/v1 on the same origin as /eve/v1.
@@ -48,6 +51,14 @@ export default defineChannel({
       if (provider === undefined) return failure(404, "provider_not_found", "No provider has that id.");
       const body: GetProviderResponse = { provider: presentProviderDetails(provider) };
       return Response.json(body);
+    }),
+
+    // The trace panel polls this while a run is going; a session with no trace yet reads as empty.
+    GET(`${API_PREFIX}/sessions/:sessionId/trace`, async (_request, { params }) => {
+      const sessionId = SessionIdSchema.safeParse(params.sessionId);
+      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      const trace = await getSessionTrace(container().traceSink, sessionId.data);
+      return Response.json(presentSessionTrace(trace, container().clock.now().getTime()));
     }),
 
     POST(`${API_PREFIX}/dev/scenario`, async (request) => {

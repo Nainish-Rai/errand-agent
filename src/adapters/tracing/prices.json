@@ -1,6 +1,8 @@
 {
+  "version": "2026-11-03",
   "currency": "USD",
   "unit": "per 1M tokens",
+  "notes": "Estimated cost of a model call = uncached input x input + cache reads x cacheRead + cache writes x cacheWrite (input when null) + output x output. Providers that report their own cost (the Claude Code CLI's total_cost_usd) are recorded as reported and never estimated from this table.",
   "models": {
     "MiniMax-M3": {
       "provider": "minimax",
@@ -8,6 +10,7 @@
       "output": 1.2,
       "cacheRead": 0.06,
       "cacheWrite": null,
+      "longContext": { "aboveInputTokens": 512000, "input": 0.6, "output": 2.4, "cacheRead": 0.12, "cacheWrite": null },
       "notes": "Standard tier, input up to 512k tokens. Above 512k input: 0.60 in / 2.40 out / 0.12 cache read. MiniMax lists no cache-write price.",
       "source": "https://platform.minimax.io/docs/guides/pricing",
       "confirmedOn": "2026-11-03"
@@ -20,6 +23,16 @@
       "cacheWrite": null,
       "notes": "Not used yet; kept for model routing. Always thinks.",
       "source": "https://platform.minimax.io/docs/guides/pricing",
+      "confirmedOn": "2026-11-03"
+    },
+    "errand-script": {
+      "provider": "errand-scripted",
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "notes": "The offline scripted model (src/adapters/models/scripted.ts). Runs in-process; free.",
+      "source": "src/adapters/models/scripted.ts",
       "confirmedOn": "2026-11-03"
     }
   }
