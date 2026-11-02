@@ -373,14 +373,22 @@ export class BrowserSession {
     do {
       reason = await this.#check(target, options).catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
       if (reason === undefined) {
+        // Bring what was asserted into view, so the outcome screenshot shows it.
+        if (options.url === undefined) await this.#scrollTo(target);
         return { ok: true, target: options.url === undefined ? describeTarget({ ...target, text: undefined }) : `url ${String(options.url)}`, expectations, waitedMs: Date.now() - started };
       }
       await delay(100);
     } while (Date.now() - started < timeout);
     const subject = options.url === undefined ? describeTarget({ ...target, text: undefined }) : "url";
     // The failure screenshot should show the element that failed, not wherever the page scrolled.
-    if (options.url === undefined) await this.#locator(target, false).first().scrollIntoViewIfNeeded({ timeout: 1_000 }).catch(() => undefined);
+    if (options.url === undefined) await this.#scrollTo(target);
     throw new CommandFailure(`assert ${subject}: ${reason} (after ${Date.now() - started} ms)`);
+  }
+
+  async #scrollTo(target: Target): Promise<void> {
+    const locator = this.#locator(target, false);
+    if ((await locator.count().catch(() => 0)) === 0) return;
+    await locator.first().scrollIntoViewIfNeeded({ timeout: 1_000 }).catch(() => undefined);
   }
 
   /** Match count, uniqueness and actionability without acting, plus the suite step to reuse. */

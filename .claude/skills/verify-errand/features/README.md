@@ -24,6 +24,15 @@ on: rerun the suite for yours. A mapped feature with no run on your source is **
 | Home screen | 13 | to map: the home route | to map: hero, errand composer, widgets, both themes | none yet | NOT RUN (not built) |
 | Generated UI in chat | 17 | `/`, a turn that renders OpenUI | to map: generated surfaces; prove none renders an approve button | none yet | NOT RUN (not built) |
 
+## Known findings
+
+- **Trace panel, running spans under a pinned clock** (found 2026-11-03, run `t19-live`): span
+  times are stamped with the real clock (`Date.now()` in `agent/instrumentation/run-trace.ts`) but
+  the trace route's `generatedAtMs` uses the pinned `ERRAND_CLOCK_START` clock, so while a span is
+  still running (a live model call) the panel shows it as about the pin offset long (99,683 s
+  observed). Settled spans are correct, so the scripted suites do not see it. Launch with
+  `--clock system` when checking running spans until it is fixed.
+
 ## When a ticket adds UI
 
 1. Drive it by hand once in a fresh run: `snapshot`, then `locate` each handle you need.
