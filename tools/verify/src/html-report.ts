@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import type { ScenarioResult, SuiteReport } from "./suite";
+import type { ScenarioResult, SuiteReport } from "./suite-report";
 
 // A standalone report.html beside report.json: every screenshot embedded as a data URI, a strict
 // Content-Security-Policy, and nothing loaded from anywhere. It refuses to call a suite PASS

@@ -6,13 +6,13 @@ import { CommandFailure, parseTheme, parseViewport, type BrowserHost, type Brows
 import type { Options } from "./cli-arguments";
 import type { Redactor } from "./redaction";
 import { ensurePrivateDir, writePrivateJson } from "./run-paths";
+import { writeHtmlReport } from "./html-report";
 import type { RunState } from "./runtime";
+import type { ScenarioResult, ScenarioStatus, SuiteReport } from "./suite-report";
 
 // `suite FILE.json`: each scenario runs in a fresh browser context (its own storage, guard and
 // evidence directory). A broken setup (context, doctor, world seeding) is BLOCKED; a product that
 // does not do what a step expects is FAIL. Later steps of a stopped scenario stay NOT RUN.
-
-export type ScenarioStatus = "PASS" | "FAIL" | "BLOCKED" | "NOT RUN";
 
 type StepOptionValue = string | number | boolean | Record<string, unknown> | unknown[];
 
@@ -138,51 +138,6 @@ export function stepOptions(step: SuiteStep): Options {
     else options[name] = String(value);
   }
   return options;
-}
-
-interface StepResult {
-  index: number;
-  phase: "setup" | "step";
-  command: string;
-  note?: string;
-  status: ScenarioStatus;
-  durationMs?: number;
-  screenshots: string[];
-  error?: string;
-}
-
-export interface ScenarioResult {
-  id: string;
-  title: string;
-  status: ScenarioStatus;
-  theme: string;
-  viewport: string;
-  evidence: string;
-  steps: StepResult[];
-  error?: string;
-  failureScreenshot?: string;
-  blockedRequests?: unknown[];
-  contextClosed?: boolean;
-  durationMs?: number;
-}
-
-export interface SuiteReport {
-  version: 1;
-  title: string;
-  feature: string;
-  description?: string;
-  manifest: string;
-  manifestDigest: string;
-  startedAt: string;
-  durationMs?: number;
-  provenance: Record<string, unknown>;
-  scenarios: ScenarioResult[];
-  counts: Record<ScenarioStatus, number>;
-  status: ScenarioStatus;
-  ok: boolean;
-  report: string;
-  html?: string;
-  htmlError?: string;
 }
 
 function provenanceOf(state: RunState, browserVersion: string): Record<string, unknown> {
@@ -336,7 +291,6 @@ export async function runSuite(run: SuiteRun, { html }: { html: boolean }): Prom
   writePrivateJson(report.report, report);
   if (html) {
     try {
-      const { writeHtmlReport } = await import("./html-report");
       report.html = writeHtmlReport(report);
     } catch (error) {
       report.htmlError = `HTML report not written: ${error instanceof Error ? error.message : String(error)}`;
