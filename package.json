@@ -17,7 +17,7 @@
     "check:contrast": "python3 -I design-system/check_contrast.py packages/design-tokens/tokens.css",
     "tokens:build": "tsx packages/design-tokens/src/build-css.ts && python3 -I design-system/build_gallery.py design-system/gallery.html packages/design-tokens/tokens.css mockups/design-system.html",
     "check:types": "tsc --noEmit -p tsconfig.json && pnpm --filter @errand/web typecheck",
-    "check:layers": "depcruise --config .dependency-cruiser.cjs agent src packages apps/web/app apps/web/features apps/web/components evals scripts",
+    "check:layers": "depcruise --config .dependency-cruiser.cjs agent src packages apps/web/app apps/web/features apps/web/components evals scripts tools",
     "check:tests": "vitest run",
     "smoke:claude-code": "tsx scripts/smoke-claude-code.ts",
     "smoke:search": "tsx scripts/smoke-search-in-chat.ts",

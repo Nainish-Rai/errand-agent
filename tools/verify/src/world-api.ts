@@ -23,7 +23,7 @@ export interface ApiResult {
   readonly error?: { readonly code: string; readonly message: string };
 }
 
-type Handler = (client: ApiClient, match: RegExpMatchArray, url: URL, body: unknown) => Promise<unknown>;
+type Handler = (client: ApiClient, match: readonly (string | undefined)[], url: URL, body: unknown) => Promise<unknown>;
 
 interface Route {
   readonly method: ApiMethod;
