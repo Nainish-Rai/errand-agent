@@ -6,13 +6,13 @@
 
 **Status:** ready-for-agent
 
-- [ ] `control-errand --run ID launch` snapshots the checkout, uncommitted edits included, and starts backend, web and Chrome on free ports, all owned by a daemon. Model selection: scripted by default (no key, no network); `--live` uses MiniMax, reading the key from the Keychain at runtime only
-- [ ] `doctor` reports owned processes, ports, an unchanged snapshot, backend health (`/api/v1`), web ready, and `networkGuard: true`. The guard is proven by a blocked request to a public host appearing as blocked in `network`
-- [ ] Driving: `goto`, `click`, `fill`, `type`, `key`, `hover`, `wait`, `text`, `count`, `assert` (text, value, count, attr, hidden, url; retrying to a timeout) and `locate` (match count, uniqueness, actionability, without acting). Targets are given by role and name, label, test id or text; `--theme dark|light` and `viewport` presets
-- [ ] Evidence: `screenshot`, `snapshot` (ARIA tree), `network` (filter by method, path or status), `logs` (console and page errors), and `api GET /api/v1/...` through the client package, so world state can be asserted next to UI state
-- [ ] `suite FILE.json [--report html]` runs scenarios in fresh contexts, each with its own steps, assertions and screenshots, and reports PASS, FAIL or BLOCKED per scenario, with a self-contained HTML report
-- [ ] Seed suites under `verification/suites/`: chat search (scripted model: providers render), trace panel (toggle shows the waterfall with model and tool spans), and `/design` (theme toggle persists across reload in both directions, approval card states render). All pass against main
-- [ ] Proof that it can fail: a planted wrong expectation makes the suite report FAIL with a screenshot of the failing state, then passes once reverted
-- [ ] `cleanup` stops the daemon, servers and Chrome, removes the snapshot, keeps evidence, and reports `daemonExited: true` with no owned process or port left. `history` lists command outcomes, including failures, after cleanup
-- [ ] The `verify-errand` skill is in the repo (`.claude/skills/verify-errand/`) with a feature map, the verification loop, evidence rules and cleanup rules; `pnpm verify:install-skill` links it into `~/.claude/skills`
-- [ ] Layer rules: nothing in the app imports the verification tool, and the tool reaches the app only through the browser and `packages/client`
+- [x] `control-errand --run ID launch` snapshots the checkout, uncommitted edits included, and starts backend, web and Chrome on free ports, all owned by a daemon. Model selection: scripted by default (no key, no network); `--live` uses MiniMax, reading the key from the Keychain at runtime only
+- [x] `doctor` reports owned processes, ports, an unchanged snapshot, backend health (`/api/v1`), web ready, and `networkGuard: true`. The guard is proven by a blocked request to a public host appearing as blocked in `network`
+- [x] Driving: `goto`, `click`, `fill`, `type`, `key`, `hover`, `wait`, `text`, `count`, `assert` (text, value, count, attr, hidden, url; retrying to a timeout) and `locate` (match count, uniqueness, actionability, without acting). Targets are given by role and name, label, test id or text; `--theme dark|light` and `viewport` presets
+- [x] Evidence: `screenshot`, `snapshot` (ARIA tree), `network` (filter by method, path or status), `logs` (console and page errors), and `api GET /api/v1/...` through the client package, so world state can be asserted next to UI state
+- [x] `suite FILE.json [--report html]` runs scenarios in fresh contexts, each with its own steps, assertions and screenshots, and reports PASS, FAIL or BLOCKED per scenario, with a self-contained HTML report
+- [x] Seed suites under `verification/suites/`: chat search (scripted model: providers render), trace panel (toggle shows the waterfall with model and tool spans), and `/design` (theme toggle persists across reload in both directions, approval card states render). All pass against main
+- [x] Proof that it can fail: a planted wrong expectation makes the suite report FAIL with a screenshot of the failing state, then passes once reverted
+- [x] `cleanup` stops the daemon, servers and Chrome, removes the snapshot, keeps evidence, and reports `daemonExited: true` with no owned process or port left. `history` lists command outcomes, including failures, after cleanup
+- [x] The `verify-errand` skill is in the repo (`.claude/skills/verify-errand/`) with a feature map, the verification loop, evidence rules and cleanup rules; `pnpm verify:install-skill` links it into `~/.claude/skills`
+- [x] Layer rules: nothing in the app imports the verification tool, and the tool reaches the app only through the browser and `packages/client`
