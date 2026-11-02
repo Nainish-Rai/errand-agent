@@ -53,7 +53,7 @@ importers:
     dependencies:
       '@assistant-ui/react':
         specifier: 0.15.32
-        version: 0.15.32(@opentelemetry/api@1.10.0)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(ai@7.0.161(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.15.32(@opentelemetry/api@1.10.0)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(ai@7.0.161(zod@4.6.7))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@errand/client':
         specifier: workspace:*
         version: link:../../packages/client
@@ -86,7 +86,7 @@ importers:
         version: 1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       eve:
         specifier: 1.0.0-rc.1
-        version: 1.0.0-rc.1(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3))(next@16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+        version: 1.0.0-rc.1(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.6.7))(next@16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       lucide-react:
         specifier: 1.33.0
         version: 1.33.0(react@19.2.8)
@@ -133,6 +133,9 @@ importers:
       eve:
         specifier: 1.0.0-rc.1
         version: 1.0.0-rc.1(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3))(next@16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/contracts:
     dependencies:
@@ -4579,6 +4582,13 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
+  '@ai-sdk/gateway@4.0.134(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.35
+      '@ai-sdk/provider-utils': 5.0.73(zod@4.6.7)
+      '@vercel/oidc': 3.2.0
+      zod: 4.6.7
+
   '@ai-sdk/provider-utils@5.0.73(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.35
@@ -4587,6 +4597,15 @@ snapshots:
       eventsource-parser: 3.1.1
       undici: 7.30.1
       zod: 4.4.3
+
+  '@ai-sdk/provider-utils@5.0.73(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.35
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.1
+      undici: 7.30.1
+      zod: 4.6.7
 
   '@ai-sdk/provider@4.0.35':
     dependencies:
@@ -4646,12 +4665,12 @@ snapshots:
     optionalDependencies:
       zod: 4.4.3
 
-  '@assistant-ui/core@0.3.32(@assistant-ui/store@0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8))(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@opentelemetry/api@1.10.0)(@types/react@19.2.18)(ai@7.0.161(zod@4.4.3))(react@19.2.8)':
+  '@assistant-ui/core@0.3.32(@assistant-ui/store@0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8))(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@opentelemetry/api@1.10.0)(@types/react@19.2.18)(ai@7.0.161(zod@4.6.7))(react@19.2.8)':
     dependencies:
       '@assistant-ui/store': 0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8)
       '@assistant-ui/tap': 0.9.24(@types/react@19.2.18)(react@19.2.8)
-      assistant-cloud: 0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3))
-      assistant-stream: 0.3.55(ai@7.0.161(zod@4.4.3))
+      assistant-cloud: 0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.6.7))
+      assistant-stream: 0.3.55(ai@7.0.161(zod@4.6.7))
       nanoid: 6.0.2
     optionalDependencies:
       '@types/react': 19.2.18
@@ -4664,13 +4683,13 @@ snapshots:
       - ioredis
       - redis
 
-  '@assistant-ui/react@0.15.32(@opentelemetry/api@1.10.0)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(ai@7.0.161(zod@4.4.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@assistant-ui/react@0.15.32(@opentelemetry/api@1.10.0)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(ai@7.0.161(zod@4.6.7))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@assistant-ui/core': 0.3.32(@assistant-ui/store@0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8))(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@opentelemetry/api@1.10.0)(@types/react@19.2.18)(ai@7.0.161(zod@4.4.3))(react@19.2.8)
+      '@assistant-ui/core': 0.3.32(@assistant-ui/store@0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8))(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@opentelemetry/api@1.10.0)(@types/react@19.2.18)(ai@7.0.161(zod@4.6.7))(react@19.2.8)
       '@assistant-ui/store': 0.3.22(@assistant-ui/tap@0.9.24(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8)
       '@assistant-ui/tap': 0.9.24(@types/react@19.2.18)(react@19.2.8)
-      assistant-cloud: 0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3))
-      assistant-stream: 0.3.55(ai@7.0.161(zod@4.4.3))
+      assistant-cloud: 0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.6.7))
+      assistant-stream: 0.3.55(ai@7.0.161(zod@4.6.7))
       radix-ui: 1.8.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
@@ -6901,6 +6920,13 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.73(zod@4.4.3)
       zod: 4.4.3
 
+  ai@7.0.161(zod@4.6.7):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.134(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.35
+      '@ai-sdk/provider-utils': 5.0.73(zod@4.6.7)
+      zod: 4.6.7
+
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
       ajv: 8.20.0
@@ -6924,24 +6950,24 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  assistant-cloud@0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3)):
+  assistant-cloud@0.2.9(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.6.7)):
     dependencies:
-      assistant-stream: 0.3.55(ai@7.0.161(zod@4.4.3))
+      assistant-stream: 0.3.55(ai@7.0.161(zod@4.6.7))
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
-      ai: 7.0.161(zod@4.4.3)
+      ai: 7.0.161(zod@4.6.7)
     transitivePeerDependencies:
       - ioredis
       - redis
 
-  assistant-stream@0.3.55(ai@7.0.161(zod@4.4.3)):
+  assistant-stream@0.3.55(ai@7.0.161(zod@4.6.7)):
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/json-schema': 7.0.15
       nanoid: 6.0.2
       secure-json-parse: 4.1.1
     optionalDependencies:
-      ai: 7.0.161(zod@4.4.3)
+      ai: 7.0.161(zod@4.6.7)
 
   bail@2.0.2: {}
 
@@ -7406,6 +7432,17 @@ snapshots:
   eve@1.0.0-rc.1(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.4.3))(next@16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)):
     dependencies:
       ai: 7.0.161(zod@4.4.3)
+      nitro: 3.0.260903-beta
+      undici: 8.12.3
+    optionalDependencies:
+      '@opentelemetry/api': 1.10.0
+      next: 16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+      vite: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
+
+  eve@1.0.0-rc.1(@opentelemetry/api@1.10.0)(ai@7.0.161(zod@4.6.7))(next@16.3.8(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)):
+    dependencies:
+      ai: 7.0.161(zod@4.6.7)
       nitro: 3.0.260903-beta
       undici: 8.12.3
     optionalDependencies:

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@errand/contracts": "workspace:*",
-    "eve": "1.0.0-rc.1"
+    "eve": "1.0.0-rc.1",
+    "zod": "4.4.3"
   }
 }
