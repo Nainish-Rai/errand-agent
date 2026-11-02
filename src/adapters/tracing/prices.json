@@ -1,0 +1,26 @@
+{
+  "currency": "USD",
+  "unit": "per 1M tokens",
+  "models": {
+    "MiniMax-M3": {
+      "provider": "minimax",
+      "input": 0.3,
+      "output": 1.2,
+      "cacheRead": 0.06,
+      "cacheWrite": null,
+      "notes": "Standard tier, input up to 512k tokens. Above 512k input: 0.60 in / 2.40 out / 0.12 cache read. MiniMax lists no cache-write price.",
+      "source": "https://platform.minimax.io/docs/guides/pricing",
+      "confirmedOn": "2026-11-03"
+    },
+    "MiniMax-M3.1-Flash": {
+      "provider": "minimax",
+      "input": 0.15,
+      "output": 0.6,
+      "cacheRead": 0.015,
+      "cacheWrite": null,
+      "notes": "Not used yet; kept for model routing. Always thinks.",
+      "source": "https://platform.minimax.io/docs/guides/pricing",
+      "confirmedOn": "2026-11-03"
+    }
+  }
+}
