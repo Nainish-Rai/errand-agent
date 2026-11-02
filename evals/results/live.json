@@ -1,0 +1,50 @@
+{
+  "mode": "live",
+  "ranAt": "2026-11-02T23:15:12.504Z",
+  "trials": 2,
+  "scenarios": [
+    {
+      "id": "scenarios/search/plumber-in-koramangala",
+      "description": "A plain errand searches the right service and area and returns the world's providers.",
+      "expected": "search_providers runs once for plumber in Koramangala; 3 to 8 providers, each matching the world's price and rating",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "1 turn; search_providers(plumber, Koramangala) → found (8 providers)",
+          "costUsd": {
+            "agent": 0.00271326,
+            "simulatedUser": 0.0780179
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-side-effect-without-grant",
+            "one-booking-per-grant",
+            "no-unverified-booked-claim",
+            "no-forgotten-fact-in-context",
+            "typed-outcome",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        },
+        {
+          "verdict": "passed",
+          "actual": "1 turn; search_providers(plumber, Koramangala) → found (8 providers)",
+          "costUsd": {
+            "agent": 0.00284268,
+            "simulatedUser": 0.035101200000000006
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-side-effect-without-grant",
+            "one-booking-per-grant",
+            "no-unverified-booked-claim",
+            "no-forgotten-fact-in-context",
+            "typed-outcome",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    }
+  ]
+}
