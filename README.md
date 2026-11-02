@@ -34,6 +34,8 @@ pnpm eval
 | `pnpm eval:record` | A live run that also saves each scenario's first trial to `evals/fixtures/recorded/` |
 | `pnpm check` | Typecheck, layer rules (dependency-cruiser) and unit tests |
 | `pnpm smoke:search` | With the backend running: sends "find a plumber in Koramangala this week" through `packages/client` and checks that `search_providers` ran |
+| `pnpm verify -- --run ID <command>` | Browser verification with `control-errand` (see below) |
+| `pnpm verify:install-skill` | Links the `verify-errand` agent skill into `~/.claude/skills` |
 | `pnpm smoke:claude-code` | Gets a structured answer from the Claude Code CLI provider (uses your local `claude` login) and prints the cost a trace records for it |
 
 ## Models
@@ -59,6 +61,21 @@ The Claude Code provider has no AI SDK tool calling, so it is refused for `main`
 
 Every run writes `traces/<sessionId>.jsonl` (gitignored; set `ERRAND_TRACE_DIR` to move it). Each line is one span, written when it starts and again when it settles, with OpenTelemetry GenAI names: `invoke_agent` per turn, `agent.step` per model run, `chat <model>` per model call (tokens, latency, `errand.cost.usd`) and `execute_tool <name>` per tool call (arguments, result, latency, error). Phone numbers, emails and keys are removed before a line is written. MiniMax cost is estimated from [prices.json](src/adapters/tracing/prices.json); Claude Code CLI calls record the cost the CLI reports. `GET /api/v1/sessions/:id/trace` serves a trace, and the chat's side panel draws it as a live waterfall (agents-ui `trace-waterfall`).
 
+## Browser verification
+
+`control-errand` (`tools/verify/`) lets an agent prove a change in a real browser. Each run is an isolated, owned copy of the app: an APFS copy-on-write snapshot of the checkout (uncommitted edits included), its own backend and web on free ports (never 3000/3100), its own data and trace directories, and its own headless Chrome that can reach only those two ports. Commands drive the page by role, label, test id or text, never by injected JavaScript.
+
+```bash
+RUN=my-check-1
+pnpm verify -- --run $RUN launch                                     # scripted models: no key, no network
+pnpm verify -- --run $RUN doctor                                     # every check true, networkGuard included
+pnpm verify -- --run $RUN suite verification/suites/chat-search.json --report html
+pnpm verify -- --run $RUN api GET /api/v1/sessions/current/trace     # world state through packages/client
+pnpm verify -- --run $RUN cleanup                                    # daemonExited: true, nothing left
+```
+
+`launch --live` uses MiniMax for the main model and reads the key from the Keychain (`errand-agent-minimax`) at launch only. Evidence (state, logs, `browser.jsonl`, screenshots, ARIA snapshots, the command journal and suite reports) stays in `~/.local/share/errand-verify/<run-id>/` after cleanup. Seed suites live in `verification/suites/`. The agent skill is [.claude/skills/verify-errand](.claude/skills/verify-errand/SKILL.md), with a [feature map](.claude/skills/verify-errand/features/README.md); every UI ticket ends with a verify-errand report. `pnpm verify -- --help` lists every command.
+
 ## Layout
 
 ```
@@ -69,6 +86,9 @@ src/composition/  the only place adapters are constructed
 packages/         contracts (Zod wire schemas), client (typed API + chat client, no React)
 apps/web/         Next.js UI shell: assistant-ui bound to eve's useEveAgent; no API routes
 evals/            eve evals; each one is a client of the backend
+tools/verify/     control-errand: browser verification CLI and daemon (reaches the app only through the browser and packages/client)
+verification/     seed suites for control-errand
+.claude/skills/   verify-errand: the agent skill and its feature map
 ```
 
 The web app is a fork of eve's [`eve-chat-template`](https://github.com/vercel/eve/tree/main/apps/templates/eve-chat-template), stripped to local-development mode: no Slack, no Linear/Notion/Sentry connections, no Neon, no Upstash, no Vercel sign-in.

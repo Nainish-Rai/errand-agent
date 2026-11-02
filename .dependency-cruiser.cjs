@@ -76,6 +76,25 @@ module.exports = {
       },
     },
     {
+      name: "nothing-imports-the-verification-tool",
+      comment: "tools/verify drives the app from outside; no app, agent, package, eval or script may import it.",
+      severity: "error",
+      from: { pathNot: "^tools/verify/" },
+      to: { path: "^tools/verify/" },
+    },
+    {
+      name: "verification-reaches-the-app-through-the-browser-and-client",
+      comment:
+        "tools/verify reaches the app only through the browser (playwright-core) and packages/client (with the " +
+        "contracts it parses); never src/, agent/, apps/, evals/ or scripts/.",
+      severity: "error",
+      from: { path: "^tools/verify/" },
+      to: {
+        path: ["^(src|agent|apps|evals|scripts)/", "^packages/"],
+        pathNot: ["^packages/(client|contracts)/"],
+      },
+    },
+    {
       name: "nothing-depends-on-tests-or-evals",
       severity: "error",
       from: { pathNot: "^evals/" },
