@@ -19,7 +19,7 @@ pnpm eval
 
 `pnpm dev` starts the backend (the eve server, http://localhost:3100) and the web chat (http://localhost:3000). It needs nothing but the MiniMax key. The dev script reads `MINIMAX_API_KEY` from the environment; the one-liner above reads it from the macOS Keychain for that one command. Don't put the key in a file. Store it once with `security add-generic-password -s errand-agent-minimax -a "$USER" -w`.
 
-`pnpm eval` runs offline: a scripted model replaces MiniMax, so it needs no key and no network.
+`pnpm eval` runs offline: a scripted model replaces MiniMax, so it needs no key and no network. It regenerates [docs/EVAL_TABLE.md](docs/EVAL_TABLE.md).
 
 ## Commands
 
@@ -28,7 +28,10 @@ pnpm eval
 | `pnpm dev` | Backend and web app together |
 | `pnpm dev:backend` / `pnpm dev:web` | One of them |
 | `pnpm dev:tui` | Backend with eve's terminal chat UI |
-| `pnpm eval` | Offline evals (`evals/`) against the scripted model |
+| `pnpm eval` | Offline evals (`evals/`): scripted model and scripted user. Writes the eval table |
+| `pnpm eval:replay` | Recorded live runs played back with no network |
+| `pnpm eval:live` | MiniMax agent and a Claude Code simulated user, `ERRAND_EVAL_TRIALS` (default 3) trials each, with pass^k |
+| `pnpm eval:record` | A live run that also saves each scenario's first trial to `evals/fixtures/recorded/` |
 | `pnpm check` | Typecheck, layer rules (dependency-cruiser) and unit tests |
 | `pnpm smoke:search` | With the backend running: sends "find a plumber in Koramangala this week" through `packages/client` and checks that `search_providers` ran |
 | `pnpm smoke:claude-code` | Gets a structured answer from the Claude Code CLI provider (uses your local `claude` login) and prints the cost a trace records for it |
@@ -69,6 +72,30 @@ evals/            eve evals; each one is a client of the backend
 ```
 
 The web app is a fork of eve's [`eve-chat-template`](https://github.com/vercel/eve/tree/main/apps/templates/eve-chat-template), stripped to local-development mode: no Slack, no Linear/Notion/Sentry connections, no Neon, no Upstash, no Vercel sign-in.
+
+## Evals
+
+Every scenario in `evals/scenarios/` runs in three modes, picked with `ERRAND_EVAL_MODE`, and is graded on the end state, never the wording (τ-bench style). The evals are clients: they drive `/eve/v1` and `/api/v1` through `packages/client`.
+
+| Mode | Agent | User | Needs |
+|---|---|---|---|
+| `offline` (default, CI) | the scenario's scripted model turns | the scenario's scripted user | nothing |
+| `replay` | a recording's model turns | the recording's user | a fixture in `evals/fixtures/recorded/` |
+| `live` | MiniMax | a simulated user (Claude Code CLI, `user_simulator` role) with the scenario's goal | `MINIMAX_API_KEY`, a `claude` login |
+
+```bash
+pnpm eval                                                                                   # offline
+MINIMAX_API_KEY="$(security find-generic-password -s errand-agent-minimax -w)" ERRAND_EVAL_TRIALS=2 pnpm eval:record scenarios/search/plumber-in-koramangala
+pnpm eval:replay                                                                            # no key, no network
+```
+
+The evals pin the backend's clock with `ERRAND_CLOCK_START` (default `2026-11-04T09:00:00+05:30`; time still moves forward from there), so "this week", the seeded slots and every recording are the same on any day. The scripted model finds its step from the conversation (which user message, how many model responses since), fails loudly when the script runs out, and falls back to the ticket 01 search responder when no script is loaded. Scenarios run one at a time, because one backend holds one world and one loaded script.
+
+After each run a custom eve reporter (`evals/reporter.ts`) writes `evals/results/<mode>.json` and regenerates [docs/EVAL_TABLE.md](docs/EVAL_TABLE.md): scenario, expected, actual, pass/fail and notes per mode, and pass^1 and pass^k (`C(c,k)/C(n,k)`) for live. Never edit the table by hand.
+
+The global invariants from [SPEC.md](SPEC.md) run after every scenario. Until the ticket that builds a feature gives its invariant a `check` in `evals/invariants.ts`, it is recorded as pending, with no pass rule, so it never counts as passing.
+
+**Add a scenario:** create `evals/scenarios/<area>/<name>.eval.ts` with `defineScenario` (see `evals/scenarios/approval/approve-click-reaches-the-api.eval.ts`). Give it the eval id of its path, the world (`scenario` and `seed`), the scripted user's steps (`{ say }` or `{ approve: { proposalId, fingerprint } }`), the scripted model turns, a goal for the simulated user, a one-line `expected`, and `expect(t, run)` asserting the end state. Record it with `pnpm eval:record <id>` so replay covers it.
 
 ## Mock world
 
