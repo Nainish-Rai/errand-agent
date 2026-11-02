@@ -133,48 +133,52 @@
   border-color: color-mix(in oklab, var(--warn) 55%, transparent);
 }
 
-* {
-  border-color: var(--border);
-}
+/* Base rules sit in the base layer, so utilities (border-info, bg-surface-card …) override them.
+ * Unlayered, `* { border-color }` would beat every border colour utility. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 
-html {
-  height: 100%;
-}
+  html {
+    height: 100%;
+  }
 
-body {
-  min-height: 100%;
-  margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-}
+  body {
+    min-height: 100%;
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+  }
 
-code,
-kbd,
-pre,
-samp {
-  font-family: var(--font-mono);
-}
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
 
-button,
-input,
-textarea {
-  font-family: inherit;
-}
+  button,
+  input,
+  textarea {
+    font-family: inherit;
+  }
 
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) {
-  cursor: pointer;
-}
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 
-button:disabled,
-[role="button"][aria-disabled="true"] {
-  cursor: not-allowed;
-}
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 
-html[data-eve-chat-sidebar="closed"] [data-desktop-sidebar] {
-  width: 0;
+  html[data-eve-chat-sidebar="closed"] [data-desktop-sidebar] {
+    width: 0;
+  }
 }
 
 .shimmer-text {

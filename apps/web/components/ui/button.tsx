@@ -15,7 +15,9 @@ const buttonVariants = cva(
     "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-medium whitespace-nowrap",
     "transition-[background-color,border-color,color,opacity]",
     focusRing,
-    "disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45",
+    // A loading button is blocked but not faded: its in-progress label must stay readable.
+    "disabled:cursor-not-allowed [&:disabled:not([aria-busy])]:opacity-45 aria-busy:cursor-progress",
+    "aria-disabled:pointer-events-none aria-disabled:opacity-45",
     "aria-invalid:border-err [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   ],
   {
