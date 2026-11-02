@@ -1,3 +1,4 @@
+import type { ModelScript } from "@errand/contracts";
 import type { LanguageModel } from "ai";
 import { mockModel, type MockModelRequest, type MockModelResponse } from "eve/evals";
 
@@ -59,6 +60,59 @@ function respondToSearchErrand(request: MockModelRequest): MockModelResponse | s
   return { toolCalls: [{ name: "search_providers", input: { service, area, date_range: weekFrom(today) } }] };
 }
 
-export function createScriptedModel(): LanguageModel {
-  return mockModel({ modelId: "errand-script", provider: "errand-scripted", respond: respondToSearchErrand });
+export class ModelScriptExhaustedError extends Error {
+  constructor(where: string) {
+    super(`The loaded model script has no step for ${where}. Add the step to the scenario's model turns.`);
+    this.name = "ModelScriptExhaustedError";
+  }
+}
+
+/** Where the conversation stands: the user message being answered and the model's responses since. */
+export interface ScriptPosition {
+  /** 0-based index of the latest user message. */
+  readonly turn: number;
+  /** How many model responses already answer that message. */
+  readonly step: number;
+}
+
+/**
+ * Read from the conversation itself, not a counter, so a retried or replayed model call gets the
+ * same step and two sessions can't push each other's script forward.
+ */
+export function positionIn(request: Pick<MockModelRequest, "messages" | "userMessageCount">): ScriptPosition {
+  const lastUser = request.messages.findLastIndex((message) => message.role === "user");
+  const step = request.messages.slice(lastUser + 1).filter((message) => message.role === "assistant").length;
+  return { turn: Math.max(0, request.userMessageCount - 1), step };
+}
+
+/**
+ * The offline main model. With a scenario's script loaded it plays the script step by step and
+ * fails loudly when the script runs out; with none it falls back to the ticket 01 search responder.
+ */
+export class ModelScriptPlayer {
+  #script: ModelScript | undefined;
+
+  get loadedTurns(): number {
+    return this.#script?.turns.length ?? 0;
+  }
+
+  load(script: ModelScript): void {
+    this.#script = script;
+  }
+
+  unload(): void {
+    this.#script = undefined;
+  }
+
+  respond(request: MockModelRequest): MockModelResponse | string {
+    if (this.#script === undefined) return respondToSearchErrand(request);
+    const { turn, step } = positionIn(request);
+    const scripted = this.#script.turns[turn]?.steps[step];
+    if (scripted === undefined) throw new ModelScriptExhaustedError(`user message ${turn + 1}, step ${step + 1}`);
+    return { text: scripted.text, toolCalls: scripted.toolCalls };
+  }
+}
+
+export function createScriptedModel(player: ModelScriptPlayer): LanguageModel {
+  return mockModel({ modelId: "errand-script", provider: "errand-scripted", respond: (request) => player.respond(request) });
 }

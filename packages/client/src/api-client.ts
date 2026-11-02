@@ -1,11 +1,17 @@
 import {
   API_PREFIX,
   ApiErrorSchema,
+  ApproveProposalResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
   GetSessionTraceResponseSchema,
+  LoadModelScriptResponseSchema,
   SwitchScenarioResponseSchema,
+  type ApproveProposalRequest,
+  type ApproveProposalResponse,
   type GetSessionTraceResponse,
+  type LoadModelScriptRequest,
+  type LoadModelScriptResponse,
   type ProviderDetails,
   type SwitchScenarioRequest,
   type SwitchScenarioResponse,
@@ -58,6 +64,27 @@ export class ApiClient {
       `/sessions/${encodeURIComponent(sessionId)}/trace`,
       { method: "GET", signal: options.signal },
       GetSessionTraceResponseSchema,
+    );
+  }
+
+  /**
+   * What the approval card's button does: approve a proposal for the fingerprint the card showed.
+   * Until ticket 05 the backend answers 501 `not_implemented`, which throws an ApiRequestError.
+   */
+  async approveProposal(proposalId: string, request: ApproveProposalRequest): Promise<ApproveProposalResponse> {
+    return await this.#request(
+      `/proposals/${encodeURIComponent(proposalId)}/approve`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      ApproveProposalResponseSchema,
+    );
+  }
+
+  /** Dev only: load a scenario's model turns into the offline model, or unload them with `null`. */
+  async loadModelScript(request: LoadModelScriptRequest): Promise<LoadModelScriptResponse> {
+    return await this.#request(
+      "/dev/model-script",
+      { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      LoadModelScriptResponseSchema,
     );
   }
 

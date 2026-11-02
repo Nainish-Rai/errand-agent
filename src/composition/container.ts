@@ -6,6 +6,8 @@ import type { Clock } from "../core/ports/clock";
 import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { TraceSink } from "../core/ports/trace-sink";
+import { clockStartingAt } from "../adapters/clock/clock-starting-at";
+import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
 import { PriceTable } from "../adapters/tracing/price-table";
@@ -19,6 +21,13 @@ import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/sc
 export const DEFAULT_WORLD_SEED = 42;
 
 const systemClock: Clock = { now: () => new Date() };
+
+/** ERRAND_CLOCK_START pins the process's start date (evals use it); unset, the clock is the system's. */
+function processClock(): { readonly clock: Clock; readonly isPinned: boolean } {
+  const start = process.env.ERRAND_CLOCK_START;
+  if (start === undefined || start.trim() === "") return { clock: systemClock, isPinned: false };
+  return { clock: clockStartingAt(start, systemClock), isPinned: true };
+}
 
 export interface WorldSettings {
   readonly scenario: ScenarioName;
@@ -36,7 +45,11 @@ function runtimeSecrets(): (string | undefined)[] {
 }
 
 class Container {
-  readonly clock: Clock = systemClock;
+  readonly clock: Clock;
+  /** True when ERRAND_CLOCK_START set the clock, so sessions read it instead of their own time. */
+  readonly isClockPinned: boolean;
+  /** The offline model's script, loaded per scenario through the dev-only model-script route. */
+  readonly modelScript = new ModelScriptPlayer();
   readonly traceSink: TraceSink = new JsonlTraceSink({
     directory: traceDirectory(),
     sanitizer: new Sanitizer({ secrets: runtimeSecrets() }),
@@ -46,6 +59,7 @@ class Container {
   #settings: WorldSettings;
 
   constructor(settings: WorldSettings) {
+    ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
     this.#settings = settings;
     this.#world = this.#buildWorld(settings);
   }
@@ -67,7 +81,7 @@ class Container {
 
   modelFor(role: ModelRole): LanguageModel {
     const selection = parseModelSelection(process.env.ERRAND_MODELS);
-    return createModel(selection[role], { minimaxApiKey: process.env.MINIMAX_API_KEY });
+    return createModel(selection[role], { minimaxApiKey: process.env.MINIMAX_API_KEY, scriptPlayer: this.modelScript });
   }
 
   #buildWorld(settings: WorldSettings): MockProviderWorld {

@@ -10,6 +10,20 @@ export const ApiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
 });
 
+/** A route that exists in the contract but whose use case hasn't landed yet answers 501 with this code. */
+export const NOT_IMPLEMENTED_ERROR_CODE = "not_implemented";
+
+/** POST /proposals/:proposalId/approve. The fingerprint is the one the approval card showed. */
+export const ApproveProposalRequestSchema = z.object({
+  fingerprint: z.string().min(1),
+});
+
+export const ApproveProposalResponseSchema = z.object({
+  proposalId: z.string(),
+  grantId: z.string(),
+  expiresAt: z.string(),
+});
+
 export const GetProvidersResponseSchema = z.object({
   providers: z.array(ProviderDetailsSchema),
 });
@@ -36,6 +50,8 @@ export const SwitchScenarioRequestSchema = z.object({
 export const SwitchScenarioResponseSchema = SwitchScenarioRequestSchema;
 
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+export type ApproveProposalRequest = z.infer<typeof ApproveProposalRequestSchema>;
+export type ApproveProposalResponse = z.infer<typeof ApproveProposalResponseSchema>;
 export type GetProvidersResponse = z.infer<typeof GetProvidersResponseSchema>;
 export type GetProviderResponse = z.infer<typeof GetProviderResponseSchema>;
 export type ScenarioName = z.infer<typeof ScenarioNameSchema>;

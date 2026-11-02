@@ -1,13 +1,17 @@
 import {
   API_PREFIX,
+  ApproveProposalRequestSchema,
+  LoadModelScriptRequestSchema,
+  NOT_IMPLEMENTED_ERROR_CODE,
   SessionIdSchema,
   SwitchScenarioRequestSchema,
   type ApiError,
   type GetProviderResponse,
   type GetProvidersResponse,
+  type LoadModelScriptResponse,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
-import { defineChannel, GET, POST } from "eve/channels";
+import { defineChannel, GET, POST, PUT } from "eve/channels";
 
 import { container } from "../../src/composition/container";
 import { getProviders } from "../../src/core/use-cases/get-providers";
@@ -27,6 +31,10 @@ function failure(status: number, code: string, message: string): Response {
 
 function isDevelopment(): boolean {
   return process.env.NODE_ENV !== "production";
+}
+
+function invalidBody(issues: readonly { readonly message: string }[]): Response {
+  return failure(400, "invalid_request", issues[0]?.message ?? "Invalid body.");
 }
 
 export default defineChannel({
@@ -61,11 +69,32 @@ export default defineChannel({
       return Response.json(presentSessionTrace(trace, container().clock.now().getTime()));
     }),
 
+    // The approval card's button, and the only way a grant will ever be created. The body is
+    // checked now so clients and the eval harness are held to the contract; ApproveProposal
+    // itself arrives with ticket 05.
+    POST(`${API_PREFIX}/proposals/:proposalId/approve`, async (request) => {
+      const parsed = ApproveProposalRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      return failure(501, NOT_IMPLEMENTED_ERROR_CODE, "Approving a proposal arrives with ticket 05.");
+    }),
+
     POST(`${API_PREFIX}/dev/scenario`, async (request) => {
       if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
       const parsed = SwitchScenarioRequestSchema.safeParse(await request.json().catch(() => undefined));
-      if (!parsed.success) return failure(400, "invalid_request", parsed.error.issues[0]?.message ?? "Invalid body.");
+      if (!parsed.success) return invalidBody(parsed.error.issues);
       const body: SwitchScenarioResponse = container().switchScenario(parsed.data);
+      return Response.json(body);
+    }),
+
+    // Evals load a scenario's model turns here; the offline model plays them. `null` unloads.
+    PUT(`${API_PREFIX}/dev/model-script`, async (request) => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const parsed = LoadModelScriptRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const { modelScript } = container();
+      if (parsed.data.script === null) modelScript.unload();
+      else modelScript.load(parsed.data.script);
+      const body: LoadModelScriptResponse = { loaded: parsed.data.script !== null, turns: modelScript.loadedTurns };
       return Response.json(body);
     }),
   ],
