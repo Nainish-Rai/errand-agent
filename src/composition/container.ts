@@ -1,8 +1,15 @@
+import path from "node:path";
+
 import type { LanguageModel } from "ai";
 
 import type { Clock } from "../core/ports/clock";
+import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
+import type { TraceSink } from "../core/ports/trace-sink";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
+import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
+import { PriceTable } from "../adapters/tracing/price-table";
+import { Sanitizer } from "../adapters/tracing/sanitize";
 import { MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 
@@ -18,8 +25,23 @@ export interface WorldSettings {
   readonly seed: number;
 }
 
+/** Traces go to `traces/` at the repo root unless ERRAND_TRACE_DIR says otherwise; keep both out of git. */
+function traceDirectory(): string {
+  return path.resolve(process.env.ERRAND_TRACE_DIR ?? path.join(process.cwd(), "traces"));
+}
+
+/** Every secret the process holds, so the sanitiser removes them from traces by value. */
+function runtimeSecrets(): (string | undefined)[] {
+  return [process.env.MINIMAX_API_KEY, process.env.ANTHROPIC_API_KEY];
+}
+
 class Container {
   readonly clock: Clock = systemClock;
+  readonly traceSink: TraceSink = new JsonlTraceSink({
+    directory: traceDirectory(),
+    sanitizer: new Sanitizer({ secrets: runtimeSecrets() }),
+  });
+  readonly modelPricing: ModelPricing = new PriceTable();
   #world: MockProviderWorld;
   #settings: WorldSettings;
 

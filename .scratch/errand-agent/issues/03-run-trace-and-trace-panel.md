@@ -4,9 +4,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done (PR #2)
 
-- [ ] Running the ticket 01 request produces a trace file with model and tool spans, tokens, latency and estimated cost
-- [ ] Sanitisation removes phone numbers, emails and keys from arguments and results before they are written
-- [ ] The chat's side panel shows the waterfall for the session as it runs
-- [ ] An eval asserts the trace exists and has the expected span kinds
+- [x] Running the ticket 01 request produces a trace file with model and tool spans, tokens, latency and estimated cost
+- [x] Sanitisation removes phone numbers, emails and keys from arguments and results before they are written
+- [x] The chat's side panel shows the waterfall for the session as it runs
+- [x] An eval asserts the trace exists and has the expected span kinds

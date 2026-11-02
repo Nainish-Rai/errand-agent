@@ -3,7 +3,9 @@ import {
   ApiErrorSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
+  GetSessionTraceResponseSchema,
   SwitchScenarioResponseSchema,
+  type GetSessionTraceResponse,
   type ProviderDetails,
   type SwitchScenarioRequest,
   type SwitchScenarioResponse,
@@ -48,6 +50,15 @@ export class ApiClient {
       GetProviderResponseSchema,
     );
     return body.provider;
+  }
+
+  /** The run trace of a chat session: its spans so far (running ones included), events and totals. */
+  async getSessionTrace(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetSessionTraceResponse> {
+    return await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/trace`,
+      { method: "GET", signal: options.signal },
+      GetSessionTraceResponseSchema,
+    );
   }
 
   /** Dev only: reseed the mock world with a named scenario. */

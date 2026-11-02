@@ -31,7 +31,7 @@ pnpm eval
 | `pnpm eval` | Offline evals (`evals/`) against the scripted model |
 | `pnpm check` | Typecheck, layer rules (dependency-cruiser) and unit tests |
 | `pnpm smoke:search` | With the backend running: sends "find a plumber in Koramangala this week" through `packages/client` and checks that `search_providers` ran |
-| `pnpm smoke:claude-code` | Gets a structured answer from the Claude Code CLI provider (uses your local `claude` login) |
+| `pnpm smoke:claude-code` | Gets a structured answer from the Claude Code CLI provider (uses your local `claude` login) and prints the cost a trace records for it |
 
 ## Models
 
@@ -52,12 +52,16 @@ The Claude Code provider has no AI SDK tool calling, so it is refused for `main`
 
 **MiniMax:** `MiniMax-M3`, called directly through MiniMax's Anthropic-compatible API (`https://api.minimax.io/anthropic`) with `@ai-sdk/anthropic`; no AI Gateway. Price (standard tier, input ≤ 512k tokens): **$0.30 / 1M input, $1.20 / 1M output, $0.06 / 1M cache read**. Confirmed 2026-11-03 at <https://platform.minimax.io/docs/guides/pricing> and <https://platform.minimax.io/docs/api-reference/text-anthropic-api>. The numbers live in [src/adapters/tracing/prices.json](src/adapters/tracing/prices.json).
 
+## Run traces
+
+Every run writes `traces/<sessionId>.jsonl` (gitignored; set `ERRAND_TRACE_DIR` to move it). Each line is one span, written when it starts and again when it settles, with OpenTelemetry GenAI names: `invoke_agent` per turn, `agent.step` per model run, `chat <model>` per model call (tokens, latency, `errand.cost.usd`) and `execute_tool <name>` per tool call (arguments, result, latency, error). Phone numbers, emails and keys are removed before a line is written. MiniMax cost is estimated from [prices.json](src/adapters/tracing/prices.json); Claude Code CLI calls record the cost the CLI reports. `GET /api/v1/sessions/:id/trace` serves a trace, and the chat's side panel draws it as a live waterfall (agents-ui `trace-waterfall`).
+
 ## Layout
 
 ```
-agent/            eve agent: agent.ts, instructions, tools/, channels/ (eve.ts = /eve/v1, app-api.ts = /api/v1)
+agent/            eve agent: agent.ts, instructions, tools/, channels/ (eve.ts = /eve/v1, app-api.ts = /api/v1), instrumentation/ (run trace)
 src/core/         pure rules and ports (no eve, Zod, AI SDK)
-src/adapters/     mock provider world (seeded, scenario-driven), models
+src/adapters/     mock provider world (seeded, scenario-driven), models, tracing (JSONL sink, sanitiser, prices)
 src/composition/  the only place adapters are constructed
 packages/         contracts (Zod wire schemas), client (typed API + chat client, no React)
 apps/web/         Next.js UI shell: assistant-ui bound to eve's useEveAgent; no API routes
