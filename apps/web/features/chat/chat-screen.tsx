@@ -5,6 +5,7 @@ import { ChatClient, DEFAULT_BACKEND_URL, type ClientSession } from "@errand/cli
 import { Activity } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
@@ -26,16 +27,18 @@ function BoundThread({ session }: { readonly session: ClientSession }) {
               {error.message}
             </p>
           )}
-          <Button
-            aria-pressed={traceOpen}
-            className="absolute top-3 right-3 z-10"
-            size="sm"
-            variant="outline"
-            onClick={() => setTraceOpen((open) => !open)}
-          >
-            <Activity />
-            {traceOpen ? "Hide trace" : "Show trace"}
-          </Button>
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+            <ThemeToggle />
+            <Button
+              aria-pressed={traceOpen}
+              size="sm"
+              variant="outline"
+              onClick={() => setTraceOpen((open) => !open)}
+            >
+              <Activity />
+              {traceOpen ? "Hide trace" : "Show trace"}
+            </Button>
+          </div>
           <Thread />
         </div>
         {traceOpen && <TracePanel backendUrl={backendUrl} session={session} onClose={() => setTraceOpen(false)} />}

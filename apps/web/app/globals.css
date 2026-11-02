@@ -1,9 +1,22 @@
+/* The web app's only colour source is the generated design tokens. This file maps them onto Tailwind
+ * and the UI libraries; it introduces no colours, durations or roles of its own (`pnpm check:tokens`).
+ * Fonts (Geist, Geist Mono) are loaded in app/layout.tsx under the family names the tokens use. */
 @import "tailwindcss";
+@import "@errand/design-tokens/tokens.css";
 @source "../node_modules/streamdown/dist/*.js";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark is the default theme; data-theme on <html> or on any subtree picks one. agents-ui uses dark:. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *:not([data-theme="light"], [data-theme="light"] *)));
+
+/* No stock palette or shadows: every colour and shadow goes through a token. The few stock names the
+ * vendored libraries use are remapped below, so nothing silently loses its colour. */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+}
 
 @theme inline {
+  /* Library bridge (shadcn names): the eve template, assistant-ui and agents-ui read these. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -22,61 +35,102 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono:
-    "Geist Mono", "Geist Mono Fallback", ui-monospace, "SFMono-Regular", "Menlo", "Monaco",
-    "Consolas", monospace;
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  /* agents-ui status names. */
+  --color-success: var(--ok);
+  --color-warning: var(--warn);
+  --color-info: var(--info);
+
+  /* Semantic roles, for our own components: bg-surface-card, text-fg-meta, border-edge, text-ok … */
+  --color-surface-well: var(--surface-well);
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-card: var(--surface-card);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-glass: var(--surface-glass);
+  --color-edge: var(--edge);
+  --color-edge-strong: var(--edge-strong);
+  --color-edge-glass: var(--edge-glass);
+  --color-fg-emph: var(--fg-emph);
+  --color-fg-body: var(--fg-body);
+  --color-fg-meta: var(--fg-meta);
+  --color-fg-faint: var(--fg-faint);
+  --color-interactive: var(--interactive);
+  --color-interactive-tint: var(--interactive-tint);
+  --color-ok: var(--ok);
+  --color-ok-tint: var(--ok-tint);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --color-warn-fill: var(--warn-fill);
+  --color-on-warn-fill: var(--on-warn-fill);
+  --color-err: var(--err);
+  --color-err-tint: var(--err-tint);
+  --color-err-fill: var(--err-fill);
+  --color-on-err-fill: var(--on-err-fill);
+  --color-brand: var(--brand);
+  --color-scrim: var(--scrim);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+  --color-cat-6: var(--cat-6);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Stock names still used by vendored code, remapped to tokens:
+   * white/black: agents-ui button highlights and trace bar labels; black/10: streamdown.
+   * red-50/100 and red-600…800: streamdown's error blocks. */
+  --color-white: var(--white);
+  --color-black: var(--black);
+  --color-red-50: var(--err-tint);
+  --color-red-100: var(--err-tint);
+  --color-red-600: var(--err);
+  --color-red-700: var(--err);
+  --color-red-800: var(--err);
+
+  /* Only floating things cast a shadow (popovers, menus, dialogs, toasts): shadow-md and up are the pop
+   * shadow. Resting controls (shadow-2xs … shadow-sm in the shadcn template) cast none. */
+  --shadow-2xs: 0 0 transparent;
+  --shadow-xs: 0 0 transparent;
+  --shadow-sm: 0 0 transparent;
+  --shadow-md: var(--shadow-pop);
+  --shadow-lg: var(--shadow-pop);
+  --shadow-xl: var(--shadow-pop);
+  --shadow-2xl: var(--shadow-pop);
+
+  --radius-sm: var(--radius-1);
+  --radius-md: var(--radius-2);
+  --radius-lg: var(--radius-3);
+  --radius-xl: calc(var(--radius-3) + 4px);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  /* agents-ui's own typefaces give way to ours. */
+  --font-pixel: var(--font-mono);
+
+  --text-meta: var(--text-meta);
+  --text-label: var(--text-label);
+  --text-body: var(--text-body);
+  --text-panel: var(--text-panel);
+  --text-title: var(--text-title);
+  --text-kpi: var(--text-kpi);
+
+  /* Tailwind's own motion runs on the duration tokens, so reduced motion zeroes it too. */
+  --default-transition-duration: var(--dur-micro);
+  --default-transition-timing-function: var(--ease-out);
+  --ease-out: var(--ease-out);
+  --animate-spin: spin var(--dur-spin) linear infinite;
+  --animate-pulse: pulse calc(var(--dur-spin) * 2) ease-in-out infinite;
 }
 
-:root,
-.light {
-  color-scheme: light;
-  /* Soft neutral page with white elevated surfaces so cards/composer pop. */
-  --background: oklch(0.971 0 0);
-  --foreground: oklch(0.16 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0 0);
-  --primary: oklch(0.19 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.94 0 0);
-  --secondary-foreground: oklch(0.19 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.94 0 0);
-  --accent-foreground: oklch(0.19 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.916 0 0);
-  --input: oklch(0.916 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-}
-
-.dark {
-  color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+/* Inferred facts, estimates and heuristic scores: a dashed edge in the warn tone. Explicit facts never. */
+@utility inferred {
+  border-style: dashed;
+  border-color: color-mix(in oklab, var(--warn) 55%, transparent);
 }
 
 * {
@@ -92,14 +146,15 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), var(--font-sans);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
 }
 
 code,
 kbd,
 pre,
 samp {
-  font-family: var(--font-geist-mono), var(--font-mono);
+  font-family: var(--font-mono);
 }
 
 button,
@@ -132,7 +187,7 @@ html[data-eve-chat-sidebar="closed"] [data-desktop-sidebar] {
   background-size: 220% 100%;
   background-clip: text;
   color: transparent;
-  animation: shimmer-text 1.8s linear infinite;
+  animation: shimmer-text calc(var(--dur-spin) * 2) linear infinite;
   will-change: background-position;
 }
 
@@ -149,5 +204,6 @@ html[data-eve-chat-sidebar="closed"] [data-desktop-sidebar] {
 @media (prefers-reduced-motion: reduce) {
   .shimmer-text {
     animation: none;
+    color: var(--muted-foreground);
   }
 }

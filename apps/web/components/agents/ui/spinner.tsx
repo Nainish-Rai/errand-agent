@@ -197,7 +197,7 @@ export type StatusBadgeProps = Omit<React.ComponentProps<'span'>, 'children'> & 
  * (220ms cubic-bezier(0.34,1.96,0.94,1)), the track fades (154ms) and the spinner fades (110ms), a 24px disc
  * fills in (220ms cubic-bezier(0.34,1.35,0.64,1)), a 0.5px blur pulses (0 -> 0.5px in 99ms, back in 200ms) and the
  * check draws after 140ms (300ms cubic-bezier(0.22,1,0.36,1)). Back to loading everything returns in 200ms on
- * cubic-bezier(0.22,1,0.36,1). The disc is #2563eb in both themes: no theme token carries that blue, so it lives
+ * cubic-bezier(0.22,1,0.36,1). The disc is the --interactive role (Errand tokens; upstream used a fixed blue). It lives
  * in --status-badge-done on the badge and can be overridden there.
  */
 function StatusBadge({ status = 'loading', variant = 'default', dynamic = true, className, ...props }: StatusBadgeProps) {
@@ -209,7 +209,7 @@ function StatusBadge({ status = 'loading', variant = 'default', dynamic = true, 
       role="img"
       aria-label={done ? 'Done' : 'Loading'}
       className={cn(
-        'group/status-badge relative block size-[22px] shrink-0 [--status-badge-done:#2563eb]',
+        'group/status-badge relative block size-[22px] shrink-0 [--status-badge-done:var(--interactive)]',
         'transition-[scale] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
         'data-[state=done]:scale-[1.09] data-[state=done]:duration-[220ms] data-[state=done]:ease-[cubic-bezier(0.34,1.96,0.94,1)]',
         'data-[state=done]:animate-[status-badge-blur_300ms_linear] motion-reduce:transition-none motion-reduce:animate-none',
