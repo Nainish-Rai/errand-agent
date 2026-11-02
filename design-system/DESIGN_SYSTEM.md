@@ -27,7 +27,14 @@ shadcn, assistant-ui, agents-ui and OpenUI. The mobile app reads the same tokens
    the measured values are below. The focus ring is always visible, and touch targets are at least 32px
    (44px on mobile).
 
-## Tokens (`tokens.css`)
+## Tokens (`packages/design-tokens`)
+
+The source is the typed object in `packages/design-tokens/src` (primitives, then the dark and light roles,
+then the bridge, then type and motion). `pnpm tokens:build` generates `packages/design-tokens/tokens.css`
+from it and rebuilds the inlined gallery; the web app imports only that generated file
+(`@errand/design-tokens/tokens.css`). Never edit `tokens.css` by hand: `pnpm check:tokens` fails when it
+is stale. The roles and the bridge are declared on `:root`, `[data-theme="dark"]` and `[data-theme="light"]`,
+so a panel can force either theme inside the other.
 
 | Group | Tokens | Notes |
 |---|---|---|
@@ -142,16 +149,19 @@ Working now · Waiting on you · Upcoming bookings · Alerts · Bookings activit
 
 ## Rules and checks
 
-- Components read semantic roles only. A new colour means a new semantic role in `tokens.css` first.
-- `python3 -I design-system/check_tokens.py <files>` flags literal colours outside primitives, undefined
-  tokens, fixed durations and a missing reduced-motion block. It runs in `pnpm check`. It was shown failing
+- Components read semantic roles only. A new colour means a new semantic role in `packages/design-tokens/src/roles.ts` first.
+- `python3 -I design-system/check_tokens.py [--tokens packages/design-tokens/tokens.css] <files>` flags literal
+  colours outside primitives, undefined tokens, fixed durations and a missing reduced-motion block. `--tokens`
+  lets an app stylesheet use the variables the token file defines. `pnpm check:tokens` runs it over the
+  generated tokens, every CSS file under `apps/` and the inlined gallery, after checking the generated file
+  is current. It runs in `pnpm check`. It was shown failing
   (52 findings when the primitive markers were wrong) and passing (0 findings) on the current tokens.
-- `python3 -I design-system/check_contrast.py tokens.css` resolves every role to its hex in both themes and
+- `python3 -I design-system/check_contrast.py packages/design-tokens/tokens.css` (`pnpm check:contrast`) resolves every role to its hex in both themes and
   checks 48 pairs: 7 text roles on 3 surfaces, plus the filled badges and the primary button. It fails below
   4.5:1 and runs in `pnpm check`. Its first run failed on 4 pairs: the dark error badge was 3.35, dark `err`
   on raised was 4.36, and light `ok` and `warn` on raised were 4.45 and 4.46. Those primitives were adjusted
   and it now passes 48 of 48.
-- The gallery source is `design-system/gallery.html`, which links `tokens.css`.
-  `python3 -I design-system/build_gallery.py design-system/gallery.html design-system/tokens.css mockups/design-system.html`
+- The gallery source is `design-system/gallery.html`, which links the generated `tokens.css`.
+  `python3 -I design-system/build_gallery.py design-system/gallery.html packages/design-tokens/tokens.css mockups/design-system.html`
   inlines the tokens into one file that the checker can scan. Every component is shown in both themes.
-  In the app it becomes the `/design` route (ticket 18).
+  In the app it is the `/design` route, built from the real components.

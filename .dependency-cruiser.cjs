@@ -41,6 +41,22 @@ module.exports = {
       to: { pathNot: ["^packages/(client|contracts)/", npm("zod"), eveEntry("client")] },
     },
     {
+      name: "design-tokens-is-a-leaf",
+      comment:
+        "packages/design-tokens imports nothing in the repo and no npm package: Node built-ins for the CSS build, vitest for its test.",
+      severity: "error",
+      from: { path: "^packages/design-tokens/" },
+      to: { pathNot: ["^packages/design-tokens/", npm("vitest")], dependencyTypesNot: ["core"] },
+    },
+    {
+      name: "generated-ui-cannot-reach-trust-components",
+      comment:
+        "Generated UI (OpenUI) may ask and show, never commit: it cannot import the approval card, receipts or alerts, so it cannot render an Approve button.",
+      severity: "error",
+      from: { path: "^apps/web/features/generated-ui/" },
+      to: { path: "^apps/web/features/trust/" },
+    },
+    {
       name: "apps-reach-the-backend-only-through-the-client",
       comment: "apps/* never import src/ or agent/, and use eve only through its React binding.",
       severity: "error",

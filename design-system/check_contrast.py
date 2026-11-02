@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""WCAG contrast check for tokens.css (stdlib only). Exit 0 when every pair passes, 1 otherwise.
+"""WCAG contrast check for the generated tokens.css (stdlib only). Exit 0 when every pair passes, 1 otherwise.
 
-    python3 -I check_contrast.py [tokens.css]
+    python3 -I design-system/check_contrast.py [packages/design-tokens/tokens.css]
 
 Resolves each semantic role to its primitive hex in both themes (dark is :root, light is
 [data-theme="light"] layered over it), then checks every text role against the surfaces text sits on,
@@ -14,6 +14,7 @@ TEXT_ROLES = ["--fg-emph", "--fg-body", "--fg-meta", "--interactive", "--ok", "-
 SURFACES = ["--surface-canvas", "--surface-card", "--surface-raised"]
 FILLS = [("--on-warn-fill", "--warn-fill"), ("--on-err-fill", "--err-fill"), ("--primary-foreground", "--primary")]
 AA = 4.5
+DEFAULT_TOKENS = "packages/design-tokens/tokens.css"
 
 
 def block(text, selector):
@@ -50,7 +51,7 @@ def ratio(a, b):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "tokens.css"
+    path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_TOKENS
     text = open(path, encoding="utf-8").read()
     dark = declarations(block(text, ":root"))
     light = {**dark, **declarations(block(text, '[data-theme="light"]'))}

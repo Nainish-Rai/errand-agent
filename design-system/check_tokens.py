@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Design-token check (copied from Nainish-Rai/observatory-ui, MIT) (stdlib only). Exit 0 clean, 1 on findings.
 
-    python3 -I check_tokens.py [file ...]
+    python3 -I design-system/check_tokens.py [--tokens tokens.css] [file ...]
+
+--tokens names the token file an app stylesheet builds on (repeatable). Its custom properties count as
+defined in every checked file, as they do in the browser, and the token file itself is checked too.
+With no arguments it checks the generated packages/design-tokens/tokens.css.
 
 Rules
   raw-color      a hex, rgb()/rgba() or hsl() colour outside the primitive token block
@@ -20,7 +24,14 @@ MOTION = re.compile(r"\b(?:transition|animation)(?:-duration)?\s*:([^;}\"]*)")
 DURATION = re.compile(r"(?<![\w.-])(\d*\.?\d+)m?s\b")
 
 
-def check(path):
+DEFAULT_TOKENS = "packages/design-tokens/tokens.css"
+
+
+def definitions(text):
+    return set(re.findall(r"(--[\w-]+)\s*:", text))
+
+
+def check(path, shared=frozenset()):
     text = open(path, encoding="utf-8").read()
     findings = []
     lines = text.split("\n")
@@ -35,7 +46,7 @@ def check(path):
         code = re.sub(r"&#\w+;|#[a-z][\w-]*\b(?=[\s,{:.)\"'\[]|$)", "", line)  # ids and entities are not colours
         for m in COLOR.finditer(code):
             findings.append((n, "raw-color", m.group(0)))
-    defined = set(re.findall(r"(--[\w-]+)\s*:", text))
+    defined = definitions(text) | shared
     for n, line in enumerate(lines, 1):
         for name in re.findall(r"var\((--[\w-]+)", line):
             if name not in defined and not name.startswith("--k"):  # --kc / --kv are set inline per element
@@ -52,11 +63,29 @@ def check(path):
     return findings
 
 
+def parse_args(argv):
+    tokens, files = [], []
+    args = iter(argv)
+    for arg in args:
+        if arg == "--tokens":
+            path = next(args, None)
+            if path is None:
+                sys.exit("--tokens needs a path")
+            tokens.append(path)
+        else:
+            files.append(arg)
+    files = tokens + [f for f in files if f not in tokens]
+    return tokens, files or [DEFAULT_TOKENS]
+
+
 def main():
-    files = sys.argv[1:] or ["dashboard.template.html"]
+    tokens, files = parse_args(sys.argv[1:])
+    shared = set()
+    for path in tokens:
+        shared |= definitions(open(path, encoding="utf-8").read())
     bad = 0
     for f in files:
-        for n, rule, what in check(f):
+        for n, rule, what in check(f, frozenset(shared)):
             print("%s:%s %s %s" % (f, n, rule, what))
             bad += 1
     print("%d finding(s) in %d file(s)" % (bad, len(files)))

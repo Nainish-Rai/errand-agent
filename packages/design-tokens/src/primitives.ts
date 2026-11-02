@@ -1,0 +1,64 @@
+// Layer 1: the raw palette, spacing and radius. The only place in the repo a literal colour may appear.
+// To re-theme, change these. Components never read primitives directly; they read semantic roles.
+
+export const colorPrimitives = {
+  "ink-0": "#0f1114",
+  "ink-1": "#17191d",
+  "ink-2": "#1e2126",
+  "ink-3": "#25292f",
+  "ink-4": "#2a2e35",
+  "ink-5": "#3a3f47",
+  "ink-6": "#5d636d",
+  "ink-7": "#8b919c",
+  "ink-8": "#b8bdc6",
+  "ink-9": "#e7e9ee",
+  "paper-0": "#ffffff",
+  "paper-1": "#f6f7f9",
+  "paper-2": "#eef0f3",
+  "paper-3": "#e3e6eb",
+  "paper-4": "#cfd4db",
+  "paper-5": "#8a919c",
+  "paper-6": "#5f6773",
+  "paper-7": "#3a404a",
+  "paper-8": "#1b1f24",
+  "paper-well": "#f1f3f6",
+  "blue-bright": "#4c8dff",
+  "blue-deep": "#1f5fd6",
+  "green-bright": "#3fb950",
+  "green-deep": "#18752f",
+  "amber-bright": "#d29922",
+  "amber-deep": "#915c00",
+  "red-bright": "#ff5f57",
+  "red-deep": "#cf222e",
+  "orange-bright": "#ff7a1a",
+  "orange-deep": "#d9600a",
+  "on-amber": "#111111",
+  "on-red": "#ffffff",
+  black: "#000000",
+  white: "#ffffff",
+  "cat-1": "#7aabfc",
+  "cat-2": "#b897f0",
+  "cat-3": "#1dc5ae",
+  "cat-4": "#e189c5",
+  "cat-5": "#2ebbe8",
+  "cat-6": "#da9e3f",
+  "night-sky-top": "#16274d",
+  "night-sky-mid": "#2c4a82",
+  "night-building": "#0e1424",
+  "night-window": "#ffd77a",
+  "night-cloud": "#9fb3dd",
+  "night-road": "#0b0f1a",
+  "day-sky-top": "#7fb6f5",
+  "day-sky-mid": "#cfe3fb",
+  "day-building": "#8a9ab8",
+  "day-window": "#e4ebf5",
+  "day-cloud": "#ffffff",
+  "day-road": "#9aa7bf",
+} as const;
+
+export type ColorPrimitive = keyof typeof colorPrimitives;
+
+/** The 4px grid. */
+export const space = { "space-1": 4, "space-2": 8, "space-3": 12, "space-4": 16, "space-5": 20, "space-6": 24, "space-8": 32 } as const;
+
+export const radius = { "radius-1": 4, "radius-2": 6, "radius-3": 10, "radius-pill": 999 } as const;

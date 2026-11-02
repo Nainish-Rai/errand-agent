@@ -1,0 +1,11 @@
+{
+  "name": "@errand/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Errand design tokens: one typed source (dark and light) and the CSS generated from it.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css"
+  }
+}
