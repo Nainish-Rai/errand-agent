@@ -1,0 +1,47 @@
+{
+  "scenario": "scenarios/search/plumber-in-koramangala",
+  "recordedAt": "2026-11-02T23:14:52.512Z",
+  "evalRunId": "080a65e5-1ba2-4f29-9382-4f945cd0e5ec",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber to fix a leaking kitchen tap at my place in Koramangala. Can you help me find someone available this week? I'd like to see who's available and what they charge."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll search for plumbers available in Koramangala this week (today through November10, 2026).",
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the plumbers available in Koramangala this week (Nov 4–10, 2026):\n\n**Top picks by rating & price:**\n\n**1. Venkatesh Sanitary Solutions** — ₹499 · ⭐ 4.8 (241 reviews)\n- Today (Nov 4): 10:00, 11:00, 12:00, 14:00, 15:00 · Nov 5: 9:00 AM\n- Verified · same-day · senior technician\n\n**2. Basava Plumbing Services** — ₹599 · ⭐ 4.8 (239 reviews)\n- Today (Nov 4): 10:00, 16:00 · Nov 5: 12:00, 17:00 · Nov 6: 8:00, 10:00\n- Parts included\n\n**3. Shiva Sanitary Solutions** — ₹399 · ⭐ 4.5 (133 reviews)\n- Nov 5: 8:00, 12:00, 15:00, 16:00, 18:00 · Nov 6: 8:00 AM\n- Senior technician\n\n**Others:**\n- **Anand Plumbing Works** — ₹949 · ⭐ 4.3 · Today 10:00, Nov 5 9:00/11:00/14:00/17:00, Nov 6 9:00 · 30-day warranty, parts included\n- **Royal Plumbing Works** — ₹999 · ⭐ 4.3 · Today 10:00, 11:00, Nov 5 8:00/14:00/16:00/18:00 · verified, same-day, female technician available\n- **Nandi Pipe Fixers** — ₹1,149 · ⭐ 4.0 · Today 11:00, 18:00, Nov 5 9:00/15:00/16:00/17:00\n- **Prestige Plumbing Works** — ₹899 · ⭐ 3.7 · Today 14:00, 18:00, Nov 5 10:00/11:00/12:00/17:00 · verified, parts included\n- **Kaveri Pipe Fixers** — ₹1,049 · ⭐ 3.6 · Today 10:00, 11:00, 14:00, Nov 5 11:00/14:00/15:00 · weekend available, female technician available\n\nAll times are IST. Venkatesh and Basava stand out — both top-rated at 4.8 with the lowest prices among the highly-reviewed options, and both can come today. Note that I can't book directly yet — booking comes next once you've picked someone. Which one would you like me to narrow down for a leaking kitchen tap?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.00271326,
+    "simulatedUser": 0.0780179
+  }
+}

@@ -2,7 +2,7 @@ import type { LanguageModel } from "ai";
 
 import { createClaudeCodeModel } from "./claude-code";
 import { createMinimaxModel } from "./minimax";
-import { createScriptedModel } from "./scripted";
+import { createScriptedModel, type ModelScriptPlayer } from "./scripted";
 
 // One setting, ERRAND_MODELS, picks the provider for each model role, for example
 // `ERRAND_MODELS=main=scripted` or `ERRAND_MODELS=main=minimax,review_reader=minimax`.
@@ -56,6 +56,8 @@ export function parseModelSelection(setting: string | undefined): Record<ModelRo
 
 export interface ModelEnvironment {
   readonly minimaxApiKey: string | undefined;
+  /** Plays a scenario's model turns when one is loaded; the scripted provider reads it. */
+  readonly scriptPlayer: ModelScriptPlayer;
 }
 
 export function createModel(provider: ModelProviderName, environment: ModelEnvironment): LanguageModel {
@@ -65,6 +67,6 @@ export function createModel(provider: ModelProviderName, environment: ModelEnvir
     case "claude-code":
       return createClaudeCodeModel();
     case "scripted":
-      return createScriptedModel();
+      return createScriptedModel(environment.scriptPlayer);
   }
 }

@@ -36,6 +36,7 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | GET | `/sessions/:id/trace`, `/sessions/:id/context` | Trace and context log for the trace panel |
   | GET | `/assets/providers/:file` | Provider photos, served by the backend so every client gets the same images |
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
+  | PUT | `/dev/model-script` `{script}` | Dev only. Load a scenario's model turns into the offline model (`null` unloads) |
 
   Every request and response body is a schema from **contracts**. The user comes from the channel's
   auth context, never from the body. Locally that is a fixed dev user; real auth later means swapping the
@@ -73,7 +74,7 @@ through the same client package the web uses. If evals pass, any client that spe
 | `packages/contracts` | Zod | anything else in the repo |
 | `packages/client` | `packages/contracts`, the eve client | React, `src/`, `agent/` |
 | `apps/*` | `packages/client`, `packages/contracts`, UI libraries | `src/`, `agent/` |
-| `evals/` | `packages/client`, `packages/contracts`, `src/adapters/world` (seeding and state assertions) | — (tests depend inward; nothing depends on tests) |
+| `evals/` | `packages/client`, `packages/contracts`, `src/adapters/world` (seeding and state assertions), `src/adapters/models` and `src/adapters/tracing/price-table` (the simulated user's model and its cost) | `agent/`, the rest of `src/` (tests depend inward; nothing depends on tests) |
 
 A dependency-cruiser rule set enforces this table in `pnpm check`. When it is first added, it is shown to
 fail on a planted violation (`src/core` importing `eve`), and that run is the proof the check works.
@@ -135,7 +136,8 @@ errand-agent/
 │   ├── web/                   app/ (home, chat/[id]) · features/home/widgets · features/chat
 │   │                          (assistant-ui runtime, approval-card, openui-library) · features/trace-panel
 │   └── mobile/                README.md only: how an Expo app plugs into the same backend
-├── evals/                     scenarios/ · users/ · invariants.ts · reporter.ts · fixtures/recorded/
+├── evals/                     scenarios/ · users/ · scenario.ts · invariants.ts · reporter.ts · eval-table.ts
+│                              fixtures/recorded/ (replay fixtures) · results/<mode>.json (feeds docs/EVAL_TABLE.md)
 ├── observatory/               dashboard copied from harness-observatory (MIT), adapted to our traces
 ├── scripts/                   fetch-stock-images.ts · export-observatory.ts
 └── docs/                      SPEC.md · DESIGN.md (1 page) · BUGS.md · EVAL_TABLE.md (generated) · tickets/
