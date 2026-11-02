@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "title": "Trace panel: the toggle shows the waterfall with model and tool spans",
+  "feature": "trace-panel",
+  "description": "Ticket 03. The run trace beside the chat: hidden and shown by its toggle, drawn as a waterfall of the turn's model and tool spans, read from GET /api/v1/sessions/:id/trace.",
+  "scenarios": [
+    {
+      "id": "toggle-shows-waterfall",
+      "title": "Hide trace, send a search, Show trace: the waterfall has the model calls and the tool call",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "text": "Send a message and the run shows up here." },
+          "note": "the panel opens empty"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Hide trace" } },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
+          "note": "Hide trace removes the panel"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Show trace", "attr": "aria-pressed=false" },
+          "note": "the toggle reads as off"
+        },
+        {
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],
+          "options": { "count": 8 },
+          "note": "the turn ran with the panel hidden"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Show trace" } },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Hide trace", "attr": "aria-pressed=true" },
+          "note": "the toggle reads as on"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" },
+          "note": "the summary counts the turn"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "tree", "name": "Steps", "state": "visible" },
+          "note": "the waterfall renders"
+        },
+        {
+          "command": "assert",
+          "args": ["role=tree[name=\"Steps\"] >> role=treeitem[name*=\"chat errand-script\"]"],
+          "options": { "count": 2 },
+          "note": "two model spans (chat errand-script)"
+        },
+        {
+          "command": "assert",
+          "args": ["role=tree[name=\"Steps\"] >> role=treeitem[name*=\"search_providers tool\"]"],
+          "options": { "count": 1 },
+          "note": "one tool span (search_providers)"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": {
+            "expect": [
+              { "path": "spans[*].kind", "includes": "model" },
+              { "path": "spans[*].kind", "includes": "tool" },
+              { "path": "totals.modelCalls", "equals": 2 },
+              { "path": "totals.toolCalls", "equals": 1 }
+            ]
+          },
+          "note": "world state: the backend's trace matches the waterfall"
+        }
+      ]
+    },
+    {
+      "id": "close-button-hides-panel",
+      "title": "The panel's close button hides it and the toggle brings it back",
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Close the trace" } },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
+          "note": "close hides the panel"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Show trace" } },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "state": "visible" },
+          "note": "Show trace brings it back"
+        }
+      ]
+    }
+  ]
+}

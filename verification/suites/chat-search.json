@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "title": "Chat search: the scripted model's search renders providers",
+  "feature": "chat-search",
+  "description": "Ticket 01. The offline (scripted) model answers a search with search_providers; the chat renders the world's providers from the tool output, and the run trace records the tool call.",
+  "scenarios": [
+    {
+      "id": "enter-sends-and-providers-render",
+      "title": "Enter sends the message; eight Koramangala plumbers render from the world",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } },
+          "note": "seed the world: default scenario, seed 42"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        {
+          "command": "assert",
+          "options": { "role": "heading", "name": "What do you need done?", "state": "visible" },
+          "note": "empty chat greets"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Send", "attr": "disabled=" },
+          "note": "Send is disabled while the composer is empty"
+        },
+        {
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Search results for plumber in Koramangala", "text": "8 plumber in Koramangala" },
+          "note": "the provider results render"
+        },
+        {
+          "command": "assert",
+          "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],
+          "options": { "count": 8 },
+          "note": "one row per provider"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Search results for plumber in Koramangala", "text": "Venkatesh Sanitary Solutions ₹499" },
+          "note": "a seeded provider with its price"
+        },
+        {
+          "command": "assert",
+          "args": ["body"],
+          "options": { "text": "I found 8 providers. The top options:" },
+          "note": "the model's reply follows the tool output"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": {
+            "expect": [
+              { "path": "spans[*].name", "includes": "execute_tool search_providers" },
+              { "path": "totals.toolCalls", "equals": 1 }
+            ]
+          },
+          "note": "world state: the session's trace holds exactly one search_providers call"
+        }
+      ]
+    },
+    {
+      "id": "send-button-sends",
+      "title": "The Send button sends a message too",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        {
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Send", "state": "visible" },
+          "note": "Send is enabled once there is text"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Send" } },
+        {
+          "command": "assert",
+          "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],
+          "options": { "count": 8 },
+          "note": "the same eight providers render"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "" },
+          "note": "the composer clears after sending"
+        }
+      ]
+    }
+  ]
+}
