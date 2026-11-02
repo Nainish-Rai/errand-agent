@@ -8,7 +8,7 @@ import { integerOption, jsonOption, stringOption, type Options } from "./cli-arg
 import { cleanUrl, GUARD_PROBE_URL, guardLaunchArgs, installNetworkGuard, runOrigins, type GuardEvent } from "./network-guard";
 import type { Redactor } from "./redaction";
 import { appendPrivateLine, evidenceFile } from "./run-paths";
-import { listenersOn, ownedProcessIds, type RunState } from "./runtime";
+import { listenersOn, ownedProcesses, type RunState } from "./runtime";
 import { sourceIdentity } from "./source-identity";
 import { describeTarget, hasTarget, locatorFor, type Target } from "./targets";
 import { callApi, parseApiMethod, parseExpectations, resolveSession, unmetExpectation, type ApiResult } from "./world-api";
@@ -549,13 +549,21 @@ export class BrowserSession {
 
   async doctor(context: DoctorContext): Promise<CommandResult> {
     const state = this.#state;
-    const ownedPorts = state.processes.every((owned) => {
-      const pids = ownedProcessIds([owned.pid]);
-      return owned.ports.every((port) => {
-        const listeners = listenersOn(port);
-        return listeners.length > 0 && listeners.every((pid) => pids.includes(pid));
+    // Every listener on a run port must be a process this run started. Retried briefly: a dev
+    // server can hand its socket from a starter process to a worker while the doctor looks.
+    const portsOwned = () =>
+      state.processes.every((owned) => {
+        const pids = ownedProcesses({ roots: [owned.pid], marker: state.snapshot });
+        return owned.ports.every((port) => {
+          const listeners = listenersOn(port);
+          return listeners.length > 0 && listeners.every((pid) => pids.includes(pid));
+        });
       });
-    });
+    let ownedPorts = portsOwned();
+    for (let attempt = 0; attempt < 10 && !ownedPorts; attempt++) {
+      await delay(500);
+      ownedPorts = portsOwned();
+    }
     let source: ReturnType<typeof sourceIdentity> | undefined;
     try {
       source = sourceIdentity(state.checkout);

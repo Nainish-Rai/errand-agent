@@ -8,7 +8,7 @@ import { integerOption, parseArguments, stringOption, type Options } from "./cli
 import { parseTheme } from "./browser-session";
 import { readHistory } from "./journal";
 import { EVIDENCE_ROOT, ensurePrivateDir, readJson, runPaths, writePrivateJson, type RunPaths } from "./run-paths";
-import { listenersOn, ownedProcessIds, stopOwnedProcesses, type LaunchOptions, type RunState } from "./runtime";
+import { listenersOn, ownedProcesses, stopOwnedProcesses, type LaunchOptions, type RunState } from "./runtime";
 import { resolveCheckout, sourceIdentity, validateCheckout } from "./source-identity";
 
 const BIN = fileURLToPath(new URL("../bin/control-errand.js", import.meta.url));
@@ -185,7 +185,12 @@ async function launch(paths: RunPaths, options: Options): Promise<void> {
 /** The ports and owned processes a cleaned run must not leave behind, checked from outside the daemon. */
 function leftovers(state: RunState): { processesRemaining: number[]; portsListening: number[] } {
   return {
-    processesRemaining: ownedProcessIds(state.processes.map((owned) => owned.pid)),
+    processesRemaining: [
+      ...new Set([
+        ...ownedProcesses({ roots: state.processes.map((owned) => owned.pid), marker: state.snapshot }),
+        ...(state.cleanup?.processesStopped ?? []).filter(isAlive),
+      ]),
+    ],
     portsListening: [state.ports.backend, state.ports.web].filter((port) => listenersOn(port).length > 0),
   };
 }
@@ -214,14 +219,13 @@ async function cleanup(paths: RunPaths): Promise<void> {
     print({ ok: daemonExited && after.status === "cleaned", recoveredOrphanDaemon: true, daemonExited, status: after.status, ...leftovers(after), evidence: paths.evidence });
     return;
   }
-  const owned = state.processes.filter((process) => ownedProcessIds([process.pid]).length > 0);
-  const { stopped, remaining } = await stopOwnedProcesses(owned.map((process) => process.pid));
+  const { stopped, remaining } = await stopOwnedProcesses({ roots: state.processes.map((owned) => owned.pid), marker: state.snapshot });
   fs.rmSync(paths.snapshot, { recursive: true, force: true });
   const after = leftovers(state);
   state.status = remaining.length === 0 && after.portsListening.length === 0 ? "cleaned" : "cleanup-failed";
   state.cleanedAt = new Date().toISOString();
   writePrivateJson(paths.state, state);
-  print({ ok: state.status === "cleaned", recoveredOrphanProcesses: stopped, daemonExited: !isAlive(state.daemon.pid), ...after, snapshotRemoved: !fs.existsSync(paths.snapshot), evidence: paths.evidence });
+  print({ ok: state.status === "cleaned", recoveredOrphanProcesses: stopped.length, daemonExited: !isAlive(state.daemon.pid), ...after, snapshotRemoved: !fs.existsSync(paths.snapshot), evidence: paths.evidence });
 }
 
 async function main(): Promise<void> {

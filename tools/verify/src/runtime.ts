@@ -71,7 +71,7 @@ export interface LaunchOptions {
 }
 
 export interface CleanupReport {
-  readonly processesStopped: number;
+  readonly processesStopped: number[];
   readonly processesRemaining: number[];
   readonly portsListening: number[];
   readonly snapshotRemoved: boolean;
@@ -159,15 +159,6 @@ function serverEnvironment(state: RunState, key: string | undefined): NodeJS.Pro
   return environment;
 }
 
-function processGroupAlive(pgid: number): boolean {
-  try {
-    process.kill(-pgid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
-}
-
 interface ProcessRow {
   readonly pid: number;
   readonly ppid: number;
@@ -221,11 +212,48 @@ export interface Runtime {
   readonly cleanup: () => Promise<CleanupReport>;
 }
 
-/** Stops every owned process tree: SIGTERM to each group and its descendants, then SIGKILL what is left. */
-export async function stopOwnedProcesses(roots: readonly number[]): Promise<{ stopped: number; remaining: number[] }> {
-  const initial = ownedProcessIds(roots);
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/** Processes whose command line names the run's snapshot: only this run's servers can. */
+export function processesMentioning(marker: string): number[] {
+  return processTable()
+    .filter((row) => row.command.includes(marker) && row.pid !== process.pid)
+    .map((row) => row.pid);
+}
+
+export interface OwnedTree {
+  /** Process (group) IDs the run started. */
+  readonly roots: readonly number[];
+  /** The run's snapshot path: a server that left its group still names it on its command line. */
+  readonly marker?: string;
+}
+
+export function ownedProcesses(tree: OwnedTree): number[] {
+  const pids = new Set([...ownedProcessIds(tree.roots), ...(tree.marker === undefined ? [] : processesMentioning(tree.marker))]);
+  pids.delete(process.pid);
+  return [...pids].sort((a, b) => a - b);
+}
+
+/**
+ * Stops every owned process: SIGTERM to each group and each known process, then SIGKILL what is
+ * left. Known PIDs are remembered, because a server whose parent exits is re-parented to launchd
+ * and no longer shows up as a descendant.
+ */
+export async function stopOwnedProcesses(tree: OwnedTree): Promise<{ stopped: number[]; remaining: number[] }> {
+  const known = new Set(ownedProcesses(tree));
+  const alive = () => {
+    for (const pid of ownedProcesses(tree)) known.add(pid);
+    return [...known].filter(isAlive);
+  };
   const signal = (pids: readonly number[], name: NodeJS.Signals) => {
-    for (const root of roots) {
+    for (const root of tree.roots) {
       try {
         process.kill(-root, name);
       } catch {
@@ -240,15 +268,15 @@ export async function stopOwnedProcesses(roots: readonly number[]): Promise<{ st
       }
     }
   };
-  signal(initial, "SIGTERM");
+  signal([...known], "SIGTERM");
   const deadline = Date.now() + 15_000;
-  while (Date.now() < deadline && ownedProcessIds(roots).length > 0) await delay(250);
-  const survivors = ownedProcessIds(roots);
+  while (Date.now() < deadline && alive().length > 0) await delay(250);
+  const survivors = alive();
   if (survivors.length > 0) {
     signal(survivors, "SIGKILL");
-    await delay(500);
+    await delay(1000);
   }
-  return { stopped: initial.length, remaining: ownedProcessIds(roots) };
+  return { stopped: [...known].sort((a, b) => a - b), remaining: alive() };
 }
 
 export async function startRuntime(options: LaunchOptions, paths: RunPaths, redactor: Redactor): Promise<Runtime> {
@@ -310,7 +338,7 @@ export async function startRuntime(options: LaunchOptions, paths: RunPaths, reda
   async function cleanup(): Promise<CleanupReport> {
     state.status = "cleaning";
     save();
-    const { stopped, remaining } = await stopOwnedProcesses(state.processes.map((owned) => owned.pid));
+    const { stopped, remaining } = await stopOwnedProcesses({ roots: state.processes.map((owned) => owned.pid), marker: paths.snapshot });
     const portsListening = [state.ports.backend, state.ports.web].filter((port) => listenersOn(port).length > 0);
     fs.rmSync(paths.snapshot, { recursive: true, force: true });
     const report: CleanupReport = { processesStopped: stopped, processesRemaining: remaining, portsListening, snapshotRemoved: !fs.existsSync(paths.snapshot) };

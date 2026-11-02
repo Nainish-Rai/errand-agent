@@ -23,7 +23,7 @@ export interface CleanupResult {
   readonly ok: boolean;
   readonly evidence: string;
   readonly daemonPid: number;
-  readonly processesStopped: number;
+  readonly processesStopped: number[];
   readonly processesRemaining: number[];
   readonly browserProcessesRemaining: number[];
   readonly portsListening: number[];
@@ -51,7 +51,7 @@ export async function serve(runId: string): Promise<void> {
       } catch {
         // Stopped below by PID if it did not close.
       }
-      const browserLeft = (await stopOwnedProcesses(browserProcesses.filter(isAlive))).remaining.filter((pid) => browserProcesses.includes(pid));
+      const browserLeft = (await stopOwnedProcesses({ roots: browserProcesses.filter(isAlive) })).remaining;
       const report = runtime === undefined ? undefined : await runtime.cleanup();
       server?.close();
       fs.rmSync(paths.socket, { force: true });
@@ -59,7 +59,7 @@ export async function serve(runId: string): Promise<void> {
         ok: report !== undefined && report.processesRemaining.length === 0 && report.portsListening.length === 0 && report.snapshotRemoved && browserLeft.length === 0,
         evidence: paths.evidence,
         daemonPid: process.pid,
-        processesStopped: (report?.processesStopped ?? 0) + browserProcesses.length,
+        processesStopped: [...(report?.processesStopped ?? []), ...browserProcesses].sort((a, b) => a - b),
         processesRemaining: report?.processesRemaining ?? [],
         browserProcessesRemaining: browserLeft,
         portsListening: report?.portsListening ?? [],
