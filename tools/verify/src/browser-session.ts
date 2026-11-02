@@ -378,6 +378,8 @@ export class BrowserSession {
       await delay(100);
     } while (Date.now() - started < timeout);
     const subject = options.url === undefined ? describeTarget({ ...target, text: undefined }) : "url";
+    // The failure screenshot should show the element that failed, not wherever the page scrolled.
+    if (options.url === undefined) await this.#locator(target, false).first().scrollIntoViewIfNeeded({ timeout: 1_000 }).catch(() => undefined);
     throw new CommandFailure(`assert ${subject}: ${reason} (after ${Date.now() - started} ms)`);
   }
 
