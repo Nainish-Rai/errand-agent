@@ -2,6 +2,7 @@ packages:
   - "."
   - "apps/web"
   - "packages/*"
+  - "tools/*"
 
 allowBuilds:
   esbuild: true

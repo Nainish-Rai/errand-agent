@@ -20,7 +20,9 @@
     "check:layers": "depcruise --config .dependency-cruiser.cjs agent src packages apps/web/app apps/web/features apps/web/components evals scripts",
     "check:tests": "vitest run",
     "smoke:claude-code": "tsx scripts/smoke-claude-code.ts",
-    "smoke:search": "tsx scripts/smoke-search-in-chat.ts"
+    "smoke:search": "tsx scripts/smoke-search-in-chat.ts",
+    "verify": "control-errand",
+    "verify:install-skill": "node tools/verify/bin/install-skill.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.95",
@@ -32,6 +34,7 @@
   },
   "devDependencies": {
     "@errand/client": "workspace:*",
+    "@errand/verify": "workspace:*",
     "@types/node": "^24.0.0",
     "concurrently": "^9.2.1",
     "dependency-cruiser": "^17.0.0",
