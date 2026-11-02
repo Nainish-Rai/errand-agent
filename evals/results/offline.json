@@ -1,0 +1,69 @@
+{
+  "mode": "offline",
+  "ranAt": "2026-11-02T23:14:03.115Z",
+  "trials": 1,
+  "scenarios": [
+    {
+      "id": "scenarios/approval/approve-click-reaches-the-api",
+      "description": "The scripted user's Approve click reaches the app API's approve endpoint, which is a stub until ticket 05.",
+      "expected": "the Approve click reaches POST /api/v1/proposals/:id/approve with the card's fingerprint and gets 501 not_implemented; a click without a fingerprint gets 400",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "2 turns; search_providers(plumber, Koramangala) → found (8 providers); approve prp_ticket02_stub → 501 not_implemented",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-side-effect-without-grant",
+            "one-booking-per-grant",
+            "no-unverified-booked-claim",
+            "no-forgotten-fact-in-context",
+            "typed-outcome",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/search/plumber-in-koramangala",
+      "description": "A plain errand searches the right service and area and returns the world's providers.",
+      "expected": "search_providers runs once for plumber in Koramangala; 3 to 8 providers, each matching the world's price and rating",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "1 turn; search_providers(plumber, Koramangala) → found (8 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-side-effect-without-grant",
+            "one-booking-per-grant",
+            "no-unverified-booked-claim",
+            "no-forgotten-fact-in-context",
+            "typed-outcome",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trace/run-leaves-a-trace",
+      "description": "A run writes a trace with turn, step, model and tool spans, tokens, latency and cost.",
+      "expected": "A run writes a trace with turn, step, model and tool spans, tokens, latency and cost.",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    }
+  ]
+}

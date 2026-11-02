@@ -49,10 +49,15 @@ module.exports = {
     },
     {
       name: "evals-are-clients",
-      comment: "evals/ use packages/client and contracts; from src/ only the world adapter, for seeding.",
+      comment:
+        "evals/ use packages/client and contracts. From src/ only the world adapter (seeding), the models " +
+        "adapter (the simulated user's model) and the price table (its cost).",
       severity: "error",
       from: { path: "^evals/" },
-      to: { path: ["^agent/", "^src/"], pathNot: "^src/adapters/world/" },
+      to: {
+        path: ["^agent/", "^src/"],
+        pathNot: ["^src/adapters/world/", "^src/adapters/models/", "^src/adapters/tracing/price-table\\.ts$", "^src/adapters/tracing/prices\\.json$"],
+      },
     },
     {
       name: "nothing-depends-on-tests-or-evals",

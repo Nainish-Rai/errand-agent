@@ -1,25 +1,12 @@
 import { ApiClient, ChatClient } from "@errand/client";
-import type { GetSessionTraceResponse } from "@errand/contracts";
 import { defineEval } from "eve/evals";
 import { equals, satisfies } from "eve/evals/expect";
+
+import { settledTrace } from "../session-trace";
 
 // A run leaves a trace with every span kind the trace panel draws: the turn (`invoke_agent`), its
 // model runs (`agent.step`), the model calls (`chat`, with tokens and cost) and the tool call
 // (`execute_tool`, with its arguments and result). Read through the same client the web app uses.
-
-const SETTLE_TIMEOUT_MS = 5_000;
-const POLL_MS = 100;
-
-/** Trace writes run beside the turn, so the last span can land a moment after the reply. */
-async function settledTrace(api: ApiClient, sessionId: string): Promise<GetSessionTraceResponse> {
-  const deadline = Date.now() + SETTLE_TIMEOUT_MS;
-  let trace = await api.getSessionTrace(sessionId);
-  while (Date.now() < deadline && (trace.spans.length === 0 || trace.spans.some((span) => span.status === "running"))) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-    trace = await api.getSessionTrace(sessionId);
-  }
-  return trace;
-}
 
 interface SearchArguments {
   readonly service?: string;
@@ -33,6 +20,8 @@ export default defineEval({
     const chat = new ChatClient({ baseUrl: t.target.url });
 
     await api.switchScenario({ scenario: "default", seed: 42 });
+    // The backend serves every eval in turn; a script an earlier scenario loaded must not answer here.
+    await api.loadModelScript({ script: null });
     const turn = await chat.sendFirstMessage("find a plumber in Koramangala this week", { signal: t.abortSignal });
     const session = t.target.attach(turn.sessionId, { startIndex: 0 });
     await session.nextTurn();
