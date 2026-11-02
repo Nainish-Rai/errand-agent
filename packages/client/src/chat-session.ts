@@ -32,9 +32,10 @@ export function toolCallsIn(messages: readonly EveMessage[]): ToolCallView[] {
 export function replyIn(messages: readonly EveMessage[]): string {
   const last = messages.findLast((message) => message.role === "assistant");
   return (last?.parts ?? [])
-    .flatMap((part) => (part.type === "text" ? [part.text] : []))
-    .join("")
-    .trim();
+    .flatMap((part) => (part.type === "text" ? [part.text.trim()] : []))
+    .filter(Boolean)
+    // Each model step is its own text part; keep them as separate paragraphs.
+    .join("\n\n");
 }
 
 /** The chat surface at /eve/v1, wrapping eve's fetch-only client. No browser APIs. */
