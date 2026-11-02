@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02, 03, 18 (all merged)
 
-**Status:** ready-for-agent
+**Status:** done (PR #5)
 
 - [x] `control-errand --run ID launch` snapshots the checkout, uncommitted edits included, and starts backend, web and Chrome on free ports, all owned by a daemon. Model selection: scripted by default (no key, no network); `--live` uses MiniMax, reading the key from the Keychain at runtime only
 - [x] `doctor` reports owned processes, ports, an unchanged snapshot, backend health (`/api/v1`), web ready, and `networkGuard: true`. The guard is proven by a blocked request to a public host appearing as blocked in `network`
