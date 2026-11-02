@@ -7,6 +7,7 @@ import {
 
 import { container } from "../../src/composition/container";
 import type { TraceAttributes, TraceSpan, TraceValue } from "../../src/core/ports/trace-sink";
+import { toolSpanId } from "../lib/trace-place";
 
 // Writes every run to the JSONL trace: one `invoke_agent` span per turn, an `agent.step` span per
 // model run, a `chat` span per provider call and an `execute_tool` span per tool call, the same
@@ -29,10 +30,6 @@ function turnSpanId(sessionId: string, turnId: string): string {
 
 function stepSpanId(scope: InstrumentationScope): string {
   return `step:${scope.sessionId}:${scope.runId}:${scope.attempt}`;
-}
-
-function toolSpanId(sessionId: string, callId: string): string {
-  return `tool:${sessionId}:${callId}`;
 }
 
 function errorType(error: unknown): string {

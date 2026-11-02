@@ -2,6 +2,7 @@ import {
   API_PREFIX,
   ApiErrorSchema,
   ApproveProposalResponseSchema,
+  GetErrandResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
   GetSessionTraceResponseSchema,
@@ -9,6 +10,7 @@ import {
   SwitchScenarioResponseSchema,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
+  type ErrandView,
   type GetSessionTraceResponse,
   type LoadModelScriptRequest,
   type LoadModelScriptResponse,
@@ -56,6 +58,16 @@ export class ApiClient {
       GetProviderResponseSchema,
     );
     return body.provider;
+  }
+
+  /** The session's errand (details, workflow state, what is missing), or null before the first request. */
+  async getErrand(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<ErrandView | null> {
+    const body = await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/errand`,
+      { method: "GET", signal: options.signal },
+      GetErrandResponseSchema,
+    );
+    return body.errand;
   }
 
   /** The run trace of a chat session: its spans so far (running ones included), events and totals. */
