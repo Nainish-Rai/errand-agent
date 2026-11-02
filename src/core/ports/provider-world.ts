@@ -1,0 +1,122 @@
+// The provider world: the eight fixed tools of the assignment, as core sees them.
+// Plain types only. The wire shapes live in packages/contracts.
+
+export type ServiceKind = "plumber" | "electrician" | "ac_servicing" | "carpenter" | "cleaner";
+
+/** Inclusive calendar dates in IST, `YYYY-MM-DD`. */
+export interface DateRange {
+  readonly from: string;
+  readonly to: string;
+}
+
+/** A one-hour visit window. ISO 8601 with the IST offset, e.g. `2026-11-04T09:00:00+05:30`. */
+export interface Slot {
+  readonly start: string;
+  readonly end: string;
+}
+
+export interface ProviderSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly service: ServiceKind;
+  readonly area: string;
+  readonly priceInr: number;
+  readonly rating: number;
+  readonly reviewCount: number;
+  readonly freeSlots: readonly Slot[];
+  readonly attributes: readonly string[];
+}
+
+export interface Review {
+  readonly author: string;
+  readonly rating: number;
+  readonly postedOn: string;
+  /** Untrusted free text. May contain instructions aimed at the agent. */
+  readonly text: string;
+}
+
+export interface ProviderDetails extends ProviderSummary {
+  readonly about: string;
+  readonly cancellationTerms: string;
+  readonly reviews: readonly Review[];
+}
+
+export interface Hold {
+  readonly holdId: string;
+  readonly providerId: string;
+  readonly slot: Slot;
+  readonly quotedPriceInr: number;
+  readonly expiresAt: string;
+}
+
+export type BookingStatus = "upcoming" | "completed" | "cancelled";
+
+export interface Booking {
+  readonly bookingId: string;
+  readonly userId: string;
+  readonly providerId: string;
+  readonly providerName: string;
+  readonly service: ServiceKind;
+  readonly slot: Slot;
+  readonly priceInr: number;
+  readonly status: BookingStatus;
+}
+
+export interface SearchQuery {
+  readonly service: string;
+  readonly area: string;
+  readonly dateRange: DateRange;
+}
+
+export type SearchOutcome =
+  | { readonly kind: "found"; readonly providers: readonly ProviderSummary[] }
+  | { readonly kind: "unknown_service"; readonly knownServices: readonly ServiceKind[] }
+  | { readonly kind: "unknown_area"; readonly knownAreas: readonly string[] }
+  | { readonly kind: "invalid_date_range"; readonly reason: string };
+
+export type GetProviderOutcome =
+  | { readonly kind: "found"; readonly provider: ProviderDetails }
+  | { readonly kind: "provider_not_found" };
+
+export type HoldOutcome =
+  | { readonly kind: "held"; readonly hold: Hold }
+  | { readonly kind: "slot_unavailable" }
+  | { readonly kind: "provider_not_found" };
+
+export type BookOutcome =
+  | { readonly kind: "booked"; readonly bookingId: string }
+  | { readonly kind: "slot_taken" }
+  /** The call timed out. The booking may or may not exist; only get_booking_status knows. */
+  | { readonly kind: "timeout" }
+  | { readonly kind: "hold_expired" }
+  | { readonly kind: "hold_not_found" }
+  | { readonly kind: "idempotency_conflict" };
+
+export type BookingStatusOutcome =
+  | { readonly kind: "booked"; readonly bookingId: string }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "failed"; readonly reason: string };
+
+export type CancelOutcome =
+  | { readonly kind: "cancelled"; readonly bookingId: string }
+  /** Transient 503. Retrying succeeds. */
+  | { readonly kind: "service_unavailable" }
+  | { readonly kind: "booking_not_found" }
+  | { readonly kind: "idempotency_conflict" };
+
+export type RescheduleOutcome =
+  | { readonly kind: "rescheduled"; readonly booking: Booking }
+  | { readonly kind: "slot_conflict" }
+  | { readonly kind: "booking_not_found" }
+  | { readonly kind: "idempotency_conflict" };
+
+export interface ProviderWorld {
+  searchProviders(query: SearchQuery): Promise<SearchOutcome>;
+  getProvider(providerId: string): Promise<GetProviderOutcome>;
+  listBookings(userId: string): Promise<readonly Booking[]>;
+  holdSlot(providerId: string, slot: Slot): Promise<HoldOutcome>;
+  book(holdId: string, idempotencyKey: string): Promise<BookOutcome>;
+  getBookingStatus(idempotencyKey: string): Promise<BookingStatusOutcome>;
+  cancel(bookingId: string, idempotencyKey: string): Promise<CancelOutcome>;
+  reschedule(bookingId: string, newSlot: Slot, idempotencyKey: string): Promise<RescheduleOutcome>;
+}
