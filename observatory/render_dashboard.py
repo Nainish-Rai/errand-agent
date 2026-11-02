@@ -4,6 +4,7 @@
     python3 -I render_dashboard.py [--summary harness-summary.json] [--out dashboard.html]
 
 Trims embedded traces to fit --max-mb, dropping the smallest sessions by tokens first.
+Copied from harness-observatory (MIT); only the template path changed.
 """
 import argparse
 import json
@@ -15,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--summary", default="harness-summary.json")
-    ap.add_argument("--template", default=os.path.join(HERE, "..", "assets", "dashboard.template.html"))
+    ap.add_argument("--template", default=os.path.join(HERE, "dashboard.template.html"))
     ap.add_argument("--out", default="dashboard.html")
     ap.add_argument("--max-mb", type=float, default=8.0)
     a = ap.parse_args()

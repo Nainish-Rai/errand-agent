@@ -3,11 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Harness Observatory</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<title>Errand Observatory</title>
 <style>
+/* Adapted from harness-observatory (MIT): errand-agent source, cost, verify and event spans. */
 /* Layout: sticky top bar, KPI strip, tabbed views (overview, traces, latency, errors, scores); trace detail opens as a right drawer. */
 :root {
   color-scheme: dark;
@@ -36,7 +34,7 @@
   --kind-turn: color-mix(in oklab, var(--indigo-6) 38%, transparent);
   --kind-llm: var(--cat-2); --kind-shell: var(--cat-1); --kind-read: var(--cat-3); --kind-edit: var(--cat-4);
   --kind-agent: var(--cat-5); --kind-web: var(--cat-6); --kind-mcp: var(--cat-7); --kind-other: var(--gray-7);
-  --tool-claude: var(--cat-7); --tool-codex: var(--cat-1);
+  --tool-claude: var(--cat-7); --tool-codex: var(--cat-1); --tool-errand: var(--cat-3); --kind-event: var(--warn);
 
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -241,6 +239,9 @@ select.chip { padding-right: 6px; }
 .wf-legend i { width: 14px; height: 8px; border-radius: 2px; display: inline-grid; place-items: center; font: normal 600 8px/1 var(--font-sans); }
 .wf-legend .lg-turn { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--indigo-6) 45%, transparent) 0 1px, transparent 1px 4px); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--indigo-6) 45%, transparent); }
 .wf-legend .lg-err { background: var(--err); color: var(--surface-chrome); }
+.wf-legend .lg-verify { background: var(--ok); color: var(--surface-chrome); }
+.wf-bar.verify .glyph { color: var(--surface-chrome); }
+.wf-bar.verify { box-shadow: inset 0 0 0 1px var(--ok); }
 .wf-legend .lg-retry { background: var(--surface-overlay); color: var(--fg-emph); box-shadow: inset 0 0 0 1px var(--edge-strong); }
 .wf-legend .lg-gap { background: repeating-linear-gradient(135deg, transparent 0 2px, var(--edge-strong) 2px 3px); box-shadow: inset 0 0 0 1px var(--edge-strong); }
 .wf-marks { position: absolute; left: 0; right: 0; top: 8px; height: 10px; pointer-events: auto; cursor: pointer; }
@@ -358,7 +359,7 @@ select.chip { padding-right: 6px; }
 <body>
 <header class="top">
   <div class="top-in">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Harness Observatory</div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Errand Observatory</div>
     <span class="window" id="window"></span>
     <span class="spacer"></span>
     <div class="seg" role="group" aria-label="Agent tool" id="toolSeg"></div>
@@ -491,7 +492,8 @@ select.chip { padding-right: 6px; }
       <span><i class="lg-turn"></i>Turn, prompt to next prompt</span><span><i style="background:var(--kind-llm)"></i>LLM call</span>
       <span><i style="background:var(--kind-shell)"></i>Shell</span><span><i style="background:var(--kind-read)"></i>Read</span><span><i style="background:var(--kind-edit)"></i>Edit</span>
       <span><i style="background:var(--kind-agent)"></i>Subagent</span><span><i style="background:var(--kind-web)"></i>Web</span><span><i style="background:var(--kind-mcp)"></i>MCP</span>
-      <span><i class="lg-err">✕</i>Failed</span><span><i class="lg-retry">↻</i>Retry</span><span><i class="lg-gap"></i>Idle, compressed</span>
+      <span><i style="background:var(--kind-event)"></i>Event</span>
+      <span><i class="lg-err">✕</i>Failed</span><span><i class="lg-retry">↻</i>Retry</span><span><i class="lg-verify">✓</i>Verify</span><span><i class="lg-gap"></i>Idle, compressed</span>
     </div>
   </div>
   <div class="dr-body">
@@ -532,7 +534,12 @@ const fmtDur = (s) => { if (s == null) return "not logged"; if (s < 1) return Ma
 const fmtPct = (r, d = 1) => r == null ? "not logged" : (r * 100).toFixed(d) + "%";
 const fmtDay = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", day: "numeric" });
 const fmtStart = (iso) => { const d = new Date(iso); return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); };
-const TOOLS = { "claude-code": { label: "Claude Code", color: "var(--tool-claude)" }, codex: { label: "Codex", color: "var(--tool-codex)" } };
+const TOOLS = { "errand-agent": { label: "Errand agent", color: "var(--tool-errand)" }, "claude-code": { label: "Claude Code", color: "var(--tool-claude)" }, codex: { label: "Codex", color: "var(--tool-codex)" } };
+const fmtUsd = (n) => n == null || typeof n !== "number" ? "not logged" : n === 0 ? "$0.00" : n < 0.01 ? "$" + n.toFixed(4) : "$" + n.toFixed(2);
+const costOf = (ks) => { const v = ks.map((k) => D.tools[k].cost_usd).filter((x) => typeof x === "number"); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
+const COST_SRC = { price_table: "estimated from prices.json", provider_reported: "reported by the Claude Code CLI" };
+// errand thresholds are low: an eval run makes a handful of calls, not hundreds
+const minCalls = (k, n) => k === "errand-agent" ? 1 : n;
 const toolBadge = (t) => el("span", { class: "tool-badge" }, el("span", { class: "dot", style: `background:${TOOLS[t].color}` }), TOOLS[t].label);
 const CAT = ["--cat-1", "--cat-2", "--cat-3", "--cat-4", "--cat-5", "--cat-6", "--cat-7", "--cat-8"];
 const KINDS = [
@@ -542,12 +549,15 @@ const KINDS = [
   [/^(Agent|Task|SubagentHandback|SendMessage|ListAgents|TaskStop|collaboration\.)/, "agent", "--kind-agent"],
   [/^(WebFetch|WebSearch)/, "web", "--kind-web"],
   [/^(mcp|mcp__)/, "mcp", "--kind-mcp"],
+  // errand-agent tools: queries read the world, the rest change it
+  [/^(search_providers|get_provider|get_provider_insight|list_bookings|get_booking_status|get_availability)$/, "read", "--kind-read"],
+  [/^(hold_slot|book|cancel|reschedule|propose_action|execute_proposal|remember_fact|correct_fact|forget_fact)$/, "edit", "--kind-edit"],
 ];
 const kindOf = (name) => { for (const [re, k, v] of KINDS) if (re.test(name)) return [k, v]; return ["other", "--kind-other"]; };
 
 /* ---------- state ---------- */
 const state = { tool: "all", tab: "overview", q: "", task: "all", errOnly: false, hideSub: true, sort: { key: "tokens_total", dir: -1 }, hidden: new Set() };
-try { const s = JSON.parse(localStorage.getItem("harness-ui") || "{}"); if (s.tool) state.tool = s.tool; if (typeof s.hideSub === "boolean") state.hideSub = s.hideSub; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem("harness-ui") || "{}"); if (s.tool && D.tools[s.tool]) state.tool = s.tool; if (typeof s.hideSub === "boolean") state.hideSub = s.hideSub; } catch (e) {}
 const save = () => { try { localStorage.setItem("harness-ui", JSON.stringify({ tool: state.tool, hideSub: state.hideSub })); } catch (e) {} };
 const toolKeys = () => state.tool === "all" ? Object.keys(D.tools) : [state.tool];
 const sessionsFor = () => D.sessions.filter((s) => state.tool === "all" || s.tool === state.tool);
@@ -589,7 +599,7 @@ function ticker(node, to, fmt) {
 function renderHeader() {
   $("#window").textContent = `${fmtStart(D.window.since)} to ${fmtStart(D.window.until)} · ${D.window.days} days · ${D.timezone}`;
   const seg = $("#toolSeg"); seg.textContent = "";
-  for (const [k, lab] of [["all", "All"], ["claude-code", "Claude Code"], ["codex", "Codex"]]) {
+  for (const [k, lab] of [["all", "All"], ...Object.keys(D.tools).map((k) => [k, TOOLS[k].label])]) {
     seg.append(el("button", { "aria-pressed": String(state.tool === k), onclick: () => { state.tool = k; save(); renderAll(); } },
       k !== "all" ? el("span", { class: "dot", style: `background:${TOOLS[k].color}` }) : null, lab));
   }
@@ -620,12 +630,15 @@ function renderKpis() {
   const perDay = (f) => days.map((d) => T.reduce((a, t) => a + (f(t)[d] || 0), 0));
   const tokPerDay = days.map((d) => T.reduce((a, t) => a + Object.values(t.tokens_by_model_by_day).reduce((b, m) => b + (m[d] ? m[d].input + m[d].output + m[d].cache_read + m[d].cache_write : 0), 0), 0));
   const errRate = calls ? fails / calls : null;
+  const onlyErrand = ks.every((k) => k === "errand-agent"), cost = costOf(ks);
+  const srcs = Object.keys(ks.reduce((a, k) => Object.assign(a, D.tools[k].cost_sources || {}), {}));
   const tiles = [
     { label: "Tool calls", v: calls, fmt: fmtN, sub: `${fmtN(sess)} sessions · ${fmtN(subs)} subagent runs`, spark: null },
-    { label: "User prompts", v: prompts, fmt: fmtN, sub: "typed by you, per day →", spark: perDay((t) => t.user_prompts_per_day) },
+    { label: onlyErrand ? "Turns" : "User prompts", v: prompts, fmt: fmtN, sub: onlyErrand ? "one per user message" : "typed by you, per day →", spark: perDay((t) => t.user_prompts_per_day) },
     { label: "Error rate", v: errRate, fmt: (x) => fmtPct(x, 2), sub: `${fmtN(fails)} failed tool calls`, cls: errRate > 0.05 ? "is-err" : errRate > 0.03 ? "is-warn" : "" },
     { label: "Tokens", v: tokens, fmt: fmtK, sub: "input + output + cache, per day →", spark: tokPerDay },
-    { label: "p95 tool latency", v: p95, fmt: fmtDur, sub: "includes permission-prompt waits", cls: p95 > 30 ? "is-warn" : "" },
+    { label: "p95 tool latency", v: p95, fmt: fmtDur, sub: onlyErrand ? "execute_tool span duration" : "includes permission-prompt waits", cls: p95 > 30 ? "is-warn" : "" },
+    { label: "Cost", v: cost, fmt: fmtUsd, sub: cost == null ? "Claude Code sessions log no cost" : srcs.map((x) => COST_SRC[x] || x).join(" + ") || "per model call" },
   ];
   const box = $("#kpis"); box.textContent = "";
   for (const t of tiles) {
@@ -714,7 +727,7 @@ function renderCtxMap() {
   const llm = sessionsFor().reduce((a, s) => a + (s.llm_calls || 0), 0);
   box.append(el("div", { class: "ctxmap" }, bar, leg,
     el("dl", { class: "kv", style: "margin-top:6px" }, el("dt", {}, "LLM calls"), el("dd", {}, fmtN(llm)), el("dt", {}, "Avg context per call"), el("dd", {}, fmtK(avgCtx)),
-      el("dt", {}, "Cost"), el("dd", { class: "nl" }, "not logged"))));
+      el("dt", {}, "Cost"), costOf(toolKeys()) == null ? el("dd", { class: "nl" }, "not logged") : el("dd", {}, fmtUsd(costOf(toolKeys()))))));
 }
 
 function squarify(items, x, y, w, h) {
@@ -758,7 +771,7 @@ function renderTreemap() {
   const foot = $("#tmapFoot"); foot.textContent = "";
   const top5 = fam.slice(0, 5).reduce((a, f) => a + f.v, 0);
   foot.append(el("span", {}, el("b", { class: "num", style: "color:var(--fg-emph)" }, ((top5 / total) * 100).toFixed(0) + "%"), " of tokens sit in the top 5 sessions"),
-    el("span", {}, el("span", { class: "dot", style: "background:var(--tool-claude)" }), " Claude Code"), el("span", {}, el("span", { class: "dot", style: "background:var(--tool-codex)" }), " Codex"));
+    ...Object.keys(D.tools).map((k) => el("span", {}, el("span", { class: "dot", style: `background:${TOOLS[k].color}` }), " " + TOOLS[k].label)));
 }
 
 function renderProjects() {
@@ -811,7 +824,7 @@ function renderModelTable() {
   for (const k of toolKeys()) for (const m of D.tools[k].model_table) rows.push({ ...m, tool: k });
   const tot = rows.reduce((a, r) => a + r.total, 0) || 1;
   rows.sort((a, b) => b.total - a.total);
-  t.append(el("thead", {}, el("tr", {}, ["Model", "Tool", "Sessions", "Tokens", "Cache read", "Output", "Tool calls", "Error rate"].map((h, i) => el("th", { class: i > 1 ? "r" : "" }, h)))));
+  t.append(el("thead", {}, el("tr", {}, ["Model", "Tool", "Sessions", "Tokens", "Cache read", "Output", "Cost", "Tool calls", "Error rate"].map((h, i) => el("th", { class: i > 1 ? "r" : "" }, h)))));
   const tb = el("tbody");
   for (const r of rows) tb.append(el("tr", {},
     el("td", {}, el("span", { class: "tool-badge" }, el("span", { class: "dot", style: `background:${MCOL[r.model] || "var(--kind-other)"}` }), r.model)),
@@ -820,6 +833,7 @@ function renderModelTable() {
     el("td", { class: "r num" }, fmtK(r.total), el("span", { class: "share" }, el("i", { class: "grow-x", style: `width:${(r.total / tot) * 100}%` }))),
     el("td", { class: "r num" }, fmtK(r.tokens.cache_read)),
     el("td", { class: "r num" }, fmtK(r.tokens.output)),
+    el("td", { class: "r num" }, fmtUsd((D.tools[r.tool].cost_by_model || {})[r.model])),
     el("td", { class: "r num" }, fmtN(r.tool_calls)),
     el("td", { class: "r num", style: r.error_rate > 0.05 ? "color:var(--err)" : "" }, r.error_rate == null ? "–" : fmtPct(r.error_rate))));
   t.append(tb);
@@ -849,6 +863,8 @@ const COLS = [
     s.tool_calls ? el("span", { class: "split" }, el("i", { style: `width:${(1 - s.errors / s.tool_calls) * 100}%` }), el("b", { style: `width:${(s.errors / s.tool_calls) * 100}%` })) : null), (s) => s.tool_calls, "r"],
   ["errors", "Errors", (s) => s.errors ? el("span", { class: "pill err" }, fmtN(s.errors)) : el("span", { class: "num zero" }, "0"), (s) => s.errors, "r"],
   ["tokens_total", "Tokens", (s) => el("span", { class: "num", "data-tip": `input ${fmtN(s.tokens.input)}\noutput ${fmtN(s.tokens.output)}\ncache read ${fmtN(s.tokens.cache_read)}\ncache write ${fmtN(s.tokens.cache_write)}` }, fmtK(s.tokens_total)), (s) => s.tokens_total, "r"],
+  ["retries", "Retries", (s) => s.retries ? el("span", { class: "pill warn" }, "↻ " + fmtN(s.retries)) : el("span", { class: "num zero" }, "0"), (s) => s.retries, "r"],
+  ["cost_usd", "Cost", (s) => s.cost_usd == null ? el("span", { class: "nl" }, "not logged") : el("span", { class: "num", "data-tip": COST_SRC[s.cost_source] || s.cost_source || "" }, fmtUsd(s.cost_usd)), (s) => s.cost_usd ?? -1, "r"],
   ["model", "Model", (s) => s.model ? el("span", { class: "tool-badge", style: "color:var(--fg-body)" }, el("span", { class: "dot", style: `background:${MCOL[s.model] || "var(--kind-other)"}` }), s.model) : el("span", { class: "nl" }, "not logged"), (s) => s.model || ""],
   ["health", "Health", (s) => healthCell(s), (s) => s.health, "r"],
 ];
@@ -877,7 +893,7 @@ function renderTraces() {
   const sel = $("#fTask");
   if (!sel.options.length) {
     sel.append(el("option", { value: "all" }, "All task types"));
-    ["build", "debug", "deploy", "research", "writing", "UI", "review", "other"].forEach((t) => sel.append(el("option", { value: t }, t)));
+    Array.from(new Set(D.sessions.map((s) => s.task_type))).sort().forEach((t) => sel.append(el("option", { value: t }, t)));
   }
   $("#fSub").setAttribute("aria-pressed", String(state.hideSub)); $("#fErr").setAttribute("aria-pressed", String(state.errOnly));
   const rows = filteredSessions();
@@ -915,12 +931,16 @@ function openTrace(id) {
   $("#drId").textContent = s.short;
   $("#drId").setAttribute("data-tip", s.id);
   const strip = $("#drStrip"); strip.textContent = "";
-  [["Active", fmtDur(s.active_s)], ["Tokens", fmtK(s.tokens_total)], ["LLM calls", fmtN(s.llm_calls)], ["Tool calls", fmtN(s.tool_calls)], ["Errors", fmtN(s.errors), s.errors ? "var(--err)" : null], ["Health", s.health + "/100", healthColor(s.health)]]
+  const kidCost = D.sessions.filter((k) => k.subagent && k.parent === s.id && k.cost_usd != null).reduce((a, k) => a + k.cost_usd, 0);
+  const totCost = s.cost_usd == null && !kidCost ? null : (s.cost_usd || 0) + kidCost;
+  [["Active", fmtDur(s.active_s)], ["Tokens", fmtK(s.tokens_total)], ["LLM calls", fmtN(s.llm_calls)], ["Tool calls", fmtN(s.tool_calls)], ["Errors", fmtN(s.errors + (s.llm_errors || 0)), s.errors || s.llm_errors ? "var(--err)" : null], ["Retries", fmtN(s.retries), s.retries ? "var(--warn)" : null], ["Cost", fmtUsd(totCost)], ["Health", s.health + "/100", healthColor(s.health)]]
     .forEach(([l, v, c]) => { const sv = el("div", { class: "sv", style: c ? `color:${c}` : "" }); strip.append(el("div", {}, el("div", { class: "sl" }, l), sv)); ticker(sv, 1, () => v); });
   const st = $("#drStats"); st.textContent = "";
   const stat = (l, v) => st.append(el("span", {}, l + " ", el("b", {}, v)));
   stat("project", s.project); stat("start", fmtStart(s.start)); stat("active", fmtDur(s.active_s)); stat("wall", fmtDur(s.wall_s));
   stat("prompts", fmtN(s.prompts)); stat("avg context", fmtK(s.avg_context)); stat("model", s.model || "not logged"); stat("task", s.task_type + " (heuristic)");
+  if (kidCost) stat("cost incl. subagents", fmtUsd(kidCost) + " in subagents");
+  if (s.events) stat("events", Object.entries(s.events).map(([k, n]) => `${n} ${k.replace(/_/g, " ")}`).join(" · "));
   if (s.subagent) stat("subagent of", (sById[s.parent] && sById[s.parent].short) || String(s.parent).slice(0, 8));
   const tr = D.traces[id];
   $("#drNote").textContent = tr ? (tr.truncated === "llm" ? "LLM spans omitted: over 1,600 spans" : tr.truncated ? "Showing the first 1,600 spans" : "") : "";
@@ -1006,15 +1026,15 @@ function renderWaterfall(s, tr, firstOpen) {
   wfRows = [];
   rows.forEach((r, i) => {
     const x = r.x;
-    const [kname, kvar] = x.k === "turn" ? ["turn", "--kind-turn"] : x.k === "llm" ? ["llm", "--kind-llm"] : x.k === "sub" ? ["subagent", "--kind-agent"] : kindOf(x.n);
+    const [kname, kvar] = x.k === "turn" ? ["turn", "--kind-turn"] : x.k === "llm" ? ["llm", "--kind-llm"] : x.k === "sub" ? ["subagent", "--kind-agent"] : x.k === "ev" ? ["event", "--kind-event"] : kindOf(x.n);
     const bad = x.k !== "turn" && !x.ok;
     const nBad = r.turn ? r.kids.filter((k) => !k.ok).length : 0;
-    const label = r.turn ? `Turn ${r.gi + 1}` + (r.prompt && r.prompt.type ? ` · ${r.prompt.type}` : "") : x.k === "llm" ? "LLM · " + x.n : x.k === "sub" ? "Subagent · " + x.n : x.n;
+    const label = r.turn ? `Turn ${r.gi + 1}` + (r.prompt && r.prompt.type ? ` · ${r.prompt.type}` : "") : x.k === "llm" ? "LLM · " + x.n : x.k === "sub" ? "Subagent · " + x.n : x.k === "ev" ? "Event · " + x.n : x.n;
     const l = X(x.s), w = Math.max(X(x.e) - l, 0), dur = x.e - x.s;
     const isFolded = r.turn && collapsed.has(r.gi);
-    const bar = el("div", { class: "wf-bar k-bar" + (r.turn ? " turnbar" : "") + (bad ? " err" : "") + (isFolded ? " folded" : ""), style: `--kc:var(${kvar});left:${l}%;width:max(${w}%,4px);animation-delay:${Math.min(i * 6, 400)}ms` },
-      bad ? el("span", { class: "glyph", "aria-hidden": "true" }, "✕") : x.r ? el("span", { class: "glyph", "aria-hidden": "true" }, "↻") : null,
-      el("span", { class: "dl" }, (x.r ? "retry · " : "") + fmtDur(dur) + (x.t ? " · " + fmtK(x.t) + " tok" : "") + (x.err ? " · " + x.err.replace(/_/g, " ") : "") + (r.turn && r.kids.length ? ` · ${r.kids.length} spans` : "")));
+    const bar = el("div", { class: "wf-bar k-bar" + (r.turn ? " turnbar" : "") + (bad ? " err" : "") + (x.v && !bad ? " verify" : "") + (isFolded ? " folded" : ""), style: `--kc:var(${kvar});left:${l}%;width:max(${w}%,4px);animation-delay:${Math.min(i * 6, 400)}ms` },
+      bad ? el("span", { class: "glyph", "aria-hidden": "true" }, "✕") : x.r ? el("span", { class: "glyph", "aria-hidden": "true" }, "↻") : x.v ? el("span", { class: "glyph", "aria-hidden": "true" }, "✓") : null,
+      el("span", { class: "dl" }, (x.r ? "retry · " : "") + (x.v ? "verify · " : "") + fmtDur(dur) + (x.t ? " · " + fmtK(x.t) + " tok" : "") + (x.c != null ? " · " + fmtUsd(x.c) : "") + (x.err ? " · " + x.err.replace(/_/g, " ") : "") + (r.turn && r.kids.length ? ` · ${r.kids.length} spans` : "")));
     const track = el("div", { class: "wf-track", html: gapCols }); track.append(bar);
     if (isFolded) { // child marks inside the folded turn
       const marks = el("div", { class: "wf-marks" });
@@ -1027,10 +1047,12 @@ function renderWaterfall(s, tr, firstOpen) {
       el("span", { class: "nm", style: r.turn ? "color:var(--fg-emph);font-weight:500" : "" }, r.turn ? `Turn ${r.gi + 1}` : label,
         r.turn && r.prompt ? el("span", { style: "color:var(--fg-faint);font-weight:400;margin-left:6px" }, r.prompt.text || r.prompt.type) : null),
       x === slowest ? el("span", { class: "pill warn", style: "height:16px;font-size:10px" }, "slowest") : null,
+      x.r && !r.turn ? el("span", { class: "pill warn", style: "height:16px;font-size:10px" }, "↻ retry") : null,
+      x.v && !r.turn ? el("span", { class: "pill ok", style: "height:16px;font-size:10px" }, "✓ verify") : null,
       bad ? el("span", { class: "x", "aria-label": "error" }, "✕") : nBad ? el("span", { class: "x", "aria-label": nBad + " errors" }, nBad + "✕") : null,
       r.turn && focusTurn == null ? el("button", { class: "wf-focus", "aria-label": `Zoom to turn ${r.gi + 1}`, "data-tip": "Zoom to this turn", onclick: (e) => { e.stopPropagation(); focusTurn = r.gi; collapsed.delete(r.gi); renderWaterfall(s, tr); } }, "⤢") : null);
     const row = el("div", { class: "wf-row" + (r.turn ? " turn" : "") + (r.child ? " child" : "") + (bad ? " err" : ""), role: "row", "data-i": i, "aria-selected": "false", "aria-expanded": r.turn ? String(!isFolded) : null,
-      "data-tip": `${label}\n+${fmtDur(x.s)} → ${fmtDur(dur)}${x.err ? "\nerror: " + x.err : ""}${x.pending ? "\nno result logged" : ""}${x.k === "sub" ? "\nclick, then open its trace in the panel" : ""}`,
+      "data-tip": `${label}\n+${fmtDur(x.s)} → ${fmtDur(dur)}${x.err ? "\nerror: " + x.err : ""}${x.r ? "\nretry of the failed call before it" : ""}${x.v ? "\nstatus check after a timeout" : ""}${x.pending ? "\nno result logged" : ""}${x.k === "sub" ? "\nclick, then open its trace in the panel" : ""}`,
       onclick: (e) => { if (r.turn && (e.target.closest(".tw") || e.target.closest(".wf-marks") || e.detail === 2)) toggleTurn(r.gi); select(i); } }, lab, track);
     if (r.child && collapsed.has(r.gi)) row.hidden = true;
     const q = wfQuery.trim().toLowerCase();
@@ -1123,13 +1145,16 @@ function renderDetail(s, w) {
   const x = w.r.x, isTurn = w.r.turn;
   box.append(el("h4", {}, el("span", { class: "dot", style: `background:var(${isTurn ? "--kind-turn" : x.k === "llm" ? "--kind-llm" : x.k === "sub" ? "--kind-agent" : kindOf(x.n)[1]})` }), isTurn ? `Turn ${w.r.gi + 1}` : x.k === "llm" ? "LLM call" : x.n,
     isTurn ? null : el("span", { class: "pill " + (x.ok ? "ok" : "err") }, x.ok ? (x.pending ? "no result" : "ok") : "error")));
-  const kv = [["Kind", isTurn ? "turn (prompt to next prompt)" : x.k === "llm" ? "generation" : x.k === "sub" ? "subagent run (wall time)" : `tool call · ${w.kname}`], ["Starts at", "+" + fmtDur(x.s)], ["Duration", fmtDur(x.e - x.s)]];
+  const kv = [["Kind", isTurn ? (s.tool === "errand-agent" ? "turn (invoke_agent span)" : "turn (prompt to next prompt)") : x.k === "llm" ? "generation" : x.k === "sub" ? "subagent run (wall time)" : x.k === "ev" ? "trace event" : `tool call · ${w.kname}`], ["Starts at", "+" + fmtDur(x.s)], ["Duration", fmtDur(x.e - x.s)]];
   if (x.k === "llm") kv.push(["Model", x.n], ["Tokens", x.t == null ? "not logged" : fmtN(x.t)]);
+  if (x.k === "llm" && s.tool === "errand-agent") kv.push(["Cost", x.c == null ? "not logged" : fmtUsd(x.c) + (x.c > 0 && x.c < 0.0001 ? ` (${x.c})` : "")], ["Cost source", COST_SRC[x.cs] || x.cs || "not logged"]);
+  if (x.r) kv.push(["Retry", "yes: retries the failed call before it"]);
+  if (x.v) kv.push(["Verify", "yes: status check after a timeout"]);
   if (x.err) kv.push(["Error type", x.err]);
   if (isTurn) { kv.push(["Calls in turn", w.r.kids.filter((k) => k.k === "tool").length], ["Errors in turn", w.r.kids.filter((k) => !k.ok).length]); }
   box.append(el("dl", { class: "kv" }, kv.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, String(v))])));
   if (isTurn && w.r.prompt) box.append(el("div", { class: "well" }, el("span", { class: "pill", style: "margin-right:6px" }, w.r.prompt.type), w.r.prompt.text || "no text"));
-  if (x.k === "llm") box.append(el("p", { class: "foot" }, D.notes.llm_spans));
+  if (x.k === "llm") box.append(el("p", { class: "foot" }, s.tool === "errand-agent" ? D.notes.errand_cost : D.notes.llm_spans));
   if (x.k === "sub") { box.append(el("dl", { class: "kv" }, el("dt", {}, "Tokens"), el("dd", {}, fmtN(x.t)), el("dt", {}, "Errors"), el("dd", {}, fmtN(x.errs)))); box.append(el("button", { class: "chip", onclick: () => openTrace(x.id) }, "Open subagent trace →")); }
   if (isTurn && focusTurn == null) box.append(el("button", { class: "chip", onclick: () => { focusTurn = w.r.gi; collapsed.delete(w.r.gi); renderWaterfall(curTrace[0], curTrace[1]); } }, "Zoom to this turn ⤢"));
   if (!isTurn && x.k !== "sub") box.append(el("p", { class: "foot" }, "Arguments and outputs are not embedded: this dashboard stores no prompt or tool text beyond 10-word snippets."));
@@ -1139,7 +1164,7 @@ function renderDetail(s, w) {
 function renderLatency() {
   const box = $("#latList"); box.textContent = "";
   const rows = [];
-  for (const k of toolKeys()) for (const [n, v] of Object.entries(D.tools[k].latency_s.per_tool)) if (v.n >= 5) rows.push({ ...v, name: n, tool: k });
+  for (const k of toolKeys()) for (const [n, v] of Object.entries(D.tools[k].latency_s.per_tool)) if (v.n >= minCalls(k, 5)) rows.push({ ...v, name: n, tool: k });
   rows.sort((a, b) => b.p95 - a.p95);
   const maxV = Math.max(...rows.map((r) => r.p95), 1);
   const L = (v) => (Math.log10(1 + Math.max(v, 0) * 1000) / Math.log10(1 + maxV * 1000)) * 100;
@@ -1245,7 +1270,7 @@ function renderScores() {
   // tool success
   const tsBox = $("#toolSuccess"); tsBox.textContent = "";
   const rows = [];
-  for (const k of ks) for (const [n, c] of Object.entries(D.tools[k].tool_calls_by_tool)) if (c >= 10) rows.push({ n, k, c, f: D.tools[k].failed_by_tool[n] || 0 });
+  for (const k of ks) for (const [n, c] of Object.entries(D.tools[k].tool_calls_by_tool)) if (c >= minCalls(k, 10)) rows.push({ n, k, c, f: D.tools[k].failed_by_tool[n] || 0 });
   rows.sort((a, b) => a.f / a.c - b.f / b.c || b.c - a.c).reverse();
   rows.slice(0, 10).forEach((r, i) => { const sr = 1 - r.f / r.c;
     tsBox.append(el("div", { class: "bl-row fade-in", style: `animation-delay:${i * 25}ms`, "data-tip": `${r.n}: ${r.f} failed of ${fmtN(r.c)}` },
@@ -1255,7 +1280,7 @@ function renderScores() {
   const t = $("#worst"); t.textContent = "";
   t.append(el("thead", {}, el("tr", {}, ["Session", "Tool", "Project", "Health", "Tool success", "Retries", "Errors", "Interrupts", "Tokens"].map((h, i) => el("th", { class: i > 2 ? "r" : "" }, h)))));
   const tb = el("tbody");
-  sessionsFor().filter((s) => s.tool_calls >= 20).sort((a, b) => a.health - b.health).slice(0, 10).forEach((s) => tb.append(el("tr", { class: "clickable", tabindex: "0", onclick: () => { setTab("traces"); openTrace(s.id); }, onkeydown: (e) => { if (e.key === "Enter") { setTab("traces"); openTrace(s.id); } } },
+  sessionsFor().filter((s) => s.tool_calls >= minCalls(s.tool, 20)).sort((a, b) => a.health - b.health).slice(0, 10).forEach((s) => tb.append(el("tr", { class: "clickable", tabindex: "0", onclick: () => { setTab("traces"); openTrace(s.id); }, onkeydown: (e) => { if (e.key === "Enter") { setTab("traces"); openTrace(s.id); } } },
     el("td", {}, el("span", { class: "trunc", style: "display:inline-block;color:var(--fg-emph)" }, s.title || s.short)), el("td", {}, toolBadge(s.tool)), el("td", {}, s.project),
     el("td", { class: "r" }, healthCell(s)), el("td", { class: "r num" }, fmtPct(s.tool_success_rate)), el("td", { class: "r num" }, fmtN(s.retries)), el("td", { class: "r num" }, fmtN(s.errors)), el("td", { class: "r num" }, fmtN(s.interrupts)), el("td", { class: "r num" }, fmtK(s.tokens_total)))));
   t.append(tb);
@@ -1265,7 +1290,7 @@ function renderScores() {
 function renderFoot() {
   const f = $("#foot"); f.textContent = "";
   f.append(el("div", {}, `Generated ${fmtStart(D.generated_at)} from ${D.files_scanned ? Object.entries(D.files_scanned).map(([k, v]) => `${v} ${TOOLS[k].label} files`).join(" and ") : "local logs"}. `,
-    `Read-only. Snippets are capped at 10 words with keys, paths, URLs and long ids removed. Anything a log does not record shows as "not logged".`));
+    `Read-only. errand-agent traces carry no prompt or tool text here, only names, timings, tokens and cost. Snippets are capped at 10 words with keys, paths, URLs and long ids removed. Anything a log does not record shows as "not logged".`));
   f.append(el("div", {}, Object.entries(D.notes).map(([k, v]) => el("div", {}, el("code", {}, k), " ", v))));
 }
 
