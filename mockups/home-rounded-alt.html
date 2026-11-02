@@ -1,0 +1,155 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Errand agent · Home (mock v2)</title>
+<style>
+:root{--bg:#14161a;--panel:#1d2026;--panel2:#252931;--line:#2d323b;--fg:#f1f2f5;--mute:#9aa1ad;--orange:#ff7a1a;--orange-soft:rgba(255,122,26,.14);--green:#3ecf72;--green-soft:rgba(62,207,114,.14);--blue:#5b9dff;--blue-soft:rgba(91,157,255,.15);--amber:#f5b83d;--amber-soft:rgba(245,184,61,.15);--red:#ff6b6b;--red-soft:rgba(255,107,107,.14)}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans,Inter,system-ui,sans-serif);color:var(--fg);font-size:14px;line-height:1.4}
+.app{background:var(--bg);border-radius:24px;overflow:hidden;padding:12px 12px 16px;border:1px solid var(--line)}
+/* nav */
+.nav{display:flex;align-items:center;gap:10px;padding:4px 4px 12px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.logo .mark{width:30px;height:30px;border-radius:10px;background:var(--orange);display:grid;place-items:center;font-size:16px}
+.tabs{margin:0 auto;display:flex;background:var(--panel);border-radius:999px;padding:4px;gap:2px}
+.tabs a{padding:7px 14px;border-radius:999px;color:var(--mute);text-decoration:none;font-size:13px;font-weight:500}
+.tabs a.on{background:var(--panel2);color:var(--fg)}
+.tabs .count{background:var(--orange);color:#1a0d00;border-radius:999px;font-size:11px;font-weight:700;padding:0 6px;margin-left:5px}
+.icon-btn{width:36px;height:36px;border-radius:50%;background:var(--panel);display:grid;place-items:center;position:relative;font-size:15px}
+.icon-btn .ping{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--panel)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff9a4d,#ff5e62);display:grid;place-items:center;font-weight:700;font-size:13px;color:#1a0d00}
+/* hero */
+.hero{position:relative;border-radius:22px;overflow:hidden;height:196px}
+.hero svg{display:block;width:100%;height:100%}
+.hero .copy{position:absolute;left:22px;bottom:20px;right:22px}
+.hero h1{margin:0;font-size:23px;font-weight:700;letter-spacing:-.02em;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.hero p{margin:4px 0 0;color:#d6dbe6;font-size:13px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+/* composer */
+.composer{margin:12px 0 0;position:relative;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.field{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:16px;padding:12px 12px 12px 16px}
+.field span{flex:1;color:var(--mute)}
+.go{width:38px;height:38px;border-radius:50%;background:var(--orange);color:#1a0d00;display:grid;place-items:center;font-weight:800;font-size:17px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{background:var(--panel2);border-radius:999px;padding:6px 12px;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.pill small{color:var(--mute);font-size:12px}
+/* quick */
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 6px}
+.q{background:var(--panel);border-radius:18px;padding:12px 8px;text-align:center;font-size:12.5px;font-weight:500}
+.q .ic{width:42px;height:42px;border-radius:14px;margin:0 auto 6px;display:grid;place-items:center;font-size:20px}
+h2{font-size:15px;margin:18px 4px 10px;display:flex;align-items:center;gap:8px}
+h2 .sub{color:var(--mute);font-weight:400;font-size:13px}
+h2 a{margin-left:auto;color:var(--orange);font-size:13px;font-weight:500;text-decoration:none}
+.cols{display:grid;grid-template-columns:1.35fr 1fr;gap:12px}
+.card{background:var(--panel);border-radius:20px;padding:14px}
+.card + .card{margin-top:12px}
+.needs{border:1.5px solid rgba(255,122,26,.45);background:linear-gradient(180deg,var(--orange-soft),var(--panel) 60%)}
+.item{display:flex;gap:12px;align-items:center}
+.tile{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:20px;flex:none}
+.item .main{flex:1;min-width:0}.item b{font-weight:600}.item .s{color:var(--mute);font-size:12.5px}
+.actions{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;text-align:center;border-radius:14px;padding:10px;font-weight:600;font-size:13px}
+.btn.primary{background:var(--orange);color:#1a0d00}.btn.ghost{background:var(--panel2)}
+.list .item{padding:10px 0}.list .item + .item{border-top:1px solid var(--line)}
+.status{border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.ok{background:var(--green-soft);color:var(--green)}.check{background:var(--blue-soft);color:var(--blue)}.warn{background:var(--amber-soft);color:var(--amber)}
+.alert{background:linear-gradient(180deg,var(--red-soft),var(--panel) 70%)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel2);border-radius:999px;padding:6px 11px;font-size:12.5px}
+.chip.guess{background:transparent;border:1.5px dashed var(--amber);color:var(--amber)}
+.ask{margin-top:10px;font-size:12.5px;color:var(--mute);display:flex;gap:8px;align-items:center}
+.mini{border-radius:999px;padding:5px 12px;font-weight:600;font-size:12px}
+.bars{display:flex;align-items:flex-end;gap:5px;height:54px;margin-top:10px}
+.bars div{flex:1;background:var(--orange);opacity:.35;border-radius:6px 6px 3px 3px}.bars div.now{opacity:1}
+.big{font-size:24px;font-weight:700}
+.tabbar{display:none}
+@media (max-width:560px){
+  .tabs,.nav .icon-btn.hide-s{display:none}.nav{justify-content:space-between}.nav .right{margin-left:auto;display:flex;gap:8px}
+  .cols{grid-template-columns:1fr}.quick{grid-template-columns:repeat(4,1fr);gap:8px}.q{font-size:11.5px;padding:10px 4px}
+  .hero h1{font-size:20px}
+  .tabbar{display:flex;justify-content:space-around;margin-top:14px;background:var(--panel);border-radius:22px;padding:8px}
+  .tabbar div{text-align:center;font-size:11px;color:var(--mute);padding:4px 10px;border-radius:14px}.tabbar div b{display:block;font-size:18px}
+  .tabbar .on{color:var(--fg);background:var(--panel2)}
+}
+</style></head><body>
+<div class="app">
+  <div class="nav">
+    <div class="logo"><span class="mark">🍊</span>Errands</div>
+    <nav class="tabs"><a class="on" href="#">Home</a><a href="#">Bookings</a><a href="#">Saved</a><a href="#">Needs you<span class="count">2</span></a></nav>
+    <div class="right" style="display:flex;gap:8px"><div class="icon-btn" title="Notifications">🔔<span class="ping"></span></div><div class="avatar">NR</div></div>
+  </div>
+
+  <div class="hero">
+    <svg viewBox="0 0 700 196" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2d5c"/><stop offset=".65" stop-color="#3a5a9a"/><stop offset="1" stop-color="#e98a55"/></linearGradient>
+        <pattern id="dith" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="1.3" height="1.3" fill="#000" opacity=".22"/></pattern>
+        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>
+      </defs>
+      <rect width="700" height="196" fill="url(#sky)"/>
+      <g fill="#dfe6ff"><rect x="60" y="20" width="2" height="2"/><rect x="170" y="38" width="2" height="2"/><rect x="250" y="14" width="2" height="2"/><rect x="390" y="30" width="2" height="2"/><rect x="470" y="12" width="2" height="2"/><rect x="300" y="52" width="2" height="2"/></g>
+      <circle cx="590" cy="44" r="18" fill="#ffe7b8"/><circle cx="598" cy="38" r="16" fill="#26407a"/>
+      <g fill="#b9c8ef" opacity=".5"><rect x="90" y="56" width="130" height="10" rx="5"/><rect x="380" y="70" width="160" height="10" rx="5"/></g>
+      <g fill="#14213f">
+        <rect x="0" y="112" width="70" height="90" rx="4"/><rect x="74" y="92" width="52" height="110" rx="4"/><rect x="84" y="80" width="20" height="12" rx="3"/>
+        <rect x="130" y="124" width="76" height="80" rx="4"/><rect x="410" y="100" width="60" height="100" rx="4"/><rect x="474" y="120" width="86" height="80" rx="4"/>
+        <rect x="566" y="96" width="50" height="104" rx="4"/><rect x="620" y="128" width="80" height="70" rx="4"/>
+        <rect x="318" y="120" width="5" height="70"/><path d="M320 122 l-28 9 l28-3 l-24 15 l24-10 l26 13 l-22-16 l28 2 l-32-10z"/>
+      </g>
+      <g fill="#ffd27a"><rect x="86" y="104" width="6" height="6" rx="1"/><rect x="104" y="124" width="6" height="6" rx="1"/><rect x="146" y="140" width="6" height="6" rx="1"/><rect x="424" y="116" width="6" height="6" rx="1"/><rect x="492" y="136" width="6" height="6" rx="1"/><rect x="580" y="112" width="6" height="6" rx="1"/><rect x="640" y="146" width="6" height="6" rx="1"/></g>
+      <rect x="0" y="176" width="700" height="20" fill="#0f1830"/>
+      <g transform="translate(220 154)"><rect width="54" height="22" rx="7" fill="#ff7a1a"/><rect x="36" y="4" width="14" height="8" rx="2" fill="#a9ccff"/><text x="6" y="15" font-size="9" font-weight="700" fill="#1a0d00" font-family="system-ui">fix·it</text><circle cx="12" cy="23" r="4.5" fill="#111"/><circle cx="42" cy="23" r="4.5" fill="#111"/></g>
+      <rect width="700" height="196" fill="url(#dith)"/><rect width="700" height="196" fill="url(#shade)"/>
+    </svg>
+    <div class="copy"><h1>Hi Nainish 👋 What needs fixing?</h1><p>I'll find, compare and book. You approve every booking.</p></div>
+  </div>
+
+  <div class="composer">
+    <div class="field"><span>e.g. "Plumber for my kitchen tap this week, mornings"</span><div class="go">↑</div></div>
+    <div class="pills"><span class="pill">📍 Koramangala</span><span class="pill">💰 Under ₹1,500</span><span class="pill">🌤 Mornings</span><span class="pill"><small>Using your saved preferences</small></span></div>
+  </div>
+
+  <div class="quick">
+    <div class="q"><div class="ic" style="background:var(--blue-soft)">🔧</div>Plumber</div>
+    <div class="q"><div class="ic" style="background:var(--green-soft)">❄️</div>AC service</div>
+    <div class="q"><div class="ic" style="background:var(--amber-soft)">💡</div>Electrician</div>
+    <div class="q"><div class="ic" style="background:var(--red-soft)">🧹</div>Cleaning</div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>Needs you <span class="sub">2</span></h2>
+      <div class="card needs">
+        <div class="item"><div class="tile" style="background:var(--blue-soft)">🔧</div>
+          <div class="main"><b>Book Ravi Plumbing?</b><div class="s">Kitchen tap · Thu 6 Nov, 9:00 AM · ₹899 · ★ 4.7</div></div></div>
+        <div class="actions"><div class="btn primary">Review &amp; approve</div><div class="btn ghost">Other options</div></div>
+      </div>
+
+      <h2>Coming up <a href="#">See all</a></h2>
+      <div class="card list">
+        <div class="item"><div class="tile" style="background:var(--green-soft)">❄️</div><div class="main"><b>AC servicing</b><div class="s">CoolAir · Sat 8 Nov, 10:00 AM</div></div><span class="status ok">Confirmed</span></div>
+        <div class="item"><div class="tile" style="background:var(--amber-soft)">💡</div><div class="main"><b>Electrician</b><div class="s">Suresh K. · Mon 10 Nov, 11:00 AM</div></div><span class="status check">Checking…</span></div>
+        <div class="item"><div class="tile" style="background:var(--red-soft)">🧹</div><div class="main"><b>Deep clean</b><div class="s">Fri 14 Nov · provider cancelled</div></div><span class="status warn">Finding a new one</span></div>
+      </div>
+    </div>
+
+    <div>
+      <h2>Heads up</h2>
+      <div class="card alert">
+        <div class="item"><div class="tile" style="background:var(--red-soft)">📣</div><div class="main"><b>Sparkle cancelled Friday</b><div class="s">I found 2 replacements that fit your preferences.</div></div></div>
+        <div class="actions"><div class="btn ghost">See options</div></div>
+      </div>
+
+      <h2>What I remember <a href="#">Manage</a></h2>
+      <div class="card">
+        <div class="chips"><span class="chip">📍 Koramangala</span><span class="chip">⏰ Not before 10 AM</span><span class="chip">💡 Suresh K.</span><span class="chip guess">Prefers mornings?</span></div>
+        <div class="ask">Is this right? <span class="mini" style="background:var(--green-soft);color:var(--green)">Yes</span><span class="mini" style="background:var(--panel2)">No</span></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="s" style="color:var(--mute);font-size:12.5px">This month</div>
+        <div><span class="big">6</span> <span style="color:var(--mute)">bookings · ₹7,450</span></div>
+        <div class="bars"><div style="height:30%"></div><div style="height:55%"></div><div style="height:20%"></div><div style="height:70%"></div><div style="height:40%"></div><div class="now" style="height:90%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar"><div class="on"><b>🏠</b>Home</div><div><b>📅</b>Bookings</div><div><b>⭐</b>Saved</div><div><b>🔔</b>Needs you</div></div>
+</div>
+</body></html>
