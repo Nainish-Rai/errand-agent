@@ -1,11 +1,9 @@
 packages:
   - "."
-
-minimumReleaseAgeExclude:
-  - eve
-  - "@vercel/connect"
-  - ai
-  - eve
+  - "apps/web"
+  - "packages/*"
 
 allowBuilds:
   esbuild: true
+  sharp: true
+  unrs-resolver: true

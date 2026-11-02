@@ -1,8 +1,8 @@
 import { eveChannel } from "eve/channels/eve";
-import { localDev, vercelOidc } from "eve/channels/auth";
-import { betterAuthEveAuth, passwordEveAuth } from "../../apps/web/lib/eve-auth";
+import { localDev } from "eve/channels/auth";
 
 export default eveChannel({
-  auth: [betterAuthEveAuth, passwordEveAuth, vercelOidc(), localDev()],
+  auth: [localDev()],
+  cors: true,
   uploadPolicy: "disabled",
 });
