@@ -71,15 +71,15 @@ export type { TraceSpan, TraceSpanKind, TraceSpanStatus, TraceTone }
 
 const STYLES = `
 [data-slot=trace-waterfall] {
-  --trace-gray: oklab(0.615 0 0);
-  --trace-blue: oklab(0.69 -0.034 -0.145);
-  --trace-purple: oklab(0.623 0.114 -0.168);
-  --trace-orange: oklab(0.682 0.087 0.132);
-  --trace-green: oklab(0.65 -0.129 0.06);
+  /* Errand: hues come from the token palette, so both themes and the gallery agree. */
+  --trace-gray: var(--fg-faint);
+  --trace-blue: var(--cat-1);
+  --trace-purple: var(--cat-2);
+  --trace-orange: var(--cat-6);
+  --trace-green: var(--cat-3);
   --trace-sweep: color-mix(in oklab, var(--card) 60%, transparent);
 }
-.dark [data-slot=trace-waterfall] {
-  --trace-gray: oklab(0.556 0 0);
+[data-theme=dark] [data-slot=trace-waterfall] {
   --trace-sweep: color-mix(in oklab, var(--foreground) 22%, transparent);
 }
 @keyframes trace-sweep {

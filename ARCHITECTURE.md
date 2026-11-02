@@ -73,7 +73,8 @@ through the same client package the web uses. If evals pass, any client that spe
 | `agent/` | `src/composition`, `src/core` (use cases and types), `packages/contracts`, eve | `src/adapters` directly, `apps/` |
 | `packages/contracts` | Zod | anything else in the repo |
 | `packages/client` | `packages/contracts`, the eve client | React, `src/`, `agent/` |
-| `apps/*` | `packages/client`, `packages/contracts`, UI libraries | `src/`, `agent/` |
+| `packages/design-tokens` | nothing in the repo (Node built-ins for its CSS build) | anything else in the repo |
+| `apps/*` | `packages/client`, `packages/contracts`, `packages/design-tokens` (its generated CSS and types), UI libraries | `src/`, `agent/` |
 | `evals/` | `packages/client`, `packages/contracts`, `src/adapters/world` (seeding and state assertions), `src/adapters/models` and `src/adapters/tracing/price-table` (the simulated user's model and its cost) | `agent/`, the rest of `src/` (tests depend inward; nothing depends on tests) |
 
 A dependency-cruiser rule set enforces this table in `pnpm check`. When it is first added, it is shown to
@@ -132,6 +133,7 @@ errand-agent/
 ├── packages/
 │   ├── contracts/             api/ (request and response schemas) · events/ · ui/ (OpenUI component props)
 │   └── client/                api-client.ts · event-stream.ts · chat-session.ts (wraps the eve client)
+│   └── design-tokens/         src/ (typed tokens, dark and light) → tokens.css (generated)
 ├── apps/
 │   ├── web/                   app/ (home, chat/[id]) · features/home/widgets · features/chat
 │   │                          (assistant-ui runtime, approval-card, openui-library) · features/trace-panel

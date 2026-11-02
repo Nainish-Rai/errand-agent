@@ -1,19 +1,14 @@
+import "@fontsource/geist/400.css";
+import "@fontsource/geist/500.css";
+import "@fontsource/geist/600.css";
+import "@fontsource/geist-mono/400.css";
+import "@fontsource/geist-mono/500.css";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { themeInitScript } from "@/components/theme-init-script";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
-
-const geistSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
 
 export const metadata: Metadata = {
   title: "Errand agent",
@@ -21,35 +16,14 @@ export const metadata: Metadata = {
   icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }] },
 };
 
-const themeScript = `
-(() => {
-  try {
-    const theme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-    const root = document.documentElement;
-    root.classList.remove("dark", "light");
-    root.classList.add(theme);
-    root.style.colorScheme = theme;
-  } catch {
-    const root = document.documentElement;
-    root.classList.add("dark");
-    root.style.colorScheme = "dark";
-  }
-})();
-`;
-
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
-    <html
-      className={`${geistSans.variable} ${geistMono.variable}`}
-      lang="en"
-      suppressHydrationWarning
-    >
+    // The head script sets data-theme before hydration, so React must not warn about it.
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} id="theme-init" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} id="theme-init" />
       </head>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className="antialiased">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
