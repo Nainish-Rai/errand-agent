@@ -1,0 +1,40 @@
+{
+  "name": "errand-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others --names backend,web --prefix-colors blue,green \"pnpm dev:backend\" \"pnpm dev:web\"",
+    "dev:backend": "eve dev --no-ui --port 3100",
+    "dev:tui": "eve dev --port 3100",
+    "dev:web": "pnpm --filter @errand/web dev",
+    "eval": "ERRAND_MODELS=main=scripted eve eval",
+    "check": "pnpm check:types && pnpm check:layers && pnpm check:tests",
+    "check:types": "tsc --noEmit -p tsconfig.json && pnpm --filter @errand/web typecheck",
+    "check:layers": "depcruise --config .dependency-cruiser.cjs agent src packages apps/web/app apps/web/features apps/web/components evals scripts",
+    "check:tests": "vitest run",
+    "smoke:claude-code": "tsx scripts/smoke-claude-code.ts",
+    "smoke:search": "tsx scripts/smoke-search-in-chat.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.95",
+    "@errand/contracts": "workspace:*",
+    "ai": "7.0.161",
+    "ai-sdk-provider-claude-code": "4.4.1",
+    "eve": "1.0.0-rc.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@errand/client": "workspace:*",
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.2.1",
+    "dependency-cruiser": "^17.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.30.2"
+}

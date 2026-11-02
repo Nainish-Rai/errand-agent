@@ -4,15 +4,21 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done (PR #1)
 
-- [ ] One command starts the agent and the web app locally, with no external services except the MiniMax API key
-- [ ] One setting selects the model per role (`minimax`, `claude-code`, `scripted`); the MiniMax model ID and price are confirmed against MiniMax's docs and written down
-- [ ] Smoke check: the Claude Code CLI provider (local `claude` login) returns a structured answer for a role without tools, so later tickets can rely on it
-- [ ] The mock world is seeded and named-scenario driven. `search_providers` returns 3–8 providers with IDs, prices, ratings, slots and attributes, and the same seed gives the same output
-- [ ] All 8 fixed tool contracts exist in the mock world with their exact names, inputs, outputs and failure behaviours. Later tickets will expose them to the agent
-- [ ] The web chat renders through assistant-ui on top of `useEveAgent` and streams the agent's reply
-- [ ] `pnpm eval` runs one offline scenario with the scripted model and passes without network access
-- [ ] The directory and services follow ARCHITECTURE.md: one backend (the eve server, with `/eve/v1` and `/api/v1`), a web app that is only a UI shell, and shared `contracts` and `client` packages
-- [ ] The web app reaches the backend only through the `client` package. The ticket 01 eval uses the same client, which proves a non-browser client works
-- [ ] `pnpm check` enforces the layer rules with dependency-cruiser. It is shown failing on a planted `src/core` → `eve` import, then passing
+- [x] One command starts the agent and the web app locally, with no external services except the MiniMax API key
+- [x] One setting selects the model per role (`minimax`, `claude-code`, `scripted`); the MiniMax model ID and price are confirmed against MiniMax's docs and written down
+- [x] Smoke check: the Claude Code CLI provider (local `claude` login) returns a structured answer for a role without tools, so later tickets can rely on it
+- [x] The mock world is seeded and named-scenario driven. `search_providers` returns 3–8 providers with IDs, prices, ratings, slots and attributes, and the same seed gives the same output
+- [x] All 8 fixed tool contracts exist in the mock world with their exact names, inputs, outputs and failure behaviours. Later tickets will expose them to the agent
+- [x] The web chat renders through assistant-ui on top of `useEveAgent` and streams the agent's reply
+- [x] `pnpm eval` runs one offline scenario with the scripted model and passes without network access
+- [x] The directory and services follow ARCHITECTURE.md: one backend (the eve server, with `/eve/v1` and `/api/v1`), a web app that is only a UI shell, and shared `contracts` and `client` packages
+- [x] The web app reaches the backend only through the `client` package. The ticket 01 eval uses the same client, which proves a non-browser client works
+- [x] `pnpm check` enforces the layer rules with dependency-cruiser. It is shown failing on a planted `src/core` → `eve` import, then passing
+
+**Notes (PR #1):**
+- MiniMax model: `MiniMax-M3`, $0.30 / 1M input, $1.20 / 1M output, $0.06 / 1M cache read (standard tier, input ≤ 512k tokens). Source: https://platform.minimax.io/docs/guides/pricing, checked 2026-11-03. Recorded in `src/adapters/tracing/prices.json`.
+- The 8 tool contracts exist as `ProviderWorld` port methods (camelCase: `searchProviders`, `holdSlot`, …). Only `search_providers` has wire schemas and is exposed to the agent so far.
+- The mock world's state is in memory; SQLite comes with the ledger ticket.
+- The web app imports `eve/react` (`useEveAgent`) and nothing else from eve. It passes in a `ClientSession` that `packages/client` created, so all its requests go through the client package.

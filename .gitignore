@@ -12,3 +12,5 @@ coverage/
 .eve/
 traces/*.jsonl
 .DS_Store
+next-env.d.ts
+*.tsbuildinfo
