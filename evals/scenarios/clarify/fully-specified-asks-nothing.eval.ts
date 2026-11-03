@@ -1,6 +1,6 @@
 import { equals } from "eve/evals/expect";
 
-import { errandAfter, questionsIn, searchesIn, THIS_WEEK, tracedTransitions } from "../../errand-checks";
+import { errandAfter, questionsIn, searchesIn, textBeforeSearch, THIS_WEEK, tracedTransitions } from "../../errand-checks";
 import { defineScenario } from "../../scenario";
 
 // SPEC "only missing details asked", the half with nothing missing: the SPEC's one-sentence
@@ -44,7 +44,7 @@ export default defineScenario({
       },
     ],
   },
-  expected: "one turn: the errand is complete with no question, search_providers runs in that turn, the errand ends choosing and the reply asks nothing",
+  expected: "one turn: the errand is complete with no question, search_providers runs in that turn with nothing asked before it, and the errand ends choosing",
   async expect(t, run) {
     t.succeeded();
     await t.require(run.turns.length, equals(1));
@@ -53,7 +53,8 @@ export default defineScenario({
     t.check(errand?.missing, equals([])).label("nothing missing");
     t.check(errand?.question ?? null, equals(null)).label("no clarifying question");
     t.check(searchesIn(turn).some((search) => search.kind === "found"), equals(true)).label("searched in the first turn");
-    t.check(questionsIn(turn?.reply ?? ""), equals(0)).label("the reply asks nothing");
+    // A question about the shown options ("which one?") is fine; a question before the search is a clarifying one.
+    t.check(questionsIn(textBeforeSearch(turn)), equals(0)).label("nothing asked before the search");
 
     const final = await run.api.getErrand(run.sessionId);
     t.check(final?.state, equals("choosing"));

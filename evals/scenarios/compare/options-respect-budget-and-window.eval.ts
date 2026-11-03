@@ -28,8 +28,9 @@ export default defineScenario({
   world: { scenario: "default", seed: 42 },
   user: [{ say: "Plumber in Koramangala this week, mornings only, under ₹800" }],
   goal:
-    "You need a plumber in Koramangala this week, mornings only, and you won't pay more than ₹800. Say all of " +
-    "that in your first message. Don't book anything; once you have seen the options you are done.",
+    "You need a plumber in Koramangala this week, mornings only, and you won't pay more than ₹800. Your first " +
+    "message asks for exactly that, in your own words, e.g. 'Need a plumber in Koramangala this week, mornings " +
+    "only, under ₹800'. Don't book anything; once you have seen the options you are done.",
   maxSimulatedMessages: 1,
   model: {
     turns: [

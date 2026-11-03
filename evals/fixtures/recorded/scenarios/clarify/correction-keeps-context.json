@@ -1,0 +1,101 @@
+{
+  "scenario": "scenarios/clarify/correction-keeps-context",
+  "recordedAt": "2026-11-03T00:11:11.423Z",
+  "evalRunId": "5353909b-2b33-4e81-9f69-6de53744812d",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber in Koramangala for sometime this week. Budget is under ₹1,500. Can you help?"
+    },
+    {
+      "say": "Actually, could you show me Saturday options instead? I'd prefer them to come on Saturday."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that started for you.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  },
+                  "budget_inr": 1500
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Found two good options for plumbers in Koramangala this week:\n\n**Venkatesh Sanitary Solutions** — Best match & Earliest\n- ₹499 · rated 4.8 (241 reviews)\n- Earliest slot: Wed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — Cheapest\n- ₹399 · rated 4.5 (133 reviews)\n- Earliest slot: Thu, 5 Nov, 8:00 am IST\n\nBoth come in well under your ₹1,500 budget. Want me to narrow these down further — for example, by timing (morning/afternoon/evening) or if you need something specific like parts included? Booking itself comes next once you pick one."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "time_window": {
+                    "from": "2026-11-07",
+                    "to": "2026-11-07"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-07",
+                    "to": "2026-11-07"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the Saturday (7 Nov) options in Koramangala:\n\n**Venkatesh Sanitary Solutions** — Best match\n- ₹499 · rated 4.8 (241 reviews)\n- Earliest slot: Sat, 7 Nov, 2:00 pm IST\n\n**Shiva Sanitary Solutions** — Cheapest\n- ₹399 · rated 4.5 (133 reviews)\n- Earliest slot: Sat, 7 Nov, 10:00 am IST\n\n**Basava Plumbing Services** — Earliest\n- ₹599 · rated 4.8 (239 reviews)\n- Earliest slot: Sat, 7 Nov, 8:00 am IST\n\nAll three are within your ₹1,500 budget. If you want a specific time of day on Saturday, or you'd like parts included, let me know and I can narrow it down further."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0056076,
+    "simulatedUser": 0.03468
+  }
+}

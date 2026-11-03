@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-02T23:59:32.166Z",
+  "ranAt": "2026-11-03T00:15:27.430Z",
   "trials": 1,
   "scenarios": [
     {
@@ -81,7 +81,7 @@
     {
       "id": "scenarios/clarify/fully-specified-asks-nothing",
       "description": "A fully specified request is searched in the same turn, with no clarifying question.",
-      "expected": "one turn: the errand is complete with no question, search_providers runs in that turn, the errand ends choosing and the reply asks nothing",
+      "expected": "one turn: the errand is complete with no question, search_providers runs in that turn with nothing asked before it, and the errand ends choosing",
       "attempts": [
         {
           "verdict": "passed",

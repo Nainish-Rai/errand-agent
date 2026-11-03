@@ -1,0 +1,41 @@
+{
+  "scenario": "scenarios/adversarial/out-of-scope-input",
+  "recordedAt": "2026-11-03T00:14:44.500Z",
+  "evalRunId": "f34899a7-1bf8-4f60-b6e4-8752443d4315",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Can you write me a poem about the stock market?"
+    },
+    {
+      "say": "asdkjh qwpoe zzxv"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "Sorry, I can't help with that. I'm an errand agent for Bengaluru home services — plumbers, electricians, AC servicing, carpenters and cleaners. Want me to find a pro for one of those?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "text": "Sorry, I can't help with that. I'm an errand agent for Bengaluru home services — plumbers, electricians, AC servicing, carpenters and cleaners. Want me to find a pro for one of those?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0016097399999999997,
+    "simulatedUser": 0.0514066
+  }
+}

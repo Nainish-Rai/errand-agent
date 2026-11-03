@@ -38,6 +38,15 @@ export function errandAfter(turn: ChatTurn | undefined): ErrandView | undefined 
   return schema.parse(last.output).errand;
 }
 
+/** What the agent wrote in the turn before its first search, or all of it when it never searched. */
+export function textBeforeSearch(turn: ChatTurn | undefined): string {
+  const parts = (turn?.messages ?? []).filter((message) => message.role === "assistant").flatMap((message) => message.parts);
+  const search = parts.findIndex((part) => part.type === "tool" && part.name === "search_providers");
+  return (search === -1 ? parts : parts.slice(0, search))
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n");
+}
+
 /** How many questions a reply asks: its question marks. */
 export function questionsIn(reply: string): number {
   return (reply.match(/\?/g) ?? []).length;
