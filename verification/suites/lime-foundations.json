@@ -279,6 +279,12 @@
           }
         },
         {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
           "command": "assert",
           "options": {
             "role": "region",
@@ -520,6 +526,12 @@
             "label": "Operator token",
             "value": "{{operator-token}}"
           }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
         },
         {
           "command": "assert",
