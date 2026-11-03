@@ -151,6 +151,27 @@ describe("hold_slot", () => {
   });
 });
 
+describe("release a hold (not a model tool: core calls it when a proposal is declined)", () => {
+  it("frees the slot again and leaves the hold unbookable", async () => {
+    const world = worldFor("happy_path");
+    const { provider, slot } = await firstBookableSlot(world);
+    const held = await world.holdSlot(provider.id, slot);
+    if (held.kind !== "held") throw new Error(`Expected a hold, got ${held.kind}`);
+
+    expect(await world.releaseHold(held.hold.holdId)).toEqual({ kind: "released" });
+    expect((await world.book(held.hold.holdId, "key-after-release")).kind).toBe("hold_not_found");
+    expect((await world.holdSlot(provider.id, slot)).kind).toBe("held");
+  });
+
+  it("reports a hold it doesn't know, or one already used", async () => {
+    const world = worldFor("happy_path");
+    expect(await world.releaseHold("hold_missing")).toEqual({ kind: "hold_not_found" });
+    const { hold } = await heldSlot(world);
+    await world.book(hold.holdId, "key-booked");
+    expect(await world.releaseHold(hold.holdId)).toEqual({ kind: "hold_not_found" });
+  });
+});
+
 describe("book", () => {
   it("books once per idempotency key, however often it is repeated", async () => {
     const world = worldFor("happy_path");

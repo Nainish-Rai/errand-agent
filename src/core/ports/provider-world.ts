@@ -83,6 +83,8 @@ export type HoldOutcome =
   | { readonly kind: "slot_unavailable" }
   | { readonly kind: "provider_not_found" };
 
+export type ReleaseHoldOutcome = { readonly kind: "released" } | { readonly kind: "hold_not_found" };
+
 export type BookOutcome =
   | { readonly kind: "booked"; readonly bookingId: string }
   | { readonly kind: "slot_taken" }
@@ -115,6 +117,11 @@ export interface ProviderWorld {
   getProvider(providerId: string): Promise<GetProviderOutcome>;
   listBookings(userId: string): Promise<readonly Booking[]>;
   holdSlot(providerId: string, slot: Slot): Promise<HoldOutcome>;
+  /**
+   * Gives a held slot back before it expires (the person declined). Not one of the assignment's
+   * eight tools, and never offered to the model: only core calls it, when a proposal is declined.
+   */
+  releaseHold(holdId: string): Promise<ReleaseHoldOutcome>;
   book(holdId: string, idempotencyKey: string): Promise<BookOutcome>;
   getBookingStatus(idempotencyKey: string): Promise<BookingStatusOutcome>;
   cancel(bookingId: string, idempotencyKey: string): Promise<CancelOutcome>;

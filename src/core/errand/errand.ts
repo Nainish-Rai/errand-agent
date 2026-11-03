@@ -1,4 +1,4 @@
-import type { DateRange, ServiceKind } from "../ports/provider-world";
+import type { DateRange, Hold, ServiceKind } from "../ports/provider-world";
 import { startingTransition, type ErrandState, type ErrandTransition } from "./errand-workflow";
 
 // The errand: what the person asked for, as structured fields. A correction patches the fields it
@@ -49,6 +49,8 @@ export interface Errand {
   readonly state: ErrandState;
   /** Every state change since the errand started, oldest first. */
   readonly transitions: readonly ErrandTransition[];
+  /** The slot the world is holding for the person, from holding until the booking or a decline. */
+  readonly hold?: Hold;
 }
 
 export type InvalidDetailReason =

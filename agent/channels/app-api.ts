@@ -3,11 +3,16 @@ import {
   ApproveProposalRequestSchema,
   InjectWorldFaultRequestSchema,
   LoadModelScriptRequestSchema,
-  NOT_IMPLEMENTED_ERROR_CODE,
+  ProposalStatusSchema,
   SessionIdSchema,
   SetRunLimitsRequestSchema,
   SwitchScenarioRequestSchema,
   type ApiError,
+  type ApproveProposalResponse,
+  type DeclineProposalResponse,
+  type GetProposalResponse,
+  type ListBookingsResponse,
+  type ListProposalsResponse,
   type GetErrandResponse,
   type GetProviderResponse,
   type GetProvidersResponse,
@@ -17,11 +22,18 @@ import {
   type SwitchScenarioResponse,
 } from "@errand/contracts";
 import { defineChannel, GET, POST, PUT } from "eve/channels";
+import { localDev, routeAuth } from "eve/channels/auth";
 
 import { container } from "../../src/composition/container";
+import { approveProposal } from "../../src/core/use-cases/approve-proposal";
+import { declineProposal } from "../../src/core/use-cases/decline-proposal";
 import { getErrand } from "../../src/core/use-cases/get-errand";
 import { getProviders } from "../../src/core/use-cases/get-providers";
 import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
+import { listBookings } from "../../src/core/use-cases/list-bookings";
+import { getProposal, listProposals } from "../../src/core/use-cases/list-proposals";
+import { presentBooking, presentProposalView } from "../lib/approval-presenter";
+import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
 import { presentProviderDetails } from "../lib/world-presenter";
@@ -38,6 +50,16 @@ function failure(status: number, code: string, message: string): Response {
 
 function isDevelopment(): boolean {
   return process.env.NODE_ENV !== "production";
+}
+
+/**
+ * The caller, from the channel's auth context (the same walk the chat channel uses), never from the
+ * body. A Response means the caller isn't authenticated and is the answer to send.
+ */
+async function callerOf(request: Request): Promise<string | Response> {
+  const auth = await routeAuth(request, [localDev()]);
+  if (auth instanceof Response) return auth;
+  return appUserOf(auth) ?? failure(401, "unauthorized", "Sign in first.");
 }
 
 function invalidBody(issues: readonly { readonly message: string }[]): Response {
@@ -89,20 +111,101 @@ export default defineChannel({
       return Response.json(body);
     }),
 
-    // The approval card's button, and the only way a grant will ever be created. The body is
-    // checked now so clients and the eval harness are held to the contract; ApproveProposal
-    // itself arrives with ticket 05.
-    POST(`${API_PREFIX}/proposals/:proposalId/approve`, async (request) => {
+    // The approval card's button, and the only way a grant is ever created: ApproveProposal has no
+    // other caller (dependency-cruiser enforces it). The person comes from the auth context; the
+    // fingerprint is the one the card showed. Idempotent: a repeated click gets the same grant.
+    POST(`${API_PREFIX}/proposals/:proposalId/approve`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
       const parsed = ApproveProposalRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
-      return failure(501, NOT_IMPLEMENTED_ERROR_CODE, "Approving a proposal arrives with ticket 05.");
+      const outcome = await approveProposal(
+        container().proposalDependencies,
+        { proposalId: params.proposalId ?? "", fingerprint: parsed.data.fingerprint, userId },
+      );
+      switch (outcome.kind) {
+        case "approved": {
+          const body: ApproveProposalResponse = {
+            proposalId: outcome.proposal.proposalId,
+            grantId: outcome.grant.grantId,
+            expiresAt: new Date(outcome.grant.expiresAtMs).toISOString(),
+          };
+          return Response.json(body);
+        }
+        case "proposal_not_found":
+          return failure(404, "proposal_not_found", "No proposal of yours has that id.");
+        case "fingerprint_mismatch":
+          return failure(409, "fingerprint_mismatch", "The card you approved no longer matches this proposal.");
+        case "not_pending":
+          return failure(409, "proposal_not_pending", `The proposal is ${outcome.status}.`);
+        case "hold_expired":
+          return failure(410, "hold_expired", "The hold ran out before you approved, so nothing can be booked on it.");
+      }
+    }),
+
+    // Decline (and Other options) on the card: nothing is booked and the hold is released.
+    POST(`${API_PREFIX}/proposals/:proposalId/decline`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const outcome = await declineProposal(container().proposalDependencies, { proposalId: params.proposalId ?? "", userId });
+      switch (outcome.kind) {
+        case "declined": {
+          const body: DeclineProposalResponse = { proposalId: outcome.proposal.proposalId, status: outcome.proposal.status };
+          return Response.json(body);
+        }
+        case "proposal_not_found":
+          return failure(404, "proposal_not_found", "No proposal of yours has that id.");
+        case "too_late":
+          return failure(409, "too_late", `The booking is already ${outcome.status}.`);
+      }
+    }),
+
+    // ListPendingProposals ("Waiting on you"), or any status with ?status=.
+    GET(`${API_PREFIX}/proposals`, async (request) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const statusParam = new URL(request.url).searchParams.get("status");
+      const status = statusParam === null ? undefined : ProposalStatusSchema.safeParse(statusParam);
+      if (status !== undefined && !status.success) return failure(400, "invalid_status", "Pass a proposal status.");
+      const standings = await listProposals(container().proposalDependencies, { userId, ...(status === undefined ? {} : { status: status.data }) });
+      const body: ListProposalsResponse = { proposals: standings.map(presentProposalView) };
+      return Response.json(body);
+    }),
+
+    // What the approval card renders from: the proposal's terms, live status, fingerprint and grant.
+    GET(`${API_PREFIX}/proposals/:proposalId`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const standing = await getProposal(container().proposalDependencies, { proposalId: params.proposalId ?? "", userId });
+      if (standing === undefined) return failure(404, "proposal_not_found", "No proposal of yours has that id.");
+      const body: GetProposalResponse = { proposal: presentProposalView(standing) };
+      return Response.json(body);
+    }),
+
+    GET(`${API_PREFIX}/sessions/:sessionId/proposals`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const sessionId = SessionIdSchema.safeParse(params.sessionId);
+      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      const standings = await listProposals(container().proposalDependencies, { userId, sessionId: sessionId.data });
+      const body: ListProposalsResponse = { proposals: standings.map(presentProposalView) };
+      return Response.json(body);
+    }),
+
+    // ListBookings: the world's bookings, each with the proposal and grant that made it.
+    GET(`${API_PREFIX}/bookings`, async (request) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const bookings = await listBookings(container().proposalDependencies, userId);
+      const body: ListBookingsResponse = { bookings: bookings.map(presentBooking) };
+      return Response.json(body);
     }),
 
     POST(`${API_PREFIX}/dev/scenario`, async (request) => {
       if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
       const parsed = SwitchScenarioRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
-      const body: SwitchScenarioResponse = container().switchScenario(parsed.data);
+      const body: SwitchScenarioResponse = await container().switchScenario(parsed.data);
       return Response.json(body);
     }),
 

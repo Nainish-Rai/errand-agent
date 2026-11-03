@@ -2,6 +2,10 @@ import {
   API_PREFIX,
   ApiErrorSchema,
   ApproveProposalResponseSchema,
+  DeclineProposalResponseSchema,
+  GetProposalResponseSchema,
+  ListBookingsResponseSchema,
+  ListProposalsResponseSchema,
   GetErrandResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
@@ -12,6 +16,10 @@ import {
   SwitchScenarioResponseSchema,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
+  type BookingView,
+  type DeclineProposalResponse,
+  type ProposalStatus,
+  type ProposalView,
   type ErrandView,
   type GetSessionTraceResponse,
   type InjectWorldFaultRequest,
@@ -86,8 +94,10 @@ export class ApiClient {
   }
 
   /**
-   * What the approval card's button does: approve a proposal for the fingerprint the card showed.
-   * Until ticket 05 the backend answers 501 `not_implemented`, which throws an ApiRequestError.
+   * What the approval card's Approve button does: approve a proposal for the fingerprint the card
+   * showed. The only way a grant is created. Repeating it returns the same grant. A changed
+   * proposal (409 `fingerprint_mismatch`), a declined one (409 `proposal_not_pending`) or a lapsed
+   * hold (410 `hold_expired`) throws an ApiRequestError.
    */
   async approveProposal(proposalId: string, request: ApproveProposalRequest): Promise<ApproveProposalResponse> {
     return await this.#request(
@@ -95,6 +105,48 @@ export class ApiClient {
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
       ApproveProposalResponseSchema,
     );
+  }
+
+  /** The card's Decline (and Other options): nothing is booked and the hold is released. */
+  async declineProposal(proposalId: string): Promise<DeclineProposalResponse> {
+    return await this.#request(
+      `/proposals/${encodeURIComponent(proposalId)}/decline`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: "{}" },
+      DeclineProposalResponseSchema,
+    );
+  }
+
+  /** One proposal as the approval card renders it: terms, live status, fingerprint and grant. */
+  async getProposal(proposalId: string, options: { readonly signal?: AbortSignal } = {}): Promise<ProposalView> {
+    const body = await this.#request(
+      `/proposals/${encodeURIComponent(proposalId)}`,
+      { method: "GET", signal: options.signal },
+      GetProposalResponseSchema,
+    );
+    return body.proposal;
+  }
+
+  /** The person's proposals, newest first; `pending` gives the ones waiting on them. */
+  async listProposals(options: { readonly status?: ProposalStatus } = {}): Promise<readonly ProposalView[]> {
+    const query = options.status === undefined ? "" : `?${new URLSearchParams({ status: options.status })}`;
+    const body = await this.#request(`/proposals${query}`, { method: "GET" }, ListProposalsResponseSchema);
+    return body.proposals;
+  }
+
+  /** The proposals made in one chat session, newest first. */
+  async listSessionProposals(sessionId: string): Promise<readonly ProposalView[]> {
+    const body = await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/proposals`,
+      { method: "GET" },
+      ListProposalsResponseSchema,
+    );
+    return body.proposals;
+  }
+
+  /** The person's bookings as the world has them, each with the proposal and grant that made it. */
+  async listBookings(): Promise<readonly BookingView[]> {
+    const body = await this.#request("/bookings", { method: "GET" }, ListBookingsResponseSchema);
+    return body.bookings;
   }
 
   /** Dev only: load a scenario's model turns into the offline model, or unload them with `null`. */

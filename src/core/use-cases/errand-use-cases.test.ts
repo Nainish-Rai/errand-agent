@@ -68,6 +68,7 @@ function worldAnswering(outcome: SearchOutcome): ProviderWorld & { readonly quer
     getProvider: unused,
     listBookings: unused,
     holdSlot: unused,
+    releaseHold: unused,
     book: unused,
     getBookingStatus: unused,
     cancel: unused,

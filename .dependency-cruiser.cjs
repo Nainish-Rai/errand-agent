@@ -83,6 +83,15 @@ module.exports = {
       },
     },
     {
+      name: "only-the-approve-route-mints-grants",
+      comment:
+        "ApproveProposal is the only code that mints a grant, and the app API's approve route (a click on the card) is its " +
+        "only caller. No agent tool, subagent or other use case may reach it, so model output can never become a grant.",
+      severity: "error",
+      from: { pathNot: ["^agent/channels/app-api\\.ts$", "^src/core/use-cases/approve-proposal\\.ts$", "\\.test\\.ts$"] },
+      to: { path: "^src/core/use-cases/approve-proposal\\.ts$" },
+    },
+    {
       name: "nothing-imports-the-verification-tool",
       comment: "tools/verify drives the app from outside; no app, agent, package, eval or script may import it.",
       severity: "error",
