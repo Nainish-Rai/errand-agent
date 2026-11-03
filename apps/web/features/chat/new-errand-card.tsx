@@ -78,6 +78,23 @@ function useCardTransition() {
   };
 }
 
+/**
+ * Whether the refused search asks for another job than the booked one: another service, area or
+ * dates. The agent re-searching the booked job itself gets the plain "already booked" line, not a card.
+ */
+export function isDifferentJob(search: SearchProvidersInput, errand: ErrandView): boolean {
+  const service = search.service.trim().toLowerCase().replaceAll(/[\s-]+/g, "_");
+  const area = search.area.trim().toLowerCase();
+  const window = errand.timeWindow;
+  return (
+    service !== errand.service ||
+    area !== errand.area?.toLowerCase() ||
+    window === null ||
+    search.date_range.from !== window.from ||
+    search.date_range.to !== window.to
+  );
+}
+
 interface NewErrandCardProps {
   readonly toolCallId: string;
   readonly search: SearchProvidersInput;
