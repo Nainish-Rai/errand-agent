@@ -4,9 +4,9 @@
 
 **Blocked by:** 11, 03
 
-**Status:** ready-for-agent
+**Status:** done (PR #15)
 
-- [ ] Core tests: filtering happens before ranking, so a ranking that would favour a forgotten fact still excludes it; the token cap is never exceeded
-- [ ] Eval "context budget": with 50+ memories and a long history, every logged turn is within the budget and contains only relevant, current preferences
-- [ ] The global invariant "no forgotten or unconfirmed-inferred fact in any logged context" is now real across all scenarios
-- [ ] The trace panel shows each turn's context and the exclusion reasons
+- [x] Core tests: filtering happens before ranking, so a ranking that would favour a forgotten fact still excludes it; the token cap is never exceeded
+- [x] Eval "context budget": with 50+ memories and a long history, every logged turn is within the budget and contains only relevant, current preferences
+- [x] The global invariant "no forgotten or unconfirmed-inferred fact in any logged context" is now real across all scenarios
+- [x] The trace panel shows each turn's context and the exclusion reasons
