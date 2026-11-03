@@ -15,7 +15,7 @@ export interface BookingTrace {
   readonly worldCalls: readonly string[];
   /** The idempotency key each `book` call sent, in order. */
   readonly bookKeys: readonly string[];
-  /** The idempotency key each `cancel` or `reschedule` call sent, in order. */
+  /** The idempotency key each `cancel` or `reschedule` call sent (its arguments, not the ledger's key), in order. */
   readonly changeKeys: readonly string[];
   /** `recorded → pending`, `pending → confirmed`, ... */
   readonly ledger: readonly string[];
@@ -31,6 +31,11 @@ function resultKind(value: unknown): string {
   return typeof value === "object" && value !== null && "kind" in value ? text(value.kind) : "";
 }
 
+/** The idempotency key a world call's arguments carried. */
+function sentKey(args: unknown): string {
+  return typeof args === "object" && args !== null && "idempotency_key" in args ? text(args.idempotency_key) : "";
+}
+
 export async function bookingTrace(api: ApiClient, sessionId: string): Promise<BookingTrace> {
   const trace = await settledTrace(api, sessionId);
   const calls = trace.spans.filter((span) => span.attributes["errand.world.call"] === true);
@@ -40,7 +45,7 @@ export async function bookingTrace(api: ApiClient, sessionId: string): Promise<B
     bookKeys: calls.filter((span) => callName(span) === "book").map((span) => text(span.attributes["errand.ledger.key"])),
     changeKeys: calls
       .filter((span) => callName(span) === "cancel" || callName(span) === "reschedule")
-      .map((span) => text(span.attributes["errand.ledger.key"])),
+      .map((span) => sentKey(span.attributes["gen_ai.tool.call.arguments"])),
     ledger: trace.events.filter((event) => event.kind === "ledger_transition").map((event) => event.name.replace(/^ledger /, "")),
     retries: calls.filter((span) => span.attributes["errand.retry"] === true).length,
   };
