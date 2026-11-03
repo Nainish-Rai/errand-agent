@@ -1,34 +1,21 @@
 "use client";
 
-import {
-  ComposerPrimitive,
-  MessagePrimitive,
-  ThreadPrimitive,
-  type TextMessagePartComponent,
-  type ToolCallMessagePartComponent,
-} from "@assistant-ui/react";
+import { ComposerPrimitive, MessagePrimitive, ThreadPrimitive, type TextMessagePartComponent } from "@assistant-ui/react";
 import { ArrowUp, Square } from "lucide-react";
 
 import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
+import { GeneratedUiPart } from "@/features/generated-ui";
 
 import { ExecutionPart, ProposalCardPart } from "./approval-card-part";
 import { ProviderInsight } from "./provider-insight";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
+import { ToolStatus } from "./tool-status";
 
 const AssistantText: TextMessagePartComponent = ({ text, status }) => (
   <Markdown isAnimating={status.type === "running"}>{text}</Markdown>
 );
-
-const ToolActivity: ToolCallMessagePartComponent = ({ toolName, status, isError }) => {
-  const word = isError === true ? "Failed" : status.type === "running" ? "Working" : "Done";
-  return (
-    <p className="my-1 text-sm text-muted-foreground">
-      {word}: {toolName.replaceAll("_", " ")}
-    </p>
-  );
-};
 
 function UserMessage() {
   return (
@@ -53,8 +40,10 @@ function AssistantMessage() {
               propose_action: ProposalCardPart,
               execute_proposal: ExecutionPart,
               get_provider_insight: ProviderInsight,
+              present_ui: GeneratedUiPart,
+              ask_ui: GeneratedUiPart,
             },
-            Fallback: ToolActivity,
+            Fallback: ToolStatus,
           },
         }}
       />

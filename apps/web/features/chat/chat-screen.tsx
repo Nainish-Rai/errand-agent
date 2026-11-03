@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Spinner } from "@/components/ui/spinner";
 import { MemoryPanel } from "@/features/memory-panel/memory-panel";
+import { GeneratedUiHostProvider, GeneratedUiTheme } from "@/features/generated-ui";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 
-import { backendUrl } from "./backend";
+import { appApi, backendUrl } from "./backend";
 import { BookingSessionProvider } from "./booking-progress";
 import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
@@ -73,6 +74,8 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <SendTextProvider value={sendText}>
+        <GeneratedUiHostProvider host={{ api: appApi, send: sendText, sessionId }}>
+        <GeneratedUiTheme>
         <div className="flex h-dvh">
           <div className="relative min-w-0 flex-1">
             {error !== undefined && (
@@ -103,6 +106,8 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
           {rail === "memory" && <MemoryPanel backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
           {rail === "trace" && <TracePanel backendUrl={backendUrl} sessionId={sessionId} activity={activity} onClose={() => setRail(undefined)} />}
         </div>
+        </GeneratedUiTheme>
+        </GeneratedUiHostProvider>
       </SendTextProvider>
     </AssistantRuntimeProvider>
   );
