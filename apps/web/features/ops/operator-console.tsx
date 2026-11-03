@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiClient } from "@errand/client";
+import type { AppApi } from "@errand/client";
 import { motion } from "motion/react";
 import { ArrowLeft, Check, LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { Presence, useLimeTiming, useWideScreen } from "@/components/layout-moti
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, focusRing } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { isDemo } from "@/features/chat/backend";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 import { cn } from "@/lib/utils";
 
@@ -61,14 +62,30 @@ function Shell({
         <div className="ml-auto flex items-center gap-1">
           {tools}
           <ThemeToggle />
-          <Button size="sm" variant="ghost" onClick={onSignOut}>
-            <LogOut />
-            Sign out
-          </Button>
+          {!isDemo && (
+            <Button size="sm" variant="ghost" onClick={onSignOut}>
+              <LogOut />
+              Sign out
+            </Button>
+          )}
         </div>
       </header>
+      {isDemo && <DemoOperatorNote />}
       {children}
     </div>
+  );
+}
+
+/**
+ * Demo mode opens the console without a token, so it says what it is showing: recorded sessions, not
+ * live ones, and no operator check (the real console needs a signed operator token; see the README).
+ */
+function DemoOperatorNote() {
+  return (
+    <p role="note" className="m-0 border-b border-line bg-surface px-4 py-2 text-xs text-fg-2">
+      <span className="font-medium text-fg">Demo: operator view.</span> No sign-in here. The sessions are recorded runs of the real
+      backend: the committed timeout-after-success trace and the chat this demo replays. The real console needs an operator token.
+    </p>
   );
 }
 
@@ -91,7 +108,7 @@ export function OperatorConsoleLoading() {
   );
 }
 
-function SessionsView({ api, onSignOut, onRefused }: { readonly api: ApiClient; readonly onSignOut: () => void; readonly onRefused: () => void }) {
+function SessionsView({ api, onSignOut, onRefused }: { readonly api: AppApi; readonly onSignOut: () => void; readonly onRefused: () => void }) {
   const sessions = useOperatorRead((signal) => api.listOperatorSessions({ signal }), "sessions", LIST_POLL_MS);
   useSignOutWhenRefused([sessions], onSignOut, onRefused);
   return (
@@ -124,7 +141,7 @@ function RailChip({ open, onToggle }: { readonly open: boolean; readonly onToggl
 }
 
 /** The trace rail: a collapsing panel, by width beside the transcript and by height when stacked under it. */
-function TraceRail({ api, sessionId }: { readonly api: ApiClient; readonly sessionId: string }) {
+function TraceRail({ api, sessionId }: { readonly api: AppApi; readonly sessionId: string }) {
   const timing = useLimeTiming();
   const wide = useWideScreen();
   return (
@@ -149,7 +166,7 @@ function SessionView({
   onSignOut,
   onRefused,
 }: {
-  readonly api: ApiClient;
+  readonly api: AppApi;
   readonly sessionId: string;
   readonly onSignOut: () => void;
   readonly onRefused: () => void;

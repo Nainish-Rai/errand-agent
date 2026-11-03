@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiClient } from "@errand/client";
+import type { AppApi } from "@errand/client";
 import type { ContextFact, GetSessionContextResponse, ModelCallContext } from "@errand/contracts";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -41,7 +41,7 @@ function tokens(count: number): string {
   return count.toLocaleString("en-IN");
 }
 
-function useSessionContext(api: ApiClient, sessionId: string, contextEvents: number): GetSessionContextResponse | undefined {
+function useSessionContext(api: AppApi, sessionId: string, contextEvents: number): GetSessionContextResponse | undefined {
   const [context, setContext] = useState<GetSessionContextResponse>();
   useEffect(() => {
     const controller = new AbortController();
@@ -240,7 +240,7 @@ function Turn({ turn, position, open, onOpenChange }: TurnProps) {
   );
 }
 
-export function ContextLog({ api, sessionId, contextEvents }: { readonly api: ApiClient; readonly sessionId: string; readonly contextEvents: number }) {
+export function ContextLog({ api, sessionId, contextEvents }: { readonly api: AppApi; readonly sessionId: string; readonly contextEvents: number }) {
   const context = useSessionContext(api, sessionId, contextEvents);
   const [toggled, setToggled] = useState<Readonly<Record<string, boolean>>>({});
   const turns = turnsOf(context?.calls ?? []);

@@ -71,11 +71,23 @@ const PLUMBER_SEARCH: readonly ModelStep[] = [
   },
 ];
 
-const HOLD_AND_PROPOSE: readonly ModelStep[] = [
-  { toolCalls: [{ name: "hold_slot", input: { provider_id: CHEAPEST_PLUMBER.providerId, slot: CHEAPEST_PLUMBER.slot } }] },
-  { toolCalls: [{ name: "propose_action", input: { action: "book" } }] },
-  { text: "Held the slot. Check the card and tap Approve ₹399 if it's right. Nothing is booked until you do." },
-];
+function holdAndPropose(provider: { readonly providerId: string; readonly slot: object; readonly priceLabel: string }): readonly ModelStep[] {
+  return [
+    { toolCalls: [{ name: "hold_slot", input: { provider_id: provider.providerId, slot: provider.slot } }] },
+    { toolCalls: [{ name: "propose_action", input: { action: "book" } }] },
+    { text: `Held the slot. Check the card and tap Approve ${provider.priceLabel} if it's right. Nothing is booked until you do.` },
+  ];
+}
+
+const HOLD_AND_PROPOSE = holdAndPropose({ ...CHEAPEST_PLUMBER, priceLabel: "₹399" });
+
+/** The best match is also the earliest: Venkatesh Sanitary Solutions, today at 10:00, ₹499. */
+const BEST_MATCH_PLUMBER = {
+  providerId: "prv_plumber_koramangala_4",
+  name: "Venkatesh Sanitary Solutions",
+  slot: { start: "2026-11-04T10:00:00+05:30", end: "2026-11-04T11:00:00+05:30" },
+  priceLabel: "₹499",
+};
 
 function tileSearch(key: string, request: string, service: string, reply: string): DemoSessionScript {
   return { key, draft: CHIPS, beats: [{ key: "search", say: { kind: "text", text: request }, steps: [search(service, "Koramangala"), { text: reply }] }] };
@@ -122,6 +134,24 @@ export const DEMO_SCRIPT = {
           before: { kind: "decline" },
           say: { kind: "card", follow: "declined" },
           steps: [search("plumber", "Koramangala"), { text: "No problem. Nothing is booked and the hold is released. Here are the options again." }],
+        },
+      ],
+    },
+    {
+      key: "best",
+      draft: CHIPS,
+      beats: [
+        { key: "search", say: { kind: "text", text: "Plumber for a leaking kitchen tap this week" }, steps: PLUMBER_SEARCH },
+        { key: "choose", say: { kind: "choose", providerName: BEST_MATCH_PLUMBER.name }, steps: holdAndPropose(BEST_MATCH_PLUMBER) },
+        {
+          key: "approve",
+          before: { kind: "approve" },
+          say: { kind: "card", follow: "approved" },
+          executes: true,
+          steps: [
+            { toolCalls: [{ name: "execute_proposal", input: {} }] },
+            { text: "Booked: Venkatesh Sanitary Solutions, today at 10:00 am IST, ₹499. The provider's reply was slow, so I checked with them before saying so." },
+          ],
         },
       ],
     },

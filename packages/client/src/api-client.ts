@@ -88,6 +88,12 @@ export interface ApiClientOptions {
   readonly accessToken?: string;
 }
 
+/**
+ * What a client of /api/v1 can call: ApiClient's public surface. An app types its API against this, so
+ * a stand-in with the same methods (the web app's demo mode) can take its place.
+ */
+export type AppApi = { readonly [Method in keyof ApiClient]: ApiClient[Method] };
+
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code: string;

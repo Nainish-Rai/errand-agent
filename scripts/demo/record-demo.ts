@@ -237,7 +237,8 @@ try {
     memory: await api.listMemory(),
     services: await api.listServiceOptions(),
     bookings: { initial: await api.listBookings(), afterBooking: undefined as unknown },
-    spend: await api.getSpend(6),
+    // The most the spend route gives; the demo answers fewer months from the end of it.
+    spend: await api.getSpend(12),
     sessions: {} as Record<string, unknown>,
     proposals: {} as Record<string, unknown>,
     intents: {} as Record<string, unknown>,
@@ -309,7 +310,10 @@ try {
   if (replacement?.proposal === undefined) throw new Error("The cancellation chat put up no card.");
   for (const provider of (toolOutput(noticeTurn, "search_providers") as { providers?: { id: string }[] } | undefined)?.providers ?? []) providerIds.add(provider.id);
   recorded.proposals["cancelled:pending"] = await api.getProposal(replacement.proposal.proposalId);
+  // What the person's home screen, bookings and spend read once the cancellation is in.
   recorded.home.initial = await api.getHomeSummary();
+  recorded.bookings.initial = await api.listBookings();
+  recorded.spend = await api.getSpend(12);
   console.error(`cancelled/notice: ${noticeTurn.toolCalls.map((call) => call.name).join(", ")}`);
 
   for (const script of DEMO_SCRIPT.sessions) {
@@ -360,8 +364,13 @@ try {
   const opsSessions = await operator.listOperatorSessions();
   const demoChat = sessionIds.plumber;
   if (demoChat === undefined) throw new Error("The plumber chat wasn't recorded.");
+  // Each booking's ledger steps, from its chat's own trace.
+  for (const script of DEMO_SCRIPT.sessions) {
+    if (!script.beats.some((beat) => beat.executes === true)) continue;
+    const trace = await operator.getSessionTrace(sessionIds[script.key] ?? "");
+    recorded.intents[`${script.key}:during`] = ledgerStates(trace, recorded.intents[`${script.key}:settled`] as ActionIntentView[]);
+  }
   const demoTrace = await operator.getSessionTrace(demoChat);
-  recorded.intents["plumber:during"] = ledgerStates(demoTrace, recorded.intents["plumber:settled"] as ActionIntentView[]);
   const ops = {
     sessions: opsSessions.filter((session) => session.sessionId === demoChat),
     demoChat: {

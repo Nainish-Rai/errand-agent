@@ -1,7 +1,6 @@
 "use client";
 
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
-import { ChatClient, type ClientSession } from "@errand/client";
 import { Brain, House } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -13,12 +12,12 @@ import { Spinner } from "@/components/ui/spinner";
 import { MemoryPanel } from "@/features/memory-panel/memory-panel";
 import { GeneratedUiHostProvider, GeneratedUiTheme } from "@/features/generated-ui";
 
-import { appApi, backendUrl } from "./backend";
+import { appApi, backendUrl, chatBackend } from "./backend";
 import { BookingSessionProvider } from "./booking-progress";
+import type { ChatSession } from "./chat-backend";
 import { ErrandHandoffsProvider } from "./errand-handoffs";
 import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
-import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
 
 // The chat at /chat/[sessionId]. The memory panel opens in a right rail; below the lg breakpoint it
 // overlays the chat instead of squeezing it. The run trace, the context log, token counts and costs
@@ -78,8 +77,8 @@ function MemoryToggle({ rail, onChange }: { readonly rail: Rail | undefined; rea
   );
 }
 
-function BoundThread({ session, entry }: { readonly session: ClientSession; readonly entry: ChatEntry }) {
-  const { runtime, error, sendText, sessionId, activity } = useEveAssistantRuntime(session);
+function BoundThread({ session, entry }: { readonly session: ChatSession; readonly entry: ChatEntry }) {
+  const { runtime, error, sendText, sessionId, activity } = chatBackend.useRuntime(session);
   const [rail, setRail] = useState<Rail | undefined>(entry.rail);
   useFocusProposal(entry.proposalId);
   return (
@@ -114,7 +113,7 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
           </div>
           {/* The panel collapses as it closes, so it stays mounted until its exit motion ends. */}
           <Presence>
-            {rail === "memory" && <MemoryPanel key="memory" backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
+            {rail === "memory" && <MemoryPanel key="memory" api={appApi} activity={activity} onClose={() => setRail(undefined)} />}
           </Presence>
         </div>
         </GeneratedUiTheme>
@@ -141,23 +140,21 @@ export function ChatLoading() {
   );
 }
 
-const chat = new ChatClient({ baseUrl: backendUrl });
-
 /** A chat that already exists: eve replays its conversation and follows a turn still running. */
 export function ChatScreen({ sessionId, entry }: { readonly sessionId: string; readonly entry: ChatEntry }) {
-  const session = useMemo(() => chat.attachSession(sessionId), [sessionId]);
+  const session = useMemo(() => chatBackend.attachSession(sessionId), [sessionId]);
   return <BoundThread key={sessionId} session={session} entry={entry} />;
 }
 
 /** /chat: starts a session, then gives it its own address so a reload or a link returns to it. */
 export function NewChatScreen({ entry }: { readonly entry: ChatEntry }) {
-  const [session, setSession] = useState<ClientSession>();
+  const [session, setSession] = useState<ChatSession>();
   const [failure, setFailure] = useState<string>();
   // Strict Mode runs effects twice in development; one chat must get one session.
-  const starting = useRef<Promise<ClientSession> | undefined>(undefined);
+  const starting = useRef<Promise<ChatSession> | undefined>(undefined);
 
   useEffect(() => {
-    starting.current ??= chat.startSession();
+    starting.current ??= chatBackend.startSession();
     starting.current.then(
       (started) => {
         window.history.replaceState(null, "", `/chat/${encodeURIComponent(started.id)}${window.location.search}`);

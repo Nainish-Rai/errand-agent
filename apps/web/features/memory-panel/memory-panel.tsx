@@ -1,9 +1,9 @@
 "use client";
 
-import { ApiClient } from "@errand/client";
+import type { AppApi } from "@errand/client";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 
 import { useLimeTiming, useWideScreen } from "@/components/layout-motion";
 import { Button } from "@/components/ui/button";
@@ -16,16 +16,15 @@ import { MemoryFacts } from "./memory-facts";
 // the chat sees new activity, so a fact changed in chat shows up here too.
 
 export function MemoryPanel({
-  backendUrl,
+  api,
   activity,
   onClose,
 }: {
-  readonly backendUrl: string;
+  readonly api: AppApi;
   /** Changes whenever the chat sees new session events. */
   readonly activity: number;
   readonly onClose: () => void;
 }) {
-  const api = useMemo(() => new ApiClient({ baseUrl: backendUrl }), [backendUrl]);
   const timing = useLimeTiming();
   const wide = useWideScreen();
   const close = useRef<HTMLButtonElement>(null);

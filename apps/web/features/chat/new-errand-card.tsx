@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuiState } from "@assistant-ui/react";
-import { ApiRequestError, ChatClient } from "@errand/client";
+import { ApiRequestError } from "@errand/client";
 import { PROVIDER_UPDATE_PREFIX, type ErrandView, type SearchProvidersInput } from "@errand/contracts";
 import { MessageSquarePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { appApi, backendUrl } from "./backend";
+import { appApi, chatBackend } from "./backend";
 import { HandoffLine, useErrandHandoffs } from "./errand-handoffs";
 
 // The New errand card (ticket 24). This chat's errand is booked, so a search for a different job
@@ -18,8 +18,6 @@ import { HandoffLine, useErrandHandoffs } from "./errand-handoffs";
 // can't add a link or an action to it. Starting a new errand books and spends nothing, so the card
 // needs no approval. "Start in a new chat" starts a session, saves the job as its errand before the
 // first turn (as the home composer does), sends the person's own last message and moves there.
-
-const chat = new ChatClient({ baseUrl: backendUrl });
 
 const SERVICE_LABELS: Readonly<Record<NonNullable<ErrandView["service"]>, string>> = {
   plumber: "Plumber",
@@ -131,7 +129,7 @@ export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps
     setBusy("start");
     setProblem(undefined);
     try {
-      const session = await chat.startSession();
+      const session = await chatBackend.startSession();
       // Awaited before the first message: the new chat's first turn must already see the job.
       const moved = await appApi.startNewErrand(sessionId, { toolCallId, toSessionId: session.id, search });
       if (moved.handoff.kind === "moved" && moved.handoff.toSessionId === session.id && request !== "") await session.send(request);

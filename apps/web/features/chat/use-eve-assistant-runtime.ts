@@ -1,12 +1,13 @@
 "use client";
 
-import { useExternalStoreRuntime, type AppendMessage } from "@assistant-ui/react";
+import { useExternalStoreRuntime, type AppendMessage, type AssistantRuntime } from "@assistant-ui/react";
 import type { ClientSession } from "@errand/client";
 import { useEveAgent } from "eve/react";
 
 import { convertEveMessage } from "./eve-message-converter";
 
-function textOf(message: AppendMessage): string {
+/** What the person typed in the composer, as one string. */
+export function textOf(message: AppendMessage): string {
   return message.content
     .flatMap((part) => (part.type === "text" ? [part.text] : []))
     .join("\n")
@@ -20,7 +21,18 @@ function textOf(message: AppendMessage): string {
  * session's stream on mount and follows a turn still running, so a chat reopened from a link (or
  * started from the home composer, which sends the first message itself) shows its conversation.
  */
-export function useEveAssistantRuntime(session: ClientSession) {
+export interface ChatRuntime {
+  readonly runtime: AssistantRuntime;
+  readonly error: Error | undefined;
+  /** Sends text as the person, the same way the composer does (quick-reply chips use it). */
+  readonly sendText: (text: string) => Promise<void>;
+  /** The session eve is streaming, which the trace panel follows from the first message on. */
+  readonly sessionId: string;
+  /** Grows with every event the session streams, so the trace panel can refresh at once. */
+  readonly activity: number;
+}
+
+export function useEveAssistantRuntime(session: ClientSession): ChatRuntime {
   const agent = useEveAgent({ session, resume: true });
 
   const runtime = useExternalStoreRuntime({
