@@ -89,9 +89,14 @@ function exclusionsLine(overBudget: number, outsideTimeWindow: number): string |
  * already dropped every provider outside the errand's budget and time window; the tagged options
  * come first, then everything that fits.
  */
-export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, status }) => {
+export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, status, isError }) => {
   const query = args as { service?: string; area?: string };
   const label = `${query.service ?? "providers"} in ${query.area ?? "your area"}`;
+
+  // A call that threw has no result; without this it would look like a search still running.
+  if (isError === true) {
+    return <p className="my-2 text-sm text-muted-foreground">The search for {label} failed.</p>;
+  }
 
   if (result === undefined) {
     return (

@@ -19,12 +19,14 @@ const AssistantText: TextMessagePartComponent = ({ text, status }) => (
   <Markdown isAnimating={status.type === "running"}>{text}</Markdown>
 );
 
-const ToolActivity: ToolCallMessagePartComponent = ({ toolName, status }) => (
-  <p className="my-1 text-sm text-muted-foreground">
-    {status.type === "running" ? "Working: " : "Done: "}
-    {toolName.replaceAll("_", " ")}
-  </p>
-);
+const ToolActivity: ToolCallMessagePartComponent = ({ toolName, status, isError }) => {
+  const word = isError === true ? "Failed" : status.type === "running" ? "Working" : "Done";
+  return (
+    <p className="my-1 text-sm text-muted-foreground">
+      {word}: {toolName.replaceAll("_", " ")}
+    </p>
+  );
+};
 
 function UserMessage() {
   return (

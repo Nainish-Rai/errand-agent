@@ -318,13 +318,15 @@
                 "path": "events[*].name",
                 "equals": [
                   "start → gathering",
+                  "run needs_user",
                   "gathering → searching",
-                  "searching → choosing"
+                  "searching → choosing",
+                  "run needs_user"
                 ]
               }
             ]
           },
-          "note": "world state: every transition is in the trace"
+          "note": "world state: every transition is in the trace, and each run ends with its typed outcome (ticket 08): both runs leave the next move to the person"
         },
         {
           "command": "api",
