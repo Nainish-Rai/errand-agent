@@ -4,7 +4,7 @@ import { ApiRequestError } from "@errand/client";
 import type { DraftErrandRequest, GetHomeSummaryResponse } from "@errand/contracts";
 import { ArrowUp, Clock, IndianRupee, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { FilterChip } from "@/components/chip";
 import { Presence, Reveal } from "@/components/layout-motion";
@@ -206,7 +206,7 @@ export function Composer({ composer }: { readonly composer: ErrandComposer }) {
   const areas: Choice<string>[] = (memory?.areas ?? []).map((area) => ({ key: area, value: area, short: area, long: area }));
   const ready = chips !== undefined && prompt.trim().length > 0 && !sending;
 
-  function submit(event: Pick<FormEvent, "preventDefault">) {
+  function submit(event: Pick<SyntheticEvent, "preventDefault">) {
     event.preventDefault();
     if (ready) send();
   }

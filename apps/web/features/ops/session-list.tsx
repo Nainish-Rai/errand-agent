@@ -4,6 +4,7 @@ import type { OperatorSession } from "@errand/contracts";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/empty-state";
+import { Presence, Reveal } from "@/components/layout-motion";
 import { Spinner } from "@/components/ui/spinner";
 import { errandTitle, stepLabel } from "@/features/home/errand-words";
 
@@ -17,25 +18,23 @@ const startedFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: 
 function SessionRow({ session }: { readonly session: OperatorSession }) {
   const title = session.errand === null ? "No errand yet" : errandTitle(session.errand);
   return (
-    <li>
-      <Link
-        className="grid gap-0.5 rounded-md border border-line bg-surface px-3 py-2 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    <Link
+        className="grid gap-0.5 rounded-field px-3 py-3 transition-colors duration-(--dur-instant) ease-out hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         href={`/ops/sessions/${encodeURIComponent(session.sessionId)}`}
       >
-        <span className="text-sm text-fg">{title}</span>
-        <span className="text-xs text-fg-3 tabular-nums">
+        <span className="text-base font-medium text-fg">{title}</span>
+        <span className="text-sm text-fg-3 tabular-nums">
           {session.ownerId} · {startedFormat.format(new Date(session.startedAt))} IST
           {session.errand === null ? "" : ` · ${stepLabel(session.errand.state)}`} · {session.sessionId}
         </span>
-      </Link>
-    </li>
+    </Link>
   );
 }
 
 export function SessionList({ sessions }: { readonly sessions: OperatorRead<readonly OperatorSession[]> }) {
   return (
     <section aria-label="Sessions" className="grid gap-2">
-      <h2 className="m-0 text-xs font-normal text-fg-3">Sessions</h2>
+      <h2 className="m-0 text-lg leading-tight font-semibold text-fg">Sessions</h2>
       {sessions.status === "loading" && <Spinner aria-label="Loading sessions" />}
       {sessions.status === "failed" && (
         <p className="m-0 rounded-md bg-danger-tint px-3 py-2 text-sm" role="alert">
@@ -44,10 +43,15 @@ export function SessionList({ sessions }: { readonly sessions: OperatorRead<read
       )}
       {sessions.status === "ready" && sessions.data.length === 0 && <EmptyState message="No sessions yet." />}
       {sessions.status === "ready" && sessions.data.length > 0 && (
-        <ul aria-label="Sessions" className="m-0 grid list-none gap-1.5 p-0">
-          {sessions.data.map((session) => (
-            <SessionRow key={session.sessionId} session={session} />
-          ))}
+        <ul aria-label="Sessions" className="m-0 flex list-none flex-col p-0 [&>li:not(:last-child)]:border-b [&>li:not(:last-child)]:border-line">
+          {/* A new session arrives at the top with a 4px rise as the list polls. */}
+          <Presence>
+            {sessions.data.map((session) => (
+              <Reveal as="li" key={session.sessionId}>
+                <SessionRow session={session} />
+              </Reveal>
+            ))}
+          </Presence>
         </ul>
       )}
     </section>

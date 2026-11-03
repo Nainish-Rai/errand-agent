@@ -1,14 +1,17 @@
 "use client";
 
 import type { ApiClient } from "@errand/client";
-import { ArrowLeft, LogOut, ShieldCheck } from "lucide-react";
+import { motion } from "motion/react";
+import { ArrowLeft, Check, LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { Presence, useLimeTiming, useWideScreen } from "@/components/layout-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { Button, focusRing } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
+import { cn } from "@/lib/utils";
 
 import { AccessLog } from "./access-log";
 import { useOperatorAccess } from "./operator-access";
@@ -18,16 +21,31 @@ import { Transcript } from "./transcript";
 import { useOperatorRead, type OperatorRead } from "./use-operator-read";
 
 // The operator console (ticket 19): /ops lists sessions, /ops/sessions/[id] shows one read-only, the
-// transcript beside the run trace and context log (the same trace panel the chat used to show), with
-// the session's operator access log. The person's chat shows none of this.
+// transcript beside the run trace and context log, with the session's operator access log. The trace rail
+// exists only here; the person's chat shows none of it. v3's Operator console: a header with a Trace chip
+// that collapses the rail (its width closes over --dur-base and the transcript reflows), and no glow
+// anywhere, since an internal tool has no next step for the person.
 
 const LIST_POLL_MS = 5_000;
 const SESSION_POLL_MS = 2_000;
 
-function Shell({ title, back, onSignOut, children }: { readonly title: string; readonly back?: boolean; readonly onSignOut: () => void; readonly children: ReactNode }) {
+function Shell({
+  title,
+  back,
+  onSignOut,
+  tools,
+  children,
+}: {
+  readonly title: ReactNode;
+  readonly back?: boolean;
+  readonly onSignOut: () => void;
+  /** Header controls for the page, before the theme toggle. */
+  readonly tools?: ReactNode;
+  readonly children: ReactNode;
+}) {
   return (
     <div className="min-h-dvh bg-page">
-      <header className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2">
+      <header className="flex h-12 items-center gap-2 border-b border-line bg-page px-3">
         {back === true && (
           <Button asChild size="sm" variant="ghost">
             <Link href="/ops">
@@ -41,6 +59,7 @@ function Shell({ title, back, onSignOut, children }: { readonly title: string; r
           {title}
         </h1>
         <div className="ml-auto flex items-center gap-1">
+          {tools}
           <ThemeToggle />
           <Button size="sm" variant="ghost" onClick={onSignOut}>
             <LogOut />
@@ -77,10 +96,50 @@ function SessionsView({ api, onSignOut, onRefused }: { readonly api: ApiClient; 
   useSignOutWhenRefused([sessions], onSignOut, onRefused);
   return (
     <Shell title="Operator console" onSignOut={onSignOut}>
-      <main className="mx-auto grid max-w-3xl gap-3 p-4">
+      <main className="mx-auto grid max-w-[48rem] gap-3 px-4 pt-6 pb-10">
         <SessionList sessions={sessions} />
       </main>
     </Shell>
+  );
+}
+
+/** v3's Chip as a toggle: pressed, it shows a check on the lime wash. */
+function RailChip({ open, onToggle }: { readonly open: boolean; readonly onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={open}
+      aria-controls="ops-rail"
+      onClick={onToggle}
+      className={cn(
+        focusRing,
+        "inline-flex h-8 items-center gap-1.5 rounded-control border border-line-strong bg-page px-3 text-sm font-medium text-fg transition-[background-color,border-color,scale] duration-(--dur-instant) ease-out hover:bg-surface active:scale-(--scale-press)",
+        "aria-pressed:border-accent-line aria-pressed:bg-accent-wash",
+      )}
+    >
+      {open && <Check aria-hidden className="size-3.5" />}
+      Trace
+    </button>
+  );
+}
+
+/** The trace rail: a collapsing panel, by width beside the transcript and by height when stacked under it. */
+function TraceRail({ api, sessionId }: { readonly api: ApiClient; readonly sessionId: string }) {
+  const timing = useLimeTiming();
+  const wide = useWideScreen();
+  return (
+    <motion.div
+      id="ops-rail"
+      className="flex-none overflow-hidden border-line bg-surface max-lg:border-t lg:sticky lg:top-0 lg:h-[calc(100dvh-3rem)] lg:border-l"
+      initial={wide ? { width: 0 } : { height: 0 }}
+      animate={wide ? { width: "auto", transition: timing.arrive } : { height: "auto", transition: timing.arrive }}
+      exit={wide ? { width: 0, transition: timing.leave } : { height: 0, transition: timing.leave }}
+    >
+      {/* The rail's content keeps its width while the rail opens, so the waterfall never rewraps. */}
+      <div className="h-full w-full overflow-y-auto lg:w-[40rem]">
+        <TracePanel api={api} sessionId={sessionId} />
+      </div>
+    </motion.div>
   );
 }
 
@@ -97,17 +156,25 @@ function SessionView({
 }) {
   const transcript = useOperatorRead((signal) => api.getSessionTranscript(sessionId, { signal }), `transcript:${sessionId}`, SESSION_POLL_MS);
   const reads = useOperatorRead((signal) => api.listOperatorReads(sessionId, { signal }), `reads:${sessionId}`, SESSION_POLL_MS);
+  const [railOpen, setRailOpen] = useState(true);
   useSignOutWhenRefused([transcript, reads], onSignOut, onRefused);
   return (
-    <Shell back title={`Session ${sessionId}`} onSignOut={onSignOut}>
-      <main className="grid gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_40rem]">
-        <div className="grid content-start gap-4">
+    <Shell
+      back
+      title={
+        <>
+          Session <span className="min-w-0 truncate font-mono text-xs font-normal text-fg-3">{sessionId}</span>
+        </>
+      }
+      tools={<RailChip open={railOpen} onToggle={() => setRailOpen((open) => !open)} />}
+      onSignOut={onSignOut}
+    >
+      <main className="flex flex-col lg:flex-row lg:items-start">
+        <div className="grid min-w-0 flex-1 content-start gap-6 px-4 pt-4 pb-6 lg:px-6">
           <Transcript transcript={transcript} />
           <AccessLog reads={reads} />
         </div>
-        <div className="rounded-panel border border-line bg-page lg:sticky lg:top-3 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
-          <TracePanel api={api} sessionId={sessionId} />
-        </div>
+        <Presence>{railOpen && <TraceRail key="rail" api={api} sessionId={sessionId} />}</Presence>
       </main>
     </Shell>
   );

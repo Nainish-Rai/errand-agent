@@ -4,7 +4,7 @@ import type { ApiClient } from "@errand/client";
 import type { ListMemoryResponse, MemoryFactView, MemoryKey, TombstoneView } from "@errand/contracts";
 import { motion } from "motion/react";
 import { Ellipsis, PencilLine, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type SyntheticEvent } from "react";
 
 import { CrossFade, Presence, Reveal, useLimeTiming } from "@/components/layout-motion";
 import { Skeleton } from "@/components/skeleton";
@@ -151,7 +151,7 @@ function CorrectionForm({
   const [value, setValue] = useState(fact.value);
   const inputId = useId();
   const name = fact.label.toLowerCase();
-  const submit = (event: FormEvent) => {
+  const submit = (event: SyntheticEvent) => {
     event.preventDefault();
     if (value.trim() !== "") onSave(value.trim());
   };
@@ -301,14 +301,11 @@ export function MemoryFacts({
   const list = useRef<HTMLUListElement>(null);
   const { toast, show, hold, release } = useToast();
 
-  const focusMore = (key: MemoryKey | undefined) => {
-    const target =
-      (key === undefined ? null : list.current?.querySelector<HTMLElement>(`[data-more="${key}"]`)) ?? list.current?.querySelector<HTMLElement>("[data-more]");
-    if (target) target.focus();
-    else returnFocus?.();
-  };
+  // Where focus goes once the list shows what the backend now serves: the row acted on if it is still
+  // there, else the first row, else the caller's fallback. Never a row that is still collapsing.
+  const [focusAfter, setFocusAfter] = useState<{ readonly key: MemoryKey | undefined }>();
 
-  const act = async (label: string, action: () => Promise<unknown>, done: string, focusAfter: MemoryKey | undefined) => {
+  const act = async (label: string, action: () => Promise<unknown>, done: string, focusKey: MemoryKey | undefined) => {
     setBusy(label);
     setActionError(undefined);
     try {
@@ -321,8 +318,7 @@ export function MemoryFacts({
       setBusy(undefined);
       await refresh();
       announceMemoryChange();
-      // After the list has rendered what the backend now serves.
-      requestAnimationFrame(() => focusMore(focusAfter));
+      setFocusAfter({ key: focusKey });
     }
   };
 
@@ -338,6 +334,16 @@ export function MemoryFacts({
       tombstones.findLastIndex((other) => other.key === tombstone.key) === index && !current.some((fact) => fact.key === tombstone.key),
   );
 
+  useEffect(() => {
+    if (focusAfter === undefined) return;
+    setFocusAfter(undefined);
+    const keys = ordered.map((fact) => fact.key);
+    const key = focusAfter.key !== undefined && keys.includes(focusAfter.key) ? focusAfter.key : keys[0];
+    const target = key === undefined ? null : list.current?.querySelector<HTMLElement>(`[data-more="${key}"]`);
+    if (target) target.focus();
+    else returnFocus?.();
+  }, [focusAfter, ordered, returnFocus]);
+
   const actionsFor = (fact: MemoryFactView): FactActions => {
     const name = fact.label.toLowerCase();
     return {
@@ -346,7 +352,7 @@ export function MemoryFacts({
       onCorrect: () => setEditing(fact.key),
       onCancelCorrect: () => {
         setEditing(undefined);
-        requestAnimationFrame(() => focusMore(fact.key));
+        setFocusAfter({ key: fact.key });
       },
       onSave: (value) =>
         void act(`correct:${fact.key}`, () => api.correctMemoryFact(fact.key, { value }), `Updated your ${name}`, fact.key),

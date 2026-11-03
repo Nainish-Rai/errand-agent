@@ -3,9 +3,9 @@
 import { ApiClient } from "@errand/client";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
-import { useMemo, useRef, useSyncExternalStore } from "react";
+import { useMemo, useRef } from "react";
 
-import { useLimeTiming } from "@/components/layout-motion";
+import { useLimeTiming, useWideScreen } from "@/components/layout-motion";
 import { Button } from "@/components/ui/button";
 
 import { MemoryFacts } from "./memory-facts";
@@ -14,20 +14,6 @@ import { MemoryFacts } from "./memory-facts";
 // screen it is a collapsing panel, so its width opens over --dur-base and the chat reflows instead of
 // jumping; below the lg breakpoint it covers the chat and rises in like a sheet. It refetches whenever
 // the chat sees new activity, so a fact changed in chat shows up here too.
-
-const WIDE = "(min-width: 1024px)";
-
-function useWide(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = window.matchMedia(WIDE);
-      query.addEventListener("change", onChange);
-      return () => query.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(WIDE).matches,
-    () => true,
-  );
-}
 
 export function MemoryPanel({
   backendUrl,
@@ -41,7 +27,7 @@ export function MemoryPanel({
 }) {
   const api = useMemo(() => new ApiClient({ baseUrl: backendUrl }), [backendUrl]);
   const timing = useLimeTiming();
-  const wide = useWide();
+  const wide = useWideScreen();
   const close = useRef<HTMLButtonElement>(null);
 
   return (

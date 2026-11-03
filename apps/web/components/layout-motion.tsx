@@ -2,7 +2,7 @@
 
 import { motion as lime } from "@errand/design-tokens";
 import { AnimatePresence, motion, useReducedMotion, type Transition } from "motion/react";
-import { useRef, type ReactNode } from "react";
+import { useRef, useSyncExternalStore, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -137,5 +137,23 @@ export function AnimatedCount({ value, className }: { readonly value: number; re
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+const WIDE = "(min-width: 1024px)";
+
+/**
+ * True at the lg breakpoint and up, where a side panel collapses by its width; below it the panel stacks
+ * or covers the page and moves vertically instead. The server and the first render assume wide.
+ */
+export function useWideScreen(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(WIDE);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => true,
   );
 }

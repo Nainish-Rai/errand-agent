@@ -33,7 +33,8 @@ export function OperatorSignIn({ refused, onSignIn }: { readonly refused: boolea
             That token doesn&apos;t open the console.
           </p>
         )}
-        <Button disabled={token.trim() === ""} type="submit">
+        {/* No glow in the operator console (v3): an internal tool has no next step for the person. */}
+        <Button disabled={token.trim() === ""} type="submit" variant="secondary">
           Sign in
         </Button>
       </form>
