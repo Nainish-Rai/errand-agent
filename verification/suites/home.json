@@ -2,7 +2,7 @@
   "version": 1,
   "title": "Home screen: composer chips become the errand, Waiting on you opens the card, empty states, theme",
   "feature": "home",
-  "description": "Ticket 13. The home screen at / draws every widget from GET /api/v1/home. The composer's chips start from memory and are saved as the new chat's errand (POST /api/v1/sessions/:id/errand) before the first model turn, so the agent asks nothing for them. A pending approval in Waiting on you opens its chat at the card, with keyboard focus on it. A new user sees every widget's empty state. The theme follows the system until toggled, and the choice survives a reload. The last four scenarios capture the populated home in dark and light at desktop and phone widths.",
+  "description": "Ticket 13. The home screen at / draws every widget from GET /api/v1/home. The composer's chips start from memory and are saved as the new chat's errand (POST /api/v1/sessions/:id/errand) before the first model turn, so the agent asks nothing for them. A pending approval in Waiting on you opens its chat at the card, with keyboard focus on it. A new user sees every widget's empty state. Light is the default whatever the OS prefers (ticket 20); a toggled dark choice survives a reload, and so does going back to light. The last four scenarios capture the populated home in dark and light at desktop and phone widths.",
   "scenarios": [
     {
       "id": "composer-chips-become-the-errand",
@@ -685,6 +685,24 @@
           ]
         },
         {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          },
+          "note": "ticket 20: light is the default whatever the OS prefers, so dark is behind the toggle"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the home is in the dark theme"
+        },
+        {
           "command": "assert",
           "options": {
             "role": "region",
@@ -823,10 +841,10 @@
       ]
     },
     {
-      "id": "theme-follows-system-then-the-toggle-persists",
-      "title": "The theme follows the system (light) until toggled; dark then survives a reload, and so does light again",
+      "id": "light-first-then-the-toggle-persists",
+      "title": "Light whatever the OS prefers (OS dark here) until toggled; dark then survives a reload, and so does light again",
       "viewport": "desktop",
-      "theme": "light",
+      "theme": "dark",
       "steps": [
         {
           "command": "goto",
@@ -842,7 +860,7 @@
           "args": [
             "html"
           ],
-          "note": "no saved choice: the home follows the system's light setting"
+          "note": "no saved choice: the home is light although the OS prefers dark (ticket 20)"
         },
         {
           "command": "click",
@@ -872,7 +890,7 @@
           "args": [
             "html"
           ],
-          "note": "the choice persists over the light system setting"
+          "note": "the dark choice is saved and survives the reload"
         },
         {
           "command": "assert",
@@ -900,7 +918,7 @@
           "args": [
             "html"
           ],
-          "note": "and light persists too"
+          "note": "back to light, which survives the reload too"
         }
       ]
     },
@@ -1053,6 +1071,24 @@
           "args": [
             "/chat"
           ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          },
+          "note": "ticket 20: light is the default whatever the OS prefers, so dark is behind the toggle"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the home is in the dark theme"
         },
         {
           "command": "fill",
@@ -1288,7 +1324,7 @@
     },
     {
       "id": "populated-home-light-desktop",
-      "title": "The same home in the light theme: the hero turns into a daytime skyline (light, 1440)",
+      "title": "The same home in the light theme, the default (light, 1440)",
       "viewport": "desktop",
       "theme": "light",
       "steps": [
@@ -1398,6 +1434,24 @@
           "args": [
             "/"
           ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          },
+          "note": "ticket 20: light is the default whatever the OS prefers, so dark is behind the toggle"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the home is in the dark theme"
         },
         {
           "command": "assert",

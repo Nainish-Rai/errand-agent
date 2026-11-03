@@ -1,0 +1,631 @@
+{
+  "version": 1,
+  "title": "Lime foundations: light first, every screen restyled",
+  "feature": "lime-foundations",
+  "description": "Ticket 20. With the OS set to dark, every page opens light (design system v3); the toggle switches to dark, the dark choice is saved and survives a reload, and going back to light survives one too. Home, chat, memory, the operator console and /design render in Lime in both themes.",
+  "scenarios": [
+    {
+      "id": "light-first-under-os-dark",
+      "title": "OS dark: home opens light; toggle to dark survives a reload; back to light survives one too",
+      "theme": "dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            }
+          },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "no saved choice: light although the OS prefers dark"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "class=lime"
+          },
+          "note": "Lime's scope is on the root, so its base, focus ring and glow apply"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the toggle still switches to dark"
+        },
+        {
+          "command": "reload"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the dark choice is saved"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to light theme"
+          }
+        },
+        {
+          "command": "reload"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "back to light, and light survives the reload"
+        }
+      ]
+    },
+    {
+      "id": "screens-light",
+      "title": "Home, chat, memory and /ops in the light theme",
+      "theme": "dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            }
+          },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          }
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": [
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "budget",
+                  "value": "1500",
+                  "source": "inferred",
+                  "status": "pending_confirmation"
+                }
+              ]
+            }
+          },
+          "note": "one explicit fact and one guess, so memory shows both edges"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "light although the OS prefers dark"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "heading",
+            "name": "What errand should I handle?",
+            "state": "visible"
+          },
+          "note": "home in Lime (light): no hero illustration, the title sits under the bar"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Area: Koramangala (from memory)",
+            "state": "visible"
+          },
+          "note": "the composer's chips render"
+        },
+        {
+          "command": "screenshot",
+          "note": "home, light"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "See all 8",
+            "state": "visible"
+          },
+          "note": "chat in Lime (light): the search renders its choice cards"
+        },
+        {
+          "command": "screenshot",
+          "note": "chat, light"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Show memory"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "listitem",
+            "name": "Budget · ₹1,500",
+            "text": "inferred"
+          },
+          "note": "memory in Lime: the guess keeps its dashed inferred edge"
+        },
+        {
+          "command": "screenshot",
+          "note": "memory, light"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Operator access log",
+            "text": "verify-operator"
+          },
+          "note": "/ops session in Lime (light): transcript, waterfall and access log"
+        },
+        {
+          "command": "screenshot",
+          "note": "ops session, light"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/ops"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "form",
+            "name": "Operator sign-in",
+            "state": "hidden"
+          },
+          "note": "the session list opens"
+        },
+        {
+          "command": "screenshot",
+          "note": "ops list, light"
+        }
+      ]
+    },
+    {
+      "id": "design-light",
+      "title": "/design in the light theme",
+      "theme": "dark",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "heading",
+            "name": "Errand design system",
+            "state": "visible"
+          },
+          "note": "/design in Lime (light): both panels"
+        },
+        {
+          "command": "screenshot",
+          "note": "design, light"
+        }
+      ]
+    },
+    {
+      "id": "screens-dark",
+      "title": "Home, chat, memory and /ops in the dark theme",
+      "theme": "dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            }
+          },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          }
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": [
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "budget",
+                  "value": "1500",
+                  "source": "inferred",
+                  "status": "pending_confirmation"
+                }
+              ]
+            }
+          },
+          "note": "one explicit fact and one guess, so memory shows both edges"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "dark only behind the toggle"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "heading",
+            "name": "What errand should I handle?",
+            "state": "visible"
+          },
+          "note": "home in Lime (dark): no hero illustration, the title sits under the bar"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Area: Koramangala (from memory)",
+            "state": "visible"
+          },
+          "note": "the composer's chips render"
+        },
+        {
+          "command": "screenshot",
+          "note": "home, dark"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "See all 8",
+            "state": "visible"
+          },
+          "note": "chat in Lime (dark): the search renders its choice cards"
+        },
+        {
+          "command": "screenshot",
+          "note": "chat, dark"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Show memory"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "listitem",
+            "name": "Budget · ₹1,500",
+            "text": "inferred"
+          },
+          "note": "memory in Lime: the guess keeps its dashed inferred edge"
+        },
+        {
+          "command": "screenshot",
+          "note": "memory, dark"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Operator access log",
+            "text": "verify-operator"
+          },
+          "note": "/ops session in Lime (dark): transcript, waterfall and access log"
+        },
+        {
+          "command": "screenshot",
+          "note": "ops session, dark"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/ops"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "form",
+            "name": "Operator sign-in",
+            "state": "hidden"
+          },
+          "note": "the session list opens"
+        },
+        {
+          "command": "screenshot",
+          "note": "ops list, dark"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the saved dark choice held on every page"
+        }
+      ]
+    },
+    {
+      "id": "design-dark",
+      "title": "/design in the dark theme",
+      "theme": "dark",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "dark only behind the toggle"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "heading",
+            "name": "Errand design system",
+            "state": "visible"
+          },
+          "note": "/design in Lime (dark): both panels"
+        },
+        {
+          "command": "screenshot",
+          "note": "design, dark"
+        }
+      ]
+    }
+  ]
+}

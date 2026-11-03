@@ -1,72 +1,137 @@
 {
   "version": 1,
-  "title": "Design system: /design theme toggle persists, approval card states render",
+  "title": "Design system: /design is light first, the toggle persists, approval card states render",
   "feature": "design-system",
-  "description": "Ticket 18. The /design gallery: the theme toggle saves the choice and it survives a reload in both directions, against the system setting; the fixed approval card renders every state in both panels.",
+  "description": "Tickets 18 and 20. The /design gallery: light is the default whatever the OS prefers (ticket 20), the theme toggle saves a dark choice and it survives a reload, and going back to light survives one too; the fixed approval card renders every state in both panels.",
   "scenarios": [
     {
-      "id": "theme-dark-to-light-persists",
-      "title": "System dark: switch to light, reload, still light",
+      "id": "theme-light-first-under-os-dark",
+      "title": "OS dark: the page opens light; switch to dark, reload, still dark",
       "theme": "dark",
       "steps": [
-        { "command": "goto", "args": ["/design"] },
         {
-          "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=dark" },
-          "note": "follows the dark system setting"
-        },
-        { "command": "click", "options": { "role": "button", "name": "Switch to light theme" } },
-        {
-          "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=light" },
-          "note": "the toggle switches to light"
-        },
-        { "command": "reload" },
-        {
-          "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=light" },
-          "note": "light survives the reload, against the dark system setting"
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Switch to dark theme", "state": "visible" },
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "light although the OS prefers dark"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the toggle switches to dark"
+        },
+        {
+          "command": "reload"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the dark choice is saved and survives the reload"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Switch to light theme",
+            "state": "visible"
+          },
           "note": "the toggle offers the way back"
         }
       ]
     },
     {
-      "id": "theme-light-to-dark-persists",
-      "title": "System light: switch to dark, reload, still dark",
+      "id": "theme-dark-back-to-light-persists",
+      "title": "OS light: switch to dark and back to light, reload, still light",
       "theme": "light",
       "steps": [
-        { "command": "goto", "args": ["/design"] },
         {
-          "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=light" },
-          "note": "follows the light system setting"
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
         },
-        { "command": "click", "options": { "role": "button", "name": "Switch to dark theme" } },
         {
           "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=dark" },
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "light by default"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
           "note": "the toggle switches to dark"
         },
-        { "command": "reload" },
         {
-          "command": "assert",
-          "args": ["html"],
-          "options": { "attr": "data-theme=dark" },
-          "note": "dark survives the reload, against the light system setting"
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to light theme"
+          }
+        },
+        {
+          "command": "reload"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Switch to light theme", "state": "visible" },
-          "note": "the toggle offers the way back"
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "note": "back to light, and light survives the reload"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme",
+            "state": "visible"
+          },
+          "note": "the toggle offers dark again"
         }
       ]
     },
@@ -74,64 +139,117 @@
       "id": "approval-card-states",
       "title": "The approval card renders pending, approving, approved, voided, expired, cancel and reschedule in both panels",
       "steps": [
-        { "command": "goto", "args": ["/design"] },
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
         {
           "command": "assert",
-          "options": { "role": "heading", "name": "Errand design system", "state": "visible" },
+          "options": {
+            "role": "heading",
+            "name": "Errand design system",
+            "state": "visible"
+          },
           "note": "the gallery loads"
         },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Approve booking", "count": 12 },
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "count": 12
+          },
           "note": "six booking states (declined included) × two panels"
         },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Approve cancellation", "count": 2 },
+          "options": {
+            "role": "region",
+            "name": "Approve cancellation",
+            "count": 2
+          },
           "note": "cancel shows in both panels"
         },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Approve reschedule", "count": 2 },
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "count": 2
+          },
           "note": "reschedule shows in both panels"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Approve ₹899", "count": 2 },
+          "options": {
+            "role": "button",
+            "name": "Approve ₹899",
+            "count": 2
+          },
           "note": "a pending booking offers Approve with the price"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Approve move", "count": 2 },
+          "options": {
+            "role": "button",
+            "name": "Approve move",
+            "count": 2
+          },
           "note": "a reschedule charges nothing new, so its Approve names the move"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Approve ₹150", "count": 2 },
+          "options": {
+            "role": "button",
+            "name": "Approve ₹150",
+            "count": 2
+          },
           "note": "cancel offers Approve with the fee"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Approving…", "nth": 0, "attr": "disabled=" },
+          "options": {
+            "role": "button",
+            "name": "Approving…",
+            "nth": 0,
+            "attr": "disabled="
+          },
           "note": "approving disables the button"
         },
         {
           "command": "assert",
-          "args": ["text=You approved ₹899. I'm confirming it with the provider now."],
-          "options": { "count": 2 },
+          "args": [
+            "text=You approved ₹899. I'm confirming it with the provider now."
+          ],
+          "options": {
+            "count": 2
+          },
           "note": "approved explains what happens next"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Review new price", "count": 2 },
+          "options": {
+            "role": "button",
+            "name": "Review new price",
+            "count": 2
+          },
           "note": "voided offers a review of the new price"
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Check again", "count": 2 },
+          "options": {
+            "role": "button",
+            "name": "Check again",
+            "count": 2
+          },
           "note": "expired offers to check again"
         },
-        { "command": "screenshot", "note": "the gallery, settled" }
+        {
+          "command": "screenshot",
+          "note": "the gallery, settled"
+        }
       ]
     }
   ]
