@@ -12,6 +12,7 @@ import { ArrowUp, Square } from "lucide-react";
 import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
 
+import { ExecutionPart, ProposalCardPart } from "./approval-card-part";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
 
@@ -44,7 +45,15 @@ function AssistantMessage() {
       <MessagePrimitive.Parts
         components={{
           Text: AssistantText,
-          tools: { by_name: { search_providers: ProviderResults, update_errand: QuickReplies }, Fallback: ToolActivity },
+          tools: {
+            by_name: {
+              search_providers: ProviderResults,
+              update_errand: QuickReplies,
+              propose_action: ProposalCardPart,
+              execute_proposal: ExecutionPart,
+            },
+            Fallback: ToolActivity,
+          },
         }}
       />
     </MessagePrimitive.Root>

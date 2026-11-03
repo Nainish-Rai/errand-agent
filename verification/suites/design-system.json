@@ -82,8 +82,8 @@
         },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Approve booking", "count": 10 },
-          "note": "five booking states × two panels"
+          "options": { "role": "region", "name": "Approve booking", "count": 12 },
+          "note": "six booking states (declined included) × two panels"
         },
         {
           "command": "assert",

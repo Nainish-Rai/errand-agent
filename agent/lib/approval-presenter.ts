@@ -177,11 +177,11 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
     case "out_of_step":
       return "That approval is no longer current, so nothing was booked. Let's look at the options again.";
     case "slot_taken":
-      return "Someone else took that slot before it could be booked. Nothing was booked and you weren't charged. Pick another option.";
+      return "Someone else took that slot before it could be booked, so nothing was booked. Pick another option.";
     case "verifying":
       return "The provider didn't answer in time, so I'm verifying whether the booking went through. I'll tell you as soon as I know.";
     case "booking_failed":
-      return "The provider couldn't take the booking. Nothing was booked and you weren't charged.";
+      return "The provider couldn't take the booking, so nothing was booked.";
   }
 }
 

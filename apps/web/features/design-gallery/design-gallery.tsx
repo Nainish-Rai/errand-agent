@@ -33,7 +33,15 @@ import {
 } from "@/features/trust";
 
 const ravi: ApprovalProvider = { name: "Ravi Plumbing", initials: "RP", tone: 1, rating: 4.7 };
-const booking: ApprovalProposal = { kind: "book", service: "Kitchen tap repair", slot: "Thu 6 Nov · 09:00", price: 899, priceNote: "incl. visit fee" };
+const booking: ApprovalProposal = {
+  kind: "book",
+  service: "Kitchen tap repair",
+  slot: "Thu 6 Nov · 09:00",
+  price: 899,
+  priceNote: "incl. visit fee",
+  address: "Koramangala, Bengaluru",
+  cancellationTerms: "Free up to 2 hours before; ₹99 after.",
+};
 const cancellation: ApprovalProposal = { kind: "cancel", service: "Deep clean", slot: "Fri 14 Nov · 11:00", bookingId: "BK-3H8D", fee: 150 };
 const reschedule: ApprovalProposal = {
   kind: "reschedule",
@@ -252,6 +260,8 @@ function Panel({ theme }: { readonly theme: Theme }) {
         <ApprovalCard proposal={booking} provider={ravi} state={{ status: "voided", change: { field: "price", from: 899, to: 1050 } }} />
         <Caption>expired</Caption>
         <ApprovalCard proposal={booking} provider={ravi} state={{ status: "expired", expiredAt: "09:12" }} />
+        <Caption>declined · the hold is released</Caption>
+        <ApprovalCard proposal={booking} provider={ravi} state={{ status: "declined" }} />
         <Caption>cancel · shows the fee</Caption>
         <ApprovalCard proposal={cancellation} provider={{ name: "Sparkle Cleaning", initials: "SC", tone: 4, rating: 4.4 }} state={{ status: "pending" }} />
         <Caption>reschedule · old time beside new</Caption>

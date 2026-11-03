@@ -1,7 +1,7 @@
 "use client";
 
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
-import { ChatClient, DEFAULT_BACKEND_URL, type ClientSession } from "@errand/client";
+import { ChatClient, type ClientSession } from "@errand/client";
 import { Activity } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,11 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 
+import { backendUrl } from "./backend";
 import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
 import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
-
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? DEFAULT_BACKEND_URL;
 
 function BoundThread({ session }: { readonly session: ClientSession }) {
   const { runtime, error, sendText, sessionId, activity } = useEveAssistantRuntime(session);
