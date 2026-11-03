@@ -140,6 +140,15 @@
         },
         {
           "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Search results for plumber in Koramangala",
+            "count": 0
+          },
+          "note": "one component: no second, plain list of the same providers"
+        },
+        {
+          "command": "assert",
           "args": [
             "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=img"
           ],

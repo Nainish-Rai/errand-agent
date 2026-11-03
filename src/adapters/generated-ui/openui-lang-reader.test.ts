@@ -59,8 +59,9 @@ describe("the component library", () => {
   });
 
   it("keeps its instructions within their share of the context budget", () => {
-    // 5,222 characters measured live at 1,235 MiniMax input tokens (docs/notes/openui-spike.md),
-    // about 4.2 characters a token; 10k characters (about 2.4k tokens) is the cap for ticket 12.
+    // 5,623 characters measured live at 1,254 MiniMax input tokens, and 2,833 by ticket 12's
+    // utf8_bytes/2 estimator (docs/notes/openui-spike.md); 10k characters keeps them near 5k of
+    // the 24,000-token instructions share.
     expect(generatedUiInstructions().length).toBeLessThan(10_000);
   });
 });
