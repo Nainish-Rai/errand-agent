@@ -16,7 +16,7 @@ import { MemoryUpdatedPart } from "@/features/memory-panel/memory-updated-line";
 import { ProviderUpdateNotice } from "@/features/trust";
 
 import { ExecutionPart, ProposalCardPart, useHasPendingApproval } from "./approval-card-part";
-import { StartedFromLine } from "./errand-handoffs";
+import { StartedFromLine, useHasOpenNewErrandCard } from "./errand-handoffs";
 import { ProviderInsight } from "./provider-insight";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
@@ -96,7 +96,9 @@ function AssistantMessage() {
  * stays quiet ink while an approval card waits, so Approve is the view's one lime action. Stop is ink.
  */
 function Composer() {
-  const approvalWaiting = useHasPendingApproval();
+  // An open New errand card's Start in a new chat is the view's one lime action too (ticket 24).
+  const newErrandWaiting = useHasOpenNewErrandCard();
+  const approvalWaiting = useHasPendingApproval() || newErrandWaiting;
   return (
     <ComposerPrimitive.Root
       data-slot="chat-input"

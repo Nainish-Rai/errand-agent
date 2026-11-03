@@ -313,6 +313,50 @@
           }
         },
         {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "hello"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Send",
+            "attr": "data-variant=solid"
+          },
+          "note": "with text in the composer, Send is ink while the card waits"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".glow:not(:disabled)"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "Start in a new chat is the only lit lime"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          },
+          "note": "the composer is empty again"
+        },
+        {
           "command": "api",
           "args": [
             "PUT",
@@ -891,6 +935,50 @@
           }
         },
         {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "hello"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Send",
+            "attr": "data-variant=solid"
+          },
+          "note": "with text in the composer, Send is ink while the card waits"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".glow:not(:disabled)"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "Start in a new chat is the only lit lime"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          },
+          "note": "the composer is empty again"
+        },
+        {
           "command": "api",
           "args": [
             "PUT",
@@ -1458,6 +1546,50 @@
             ]
           },
           "note": "the booked errand is unchanged"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "hello"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Send",
+            "attr": "data-variant=solid"
+          },
+          "note": "with text in the composer, Send is ink while the card waits"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".glow:not(:disabled)"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "Start in a new chat is the only lit lime"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          },
+          "note": "the composer is empty again"
         },
         {
           "command": "click",

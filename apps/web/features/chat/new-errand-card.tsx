@@ -7,7 +7,7 @@ import { motion as limeMotion } from "@errand/design-tokens";
 import { MessageSquarePlus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -94,13 +94,21 @@ function Field({ label, value }: { readonly label: string; readonly value: strin
 }
 
 export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps) {
-  const { sessionId, loaded, settled, record } = useErrandHandoffs();
+  const { sessionId, loaded, settled, record, markOpen } = useErrandHandoffs();
   const request = usePersonsRequest();
   const router = useRouter();
   const transition = useCardTransition();
   const [busy, setBusy] = useState<"start" | "dismiss">();
   const [problem, setProblem] = useState<string>();
   const handoff = settled.get(toolCallId);
+  const open = loaded && handoff === undefined;
+
+  // While the card waits, Start in a new chat is the view's one lime action: the composer's Send stays quiet.
+  useEffect(() => {
+    if (!open) return;
+    markOpen(toolCallId, true);
+    return () => markOpen(toolCallId, false);
+  }, [open, toolCallId, markOpen]);
 
   async function start() {
     setBusy("start");
@@ -150,24 +158,25 @@ export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps
             key="card"
             aria-labelledby={`new-errand-${toolCallId}`}
             aria-busy={busy !== undefined || undefined}
-            className="overflow-hidden rounded-panel border border-line bg-surface text-sm"
+            data-slot="new-errand"
+            className="flex w-full min-w-0 flex-col gap-3 rounded-panel bg-surface p-4 text-sm text-fg"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0, transition: transition.arrive }}
             exit={{ opacity: 0, transition: transition.leave }}
           >
-            <header className="flex items-center gap-2 px-3 pt-3">
-              <MessageSquarePlus aria-hidden className="size-4 text-fg-3" />
-              <h3 id={`new-errand-${toolCallId}`} className="m-0 text-sm font-semibold text-fg">
+            <header className="flex flex-col gap-1">
+              <h3 id={`new-errand-${toolCallId}`} className="m-0 flex items-center gap-2 text-sm font-semibold text-fg">
+                <MessageSquarePlus aria-hidden className="size-4 text-fg-3" />
                 New errand
               </h3>
+              <p className="m-0 text-xs text-fg-3">{bookingNote(errand)} This one starts in its own chat.</p>
             </header>
-            <p className="m-0 px-3 pt-1 text-xs text-fg-3">{bookingNote(errand)} This one starts in its own chat.</p>
-            <dl className="m-0 grid grid-cols-[64px_1fr] gap-x-3 gap-y-1.5 px-3 pt-3">
+            <dl className="m-0 grid grid-cols-[64px_1fr] gap-x-3 gap-y-1.5">
               <Field label="Job" value={serviceLabel(search.service)} />
               <Field label="Where" value={search.area} />
               <Field label="When" value={whenLabel(search.date_range)} />
             </dl>
-            <div className="flex flex-wrap gap-2 px-3 pt-3 pb-3">
+            <div className="flex flex-wrap gap-2">
               <Button variant="primary" loading={busy === "start"} disabled={busy !== undefined} onClick={() => void start()}>
                 {busy === "start" ? "Starting…" : "Start in a new chat"}
               </Button>
@@ -176,7 +185,7 @@ export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps
               </Button>
             </div>
             {problem !== undefined && (
-              <p role="alert" className="m-0 px-3 pb-3 text-xs text-danger-text">
+              <p role="alert" className="m-0 text-xs text-danger-text">
                 {problem}
               </p>
             )}

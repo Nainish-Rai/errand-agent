@@ -17,6 +17,9 @@ interface ErrandHandoffs {
   readonly settled: ReadonlyMap<string, ErrandHandoffView>;
   readonly startedFrom: HandoffOriginView | null;
   readonly record: (handoff: ErrandHandoffView) => void;
+  /** New errand cards still waiting for Start or Not now, so the composer can keep its Send quiet. */
+  readonly openCards: number;
+  readonly markOpen: (toolCallId: string, open: boolean) => void;
 }
 
 const ErrandHandoffsContext = createContext<ErrandHandoffs | undefined>(undefined);
@@ -38,10 +41,22 @@ export function ErrandHandoffsProvider({ sessionId, children }: { readonly sessi
     return () => controller.abort();
   }, [sessionId]);
 
+  const [openCards, setOpenCards] = useState<ReadonlySet<string>>(new Set());
+  const markOpen = useCallback(
+    (toolCallId: string, open: boolean) =>
+      setOpenCards((cards) => {
+        if (cards.has(toolCallId) === open) return cards;
+        const next = new Set(cards);
+        if (open) next.add(toolCallId);
+        else next.delete(toolCallId);
+        return next;
+      }),
+    [],
+  );
   const record = useCallback((handoff: ErrandHandoffView) => setSettled((mine) => new Map(mine).set(handoff.toolCallId, handoff)), []);
   const value = useMemo(
-    () => ({ sessionId, loaded: read !== undefined, settled, startedFrom: read?.startedFrom ?? null, record }),
-    [sessionId, read, settled, record],
+    () => ({ sessionId, loaded: read !== undefined, settled, startedFrom: read?.startedFrom ?? null, record, openCards: openCards.size, markOpen }),
+    [sessionId, read, settled, record, openCards, markOpen],
   );
   return <ErrandHandoffsContext.Provider value={value}>{children}</ErrandHandoffsContext.Provider>;
 }
@@ -64,6 +79,11 @@ const SERVICE_WORDS: Readonly<Record<NonNullable<HandoffOriginView["service"]>, 
 function originLabel(origin: HandoffOriginView): string {
   const words = [origin.area, origin.service === null ? null : SERVICE_WORDS[origin.service]].filter((word) => word !== null);
   return words.length === 0 ? "your earlier chat" : `your ${words.join(" ")} chat`;
+}
+
+/** Whether a New errand card waits on the person: the composer's Send then stays quiet, not lime. */
+export function useHasOpenNewErrandCard(): boolean {
+  return useErrandHandoffs().openCards > 0;
 }
 
 /** A link line in the thread: what happened, then Open. */
