@@ -47,9 +47,6 @@
 .lime ::selection { background: var(--accent); color: var(--on-accent); }
 /* Focus is a 2px outline in the accent's line step (3.95:1 on white), 2px out. Two classes of specificity beat a site-wide a:focus-visible. */
 .lime :where(*):is(:focus-visible, [data-force-focus-visible]) { outline: var(--line-focus) solid var(--ring); outline-offset: var(--focus-offset); }
-/* The chat input shows focus on its border (v3 "Chat input"), so the textarea inside draws no ring of its own. */
-.lime [data-slot="chat-input"] textarea:focus-visible { outline: none; }
-@media (forced-colors: active) { .lime [data-slot="chat-input"]:focus-within { outline: 2px solid Highlight; outline-offset: 2px; } }
 .lime, .lime * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* iOS Safari zooms the page when a field under 16px takes focus. On a coarse pointer every text field is at least 16px. */
@@ -210,3 +207,12 @@
 }
 @keyframes lime-spin { to { transform: rotate(1turn); } }
 /* ---- end lime source */
+
+/* Errand: a field shell (the chat input, the search palette, an input group, the trace search) shows focus itself,
+   on its border or as the open palette, as v3's Chat input does. The text field inside draws no ring of its own,
+   which would otherwise sit square inside the rounded shell: Lime's ring is unlayered on purpose, so a utility
+   can't remove it, only this named hook. Under forced colors, where borders lose their colour, the shell rings. */
+.lime [data-focus-shell] :where(input, textarea):focus-visible { outline: none; }
+@media (forced-colors: active) {
+  .lime [data-focus-shell]:focus-within { outline: var(--line-focus) solid Highlight; outline-offset: var(--focus-offset); }
+}

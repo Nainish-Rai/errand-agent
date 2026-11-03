@@ -51,7 +51,7 @@ const STEP_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   type: [],
   key: [],
   wait: [...TARGET, "state"],
-  assert: [...TARGET, "value", "count", "attr", "state", "url"],
+  assert: [...TARGET, "value", "count", "attr", "style", "state", "url"],
   api: ["body", "expect", "timeoutMs", "as", "status"],
   viewport: [],
   theme: [],
@@ -88,8 +88,8 @@ function checkStep(step: SuiteStep, where: string, allowed: ReadonlySet<string> 
   const [min, max] = ARG_COUNT[step.command] ?? [0, 1];
   if (args.length < min || args.length > max) fail(`${where} (${step.command}) takes ${min === max ? min : `${min}-${max}`} argument(s)`);
   for (const key of Object.keys(step.options ?? {})) if (!options.includes(key)) fail(`${where} (${step.command}) has unknown option ${key}`);
-  if (step.command === "assert" && !["text", "value", "count", "attr", "state", "url"].some((key) => step.options?.[key] !== undefined)) {
-    fail(`${where} asserts nothing: give text, value, count, attr, state or url`);
+  if (step.command === "assert" && !["text", "value", "count", "attr", "style", "state", "url"].some((key) => step.options?.[key] !== undefined)) {
+    fail(`${where} asserts nothing: give text, value, count, attr, style, state or url`);
   }
   if (step.command === "goto" && (!args[0]?.startsWith("/") || args[0].startsWith("//"))) fail(`${where} goto takes a route such as /design`);
   if (step.command === "viewport") parseViewport(args[0] ?? "");

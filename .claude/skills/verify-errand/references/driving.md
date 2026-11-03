@@ -46,7 +46,8 @@ Every command accepts `--timeout-ms MS` (default 15000).
 
 `assert TARGET` plus one or more of `--text T` (contains, whitespace-normalised; in `assert`,
 `--text` is the expectation, not the target), `--value V`, `--count N` (0 allowed), `--attr
-name=value` (`disabled=` for a present boolean attribute), `--state visible|hidden|attached|detached`.
+name=value` (`disabled=` for a present boolean attribute), `--style property=value` (a computed style, for
+what only shows as paint: `outline-style=none` on a focused field inside a focus shell), `--state visible|hidden|attached|detached`.
 `assert --url /ROUTE` checks the path. They retry until the timeout; the failure says what was
 seen (`found 3, expected 8`, `text is "…"`).
 

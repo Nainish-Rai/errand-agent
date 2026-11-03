@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "title": "Focus shells: a field inside a rounded shell shows focus on the shell, never a square ring inside it",
+  "feature": "design-system",
+  "description": "Lime's focus ring is unlayered, so a Tailwind outline-none can't remove it; a shell marked data-focus-shell (the chat input, the search palette, input groups, the trace search) shows focus itself and its text field draws no ring. A standalone field keeps Lime's ring.",
+  "scenarios": [
+    {
+      "id": "chat-input-focus-on-the-border",
+      "title": "The chat input's textarea draws no ring; the rounded shell's border turns the accent line",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "style": "outline-style=none"
+          },
+          "note": "no square ring inside the shell"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"chat-input\"]"
+          ],
+          "options": {
+            "style": "border-top-color=rgb(124, 135, 0)"
+          },
+          "note": "the shell's border is --accent-line"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "chat-input-focused.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search-palette-no-inner-ring",
+      "title": "The search palette's input draws no ring inside the open palette",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "key",
+          "args": [
+            "ControlOrMeta+K"
+          ],
+          "note": "open the palette with its shortcut"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"command-input\"]"
+          ],
+          "options": {
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"command-input\"]"
+          ],
+          "options": {
+            "style": "outline-style=none"
+          },
+          "note": "the open palette is the focus context"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "search-palette-focused.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "standalone-field-keeps-the-ring",
+      "title": "A field that is its own shell (the home composer) still shows Lime's focus ring",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "textbox",
+            "name": "Describe your errand"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Describe your errand",
+            "style": "outline-style=solid"
+          },
+          "note": "the hook is opt-in: focus never disappears elsewhere"
+        }
+      ]
+    }
+  ]
+}
