@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiClient } from "@errand/client";
+import type { ApiClient } from "@errand/client";
 import type { GetSessionTraceResponse } from "@errand/contracts";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,8 +12,10 @@ import { ContextLog } from "./context-log";
 import { ErrandStates } from "./errand-states";
 import { toWaterfallTrace, type WaterfallTrace } from "./waterfall-spans";
 
-// The session's run trace beside the chat, as a live waterfall. It polls the backend's trace route
-// while it is open, so model and tool calls appear as they start and fill in as they settle.
+// A session's run trace as a live waterfall, with its errand states and context log. It polls the
+// backend's trace route while it is open, so model and tool calls appear as they start and fill in
+// as they settle. Operators only: the operator console (/ops/sessions/[id]) shows it beside the
+// transcript, with the operator's own API client, and the backend refuses everyone else.
 
 const POLL_MS = 1_000;
 const TICK_MS = 100;
@@ -137,18 +139,19 @@ function summaryOf(trace: GetSessionTraceResponse | undefined): string {
 
 export function TracePanel({
   sessionId,
-  activity,
-  backendUrl,
+  activity = 0,
+  api,
   onClose,
 }: {
-  /** The session the chat is streaming; the panel follows it from the first message. */
+  /** The session to follow; the panel shows its turns as they run. */
   readonly sessionId: string;
-  /** Changes whenever the chat sees new session events. */
-  readonly activity: number;
-  readonly backendUrl: string;
-  readonly onClose: () => void;
+  /** Changes whenever the caller sees new session events, so the panel refetches at once. */
+  readonly activity?: number;
+  /** The operator's API client: the trace and context routes answer nobody else. */
+  readonly api: ApiClient;
+  /** Shows a close button when the panel can be dismissed. */
+  readonly onClose?: () => void;
 }) {
-  const api = useMemo(() => new ApiClient({ baseUrl: backendUrl }), [backendUrl]);
   const { fetched, error } = useSessionTrace(api, sessionId, activity);
   const waterfall = useMemo(() => (fetched === undefined ? undefined : toWaterfallTrace(fetched.trace)), [fetched]);
   const clock = useTraceClock(waterfall, fetched?.clockOffsetMs ?? 0);
@@ -156,13 +159,15 @@ export function TracePanel({
   return (
     <aside
       aria-label="Run trace"
-      className="fixed inset-0 z-20 flex h-dvh w-full flex-col gap-3 overflow-y-auto border-l border-border bg-background p-3 lg:static lg:z-auto lg:w-[40rem] lg:shrink-0"
+      className="flex min-w-0 flex-col gap-3 p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{summaryOf(fetched?.trace)}</p>
-        <Button aria-label="Close the trace" size="icon" variant="ghost" onClick={onClose}>
-          <X />
-        </Button>
+        {onClose !== undefined && (
+          <Button aria-label="Close the trace" size="icon" variant="ghost" onClick={onClose}>
+            <X />
+          </Button>
+        )}
       </div>
       {error !== undefined && (
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm" role="alert">
