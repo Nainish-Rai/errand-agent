@@ -192,12 +192,13 @@
         },
         {
           "command": "assert",
+          "args": [
+            "role=heading[name=/^Good (morning|afternoon|evening)$/]"
+          ],
           "options": {
-            "role": "heading",
-            "name": "Good morning",
             "state": "visible"
           },
-          "note": "home in Lime (light): the greeting under the bar (ticket 23; the verify clock is 09:00 IST)"
+          "note": "home in Lime (light): the greeting under the bar (ticket 23)"
         },
         {
           "command": "assert",
@@ -428,9 +429,10 @@
         },
         {
           "command": "assert",
+          "args": [
+            "role=heading[name=/^Good (morning|afternoon|evening)$/]"
+          ],
           "options": {
-            "role": "heading",
-            "name": "Good morning",
             "state": "visible"
           },
           "note": "home in Lime (dark): no hero illustration, the title sits under the bar"

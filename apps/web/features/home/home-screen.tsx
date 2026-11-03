@@ -124,7 +124,7 @@ export function HomeScreen() {
           </p>
         </footer>
       </div>
-      <MemorySheet open={memoryOpen} onOpenChange={setMemoryOpen} />
+      <MemorySheet open={memoryOpen} onOpenChange={setMemoryOpen} fallbackFocus={focusComposer} />
     </main>
   );
 }

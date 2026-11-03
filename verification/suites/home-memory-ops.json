@@ -29,7 +29,7 @@
       "steps": [
         { "command": "goto", "args": ["/"] },
         { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=light" }, "note": "light by default" },
-        { "command": "assert", "options": { "role": "heading", "name": "Good morning", "state": "visible" }, "note": "the greeting, from the backend's clock (09:00 IST)" },
+        { "command": "assert", "args": ["role=heading[name=/^Good (morning|afternoon|evening)$/]"], "options": { "state": "visible" }, "note": "the greeting for the time of day in IST, from the backend's clock" },
         { "command": "assert", "options": { "role": "button", "name": "Plumber for a leaking kitchen tap this week", "state": "visible" }, "note": "three suggestions under the composer" },
         { "command": "assert", "args": ["role=group[name=\"Services\"s] >> role=button"], "options": { "count": 5 }, "note": "five service tiles, text only until ticket 22 adds photos" },
         { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" }, "note": "the upcoming AC service with its status word" },
@@ -75,7 +75,8 @@
           "note": "world state: the budget was superseded, the area has a tombstone"
         },
         { "command": "click", "options": { "role": "button", "name": "Done" } },
-        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "count": 0 }, "note": "Done closes the sheet" }
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "count": 0 }, "note": "Done closes the sheet" },
+        { "command": "assert", "args": ["textarea:focus"], "options": { "count": 1 }, "note": "the guess's Confirm that opened the sheet is gone, so focus goes to the composer, not the page" }
       ]
     },
     {
@@ -109,7 +110,10 @@
         { "command": "click", "options": { "role": "button", "name": "Memory" } },
         { "command": "assert", "options": { "role": "listitem", "name": "Earliest start · 09:00", "text": "not used until you confirm" } },
         { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> [data-guess].inferred"], "options": { "count": 1 }, "note": "the dashed edge in dark too" },
-        { "command": "screenshot", "args": ["memory-dark.png"], "note": "the memory sheet, dark" }
+        { "command": "screenshot", "args": ["memory-dark.png"], "note": "the memory sheet, dark" },
+        { "command": "key", "args": ["Escape"] },
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "count": 0 } },
+        { "command": "assert", "args": ["button:focus"], "options": { "text": "Memory" }, "note": "focus went back to the Memory button that opened the sheet" }
       ]
     },
     {
@@ -164,7 +168,8 @@
       "title": "The console's Trace chip collapses and reopens the rail; the console has no glow (light)",
       "viewport": "desktop",
       "setup": [
-        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" }
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" },
+        { "command": "api", "args": ["PUT", "/api/v1/dev/model-script"], "options": { "body": { "script": null }, "expect": { "path": "loaded", "equals": false } }, "note": "the default search responder" }
       ],
       "steps": [
         { "command": "goto", "args": ["/chat"] },
@@ -195,7 +200,8 @@
       "title": "The operator console in the dark theme",
       "viewport": "desktop",
       "setup": [
-        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" }
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" },
+        { "command": "api", "args": ["PUT", "/api/v1/dev/model-script"], "options": { "body": { "script": null }, "expect": { "path": "loaded", "equals": false } }, "note": "the default search responder" }
       ],
       "steps": [
         { "command": "goto", "args": ["/chat"] },

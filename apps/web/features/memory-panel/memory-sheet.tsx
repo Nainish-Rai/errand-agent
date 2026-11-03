@@ -14,11 +14,22 @@ import { MemoryFacts } from "./memory-facts";
 // v3's memory sheet: every fact Errand keeps, each correctable or forgettable, the guesses dashed. It rises
 // from the bottom over --dur-slow on --ease-out while the scrim fades in, and leaves faster on --ease-in.
 // It is a modal dialog: focus moves into it, Tab stays inside, Escape or Done closes it and focus goes
-// back to whatever opened it. Done is the sheet's one lime action.
+// back to whatever opened it (Radix returns focus only to a DialogTrigger, and the sheet opens from plain
+// buttons, so it remembers its opener itself). Done is the sheet's one lime action.
 
-export function MemorySheet({ open, onOpenChange }: { readonly open: boolean; readonly onOpenChange: (open: boolean) => void }) {
+export function MemorySheet({
+  open,
+  onOpenChange,
+  fallbackFocus,
+}: {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  /** Where focus goes on close when the control that opened the sheet is gone (a confirmed guess's row). */
+  readonly fallbackFocus?: () => void;
+}) {
   const timing = useLimeTiming();
   const done = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>
@@ -32,7 +43,20 @@ export function MemorySheet({ open, onOpenChange }: { readonly open: boolean; re
                 exit={{ opacity: 0, transition: timing.close }}
               />
             </DialogPrimitive.Overlay>
-            <DialogPrimitive.Content asChild forceMount aria-describedby="memory-sheet-description">
+            <DialogPrimitive.Content
+              asChild
+              forceMount
+              aria-describedby="memory-sheet-description"
+              // Focus has not moved yet when the sheet mounts: whatever holds it opened the sheet.
+              onOpenAutoFocus={() => {
+                opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+              }}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                if (opener.current?.isConnected === true) opener.current.focus();
+                else fallbackFocus?.();
+              }}
+            >
               <motion.div
                 className="fixed inset-x-0 bottom-0 z-(--z-dialog) mx-auto flex max-h-[90dvh] w-full max-w-(--overlay-lg) flex-col overflow-hidden rounded-t-sheet bg-raised text-fg shadow-overlay outline-none"
                 initial={{ y: "100%" }}
