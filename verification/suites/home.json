@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "title": "Home screen: composer chips become the errand, Waiting on you opens the card, empty states, theme",
+  "title": "Home screen: composer chips become the errand, an approval in Alerts opens the card, empty states, theme",
   "feature": "home",
-  "description": "Ticket 13. The home screen at / draws every widget from GET /api/v1/home. The composer's chips start from memory and are saved as the new chat's errand (POST /api/v1/sessions/:id/errand) before the first model turn, so the agent asks nothing for them. A pending approval in Waiting on you opens its chat at the card, with keyboard focus on it. A new user sees every widget's empty state. Light is the default whatever the OS prefers (ticket 20); a toggled dark choice survives a reload, and so does going back to light. The last four scenarios capture the populated home in dark and light at desktop and phone widths.",
+  "description": "Ticket 13, restyled to v3 by ticket 23. The home screen at / is a greeting, the composer, suggestions, service tiles, In progress (only while something runs), Upcoming and Alerts, all from GET /api/v1/home. The composer's chips start from memory and are saved as the new chat's errand (POST /api/v1/sessions/:id/errand) before the first model turn, so the agent asks nothing for them. A pending approval in Alerts opens its chat at the card, with keyboard focus on it. A new user sees every list's empty state and an empty memory sheet. Light is the default whatever the OS prefers (ticket 20); a toggled dark choice survives a reload, and so does going back to light. The last four scenarios capture the populated home in dark and light at desktop and phone widths.",
   "scenarios": [
     {
       "id": "composer-chips-become-the-errand",
@@ -281,7 +281,7 @@
     },
     {
       "id": "waiting-on-you-opens-the-chat-at-the-card",
-      "title": "A pending approval shows in Waiting on you; Review opens its chat at the card with focus on it; Tab, Enter approves",
+      "title": "A pending approval shows in Alerts; Review opens its chat at the card with focus on it; Tab, Enter approves",
       "viewport": "desktop",
       "setup": [
         {
@@ -461,27 +461,28 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Approve booking · Shiva Sanitary Solutions"
           },
-          "note": "the pending card waits on the person, with its slot and price"
+          "note": "the pending card waits on the person, with its slot and price (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "₹399"
-          }
+          },
+          "note": "with its price (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "approval card waiting for you"
           },
-          "note": "the errand's current step"
+          "note": "the errand's current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
@@ -593,7 +594,7 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Upcoming bookings",
+            "name": "Upcoming",
             "text": "Shiva Sanitary Solutions"
           },
           "note": "the new booking is upcoming"
@@ -602,10 +603,10 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
-            "text": "Nothing needs you"
+            "name": "Alerts",
+            "text": "No alerts right now"
           },
-          "note": "and nothing waits on the person any more"
+          "note": "nothing waits on the person: Alerts is empty (ticket 23 folds Waiting on you into Alerts)"
         },
         {
           "command": "api",
@@ -628,7 +629,7 @@
     },
     {
       "id": "empty-states-for-a-new-user",
-      "title": "A new user with no bookings, errands or memory sees every widget's designed empty state",
+      "title": "A new user with no bookings, errands or memory sees every list's empty state",
       "viewport": "desktop",
       "theme": "dark",
       "setup": [
@@ -706,46 +707,61 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
-            "text": "Nothing in progress"
+            "name": "In progress",
+            "count": 0
           },
-          "note": "Working now is empty"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Waiting on you",
-            "text": "Nothing needs you"
-          },
-          "note": "Waiting on you is empty"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Upcoming bookings",
-            "text": "No upcoming bookings"
-          },
-          "note": "Upcoming bookings is empty"
+          "note": "nothing runs, so home has no In progress list (ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
             "name": "Alerts",
-            "text": "No alerts"
+            "text": "No alerts right now"
           },
-          "note": "Alerts is empty"
+          "note": "nothing waits on the person: Alerts is empty (ticket 23 folds Waiting on you into Alerts)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Bookings · 14 days",
-            "text": "No visits booked"
+            "name": "Upcoming",
+            "text": "No upcoming bookings"
           },
-          "note": "the chart says so instead of drawing zero bars"
+          "note": "Upcoming is empty"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Memory"
+          },
+          "note": "memory opens in the memory sheet (ticket 23)"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "dialog",
+            "name": "Memory",
+            "text": "Nothing remembered yet"
+          },
+          "note": "the sheet's empty state"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Done"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "dialog",
+            "name": "Memory",
+            "count": 0
+          },
+          "note": "Done closes the sheet"
         },
         {
           "command": "assert",
@@ -754,16 +770,7 @@
             "name": "Start an errand",
             "state": "visible"
           },
-          "note": "with one action"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Memory",
-            "text": "Nothing remembered yet"
-          },
-          "note": "Memory is empty"
+          "note": "the empty Upcoming offers one action"
         },
         {
           "command": "assert",
@@ -924,7 +931,7 @@
     },
     {
       "id": "populated-home-dark-desktop",
-      "title": "With a pending approval, an open search, a failed run, a booking and memory, every widget has live data (dark, 1440)",
+      "title": "With a pending approval, an open search, a failed run, a booking and memory, every list has live data (dark, 1440)",
       "viewport": "desktop",
       "theme": "dark",
       "setup": [
@@ -1237,42 +1244,43 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "Plumber · Koramangala"
           },
-          "note": "Working now lists the open errands with their current step"
+          "note": "In progress lists the open errands with their current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "approval card waiting for you"
-          }
+          },
+          "note": "with its current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Approve booking · Shiva Sanitary Solutions"
           },
-          "note": "the pending approval card waits on the person"
+          "note": "the pending approval card waits on the person (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Confirm earliest start"
           },
-          "note": "and so does the inferred fact to confirm"
+          "note": "and so does the inferred fact to confirm (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Upcoming bookings",
+            "name": "Upcoming",
             "text": "AC servicing"
           },
           "note": "the world's upcoming booking with its status"
@@ -1290,19 +1298,10 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Bookings · 14 days",
-            "text": "visits"
+            "name": "Alerts",
+            "text": "09:00"
           },
-          "note": "the 14-day chart has data"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Memory",
-            "text": "Earliest start · 09:00?"
-          },
-          "note": "memory, with the guess marked"
+          "note": "the guess to confirm shows its value in the dashed inferred edge (ticket 23)"
         },
         {
           "command": "assert",
@@ -1347,42 +1346,43 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "Plumber · Koramangala"
           },
-          "note": "Working now lists the open errands with their current step"
+          "note": "In progress lists the open errands with their current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "approval card waiting for you"
-          }
+          },
+          "note": "with its current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Approve booking · Shiva Sanitary Solutions"
           },
-          "note": "the pending approval card waits on the person"
+          "note": "the pending approval card waits on the person (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Confirm earliest start"
           },
-          "note": "and so does the inferred fact to confirm"
+          "note": "and so does the inferred fact to confirm (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Upcoming bookings",
+            "name": "Upcoming",
             "text": "AC servicing"
           },
           "note": "the world's upcoming booking with its status"
@@ -1400,19 +1400,10 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Bookings · 14 days",
-            "text": "visits"
+            "name": "Alerts",
+            "text": "09:00"
           },
-          "note": "the 14-day chart has data"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Memory",
-            "text": "Earliest start · 09:00?"
-          },
-          "note": "memory, with the guess marked"
+          "note": "the guess to confirm shows its value in the dashed inferred edge (ticket 23)"
         },
         {
           "command": "screenshot",
@@ -1457,42 +1448,43 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "Plumber · Koramangala"
           },
-          "note": "Working now lists the open errands with their current step"
+          "note": "In progress lists the open errands with their current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "approval card waiting for you"
-          }
+          },
+          "note": "with its current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Approve booking · Shiva Sanitary Solutions"
           },
-          "note": "the pending approval card waits on the person"
+          "note": "the pending approval card waits on the person (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Confirm earliest start"
           },
-          "note": "and so does the inferred fact to confirm"
+          "note": "and so does the inferred fact to confirm (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Upcoming bookings",
+            "name": "Upcoming",
             "text": "AC servicing"
           },
           "note": "the world's upcoming booking with its status"
@@ -1510,19 +1502,10 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Bookings · 14 days",
-            "text": "visits"
+            "name": "Alerts",
+            "text": "09:00"
           },
-          "note": "the 14-day chart has data"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Memory",
-            "text": "Earliest start · 09:00?"
-          },
-          "note": "memory, with the guess marked"
+          "note": "the guess to confirm shows its value in the dashed inferred edge (ticket 23)"
         },
         {
           "command": "screenshot",
@@ -1549,42 +1532,43 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "Plumber · Koramangala"
           },
-          "note": "Working now lists the open errands with their current step"
+          "note": "In progress lists the open errands with their current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Working now",
+            "name": "In progress",
             "text": "approval card waiting for you"
-          }
+          },
+          "note": "with its current step (In progress, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Approve booking · Shiva Sanitary Solutions"
           },
-          "note": "the pending approval card waits on the person"
+          "note": "the pending approval card waits on the person (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Waiting on you",
+            "name": "Alerts",
             "text": "Confirm earliest start"
           },
-          "note": "and so does the inferred fact to confirm"
+          "note": "and so does the inferred fact to confirm (in Alerts, ticket 23)"
         },
         {
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Upcoming bookings",
+            "name": "Upcoming",
             "text": "AC servicing"
           },
           "note": "the world's upcoming booking with its status"
@@ -1602,19 +1586,10 @@
           "command": "assert",
           "options": {
             "role": "region",
-            "name": "Bookings · 14 days",
-            "text": "visits"
+            "name": "Alerts",
+            "text": "09:00"
           },
-          "note": "the 14-day chart has data"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Memory",
-            "text": "Earliest start · 09:00?"
-          },
-          "note": "memory, with the guess marked"
+          "note": "the guess to confirm shows its value in the dashed inferred edge (ticket 23)"
         },
         {
           "command": "screenshot",

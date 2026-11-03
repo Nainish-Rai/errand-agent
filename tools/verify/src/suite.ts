@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { CommandFailure, parseTheme, parseViewport, type BrowserHost, type BrowserSession, type DoctorContext } from "./browser-session";
+import { CommandFailure, parseMotion, parseTheme, parseViewport, type BrowserHost, type BrowserSession, type DoctorContext } from "./browser-session";
 import type { Options } from "./cli-arguments";
 import type { Redactor } from "./redaction";
 import { ensurePrivateDir, writePrivateJson } from "./run-paths";
@@ -55,10 +55,11 @@ const STEP_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   api: ["body", "expect", "timeoutMs", "as", "status"],
   viewport: [],
   theme: [],
-  screenshot: ["viewport"],
+  motion: [],
+  screenshot: ["viewport", "animations"],
   snapshot: TARGET,
 };
-const SETUP_COMMANDS = new Set(["api", "goto", "theme", "viewport"]);
+const SETUP_COMMANDS = new Set(["api", "goto", "theme", "motion", "viewport"]);
 const ACTIONS = new Set(["goto", "reload", "click", "hover", "fill", "type", "key"]);
 const ARG_COUNT: Readonly<Record<string, readonly [number, number]>> = {
   goto: [1, 1],
@@ -66,6 +67,7 @@ const ARG_COUNT: Readonly<Record<string, readonly [number, number]>> = {
   key: [1, 1],
   viewport: [1, 1],
   theme: [1, 1],
+  motion: [1, 1],
   api: [2, 2],
   screenshot: [0, 1],
   snapshot: [0, 1],
@@ -94,6 +96,7 @@ function checkStep(step: SuiteStep, where: string, allowed: ReadonlySet<string> 
   if (step.command === "goto" && (!args[0]?.startsWith("/") || args[0].startsWith("//"))) fail(`${where} goto takes a route such as /design`);
   if (step.command === "viewport") parseViewport(args[0] ?? "");
   if (step.command === "theme") parseTheme(args[0]);
+  if (step.command === "motion") parseMotion(args[0]);
 }
 
 export function validateSuite(value: unknown): Suite {

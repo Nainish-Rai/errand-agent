@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "title": "Home, memory and the operator console in Lime, with layout motion",
+  "feature": "home-memory-ops",
+  "description": "Ticket 23. Home is v3's greeting, composer, suggestions, service tiles, Upcoming and Alerts, with no stat cards and Send as the one lime action once there is text. The memory sheet inspects, corrects, confirms and forgets, with a guess in the dashed inferred edge, a toast after each act and focus kept on the row. The chat's 'Memory updated · View' line opens the same sheet, and the chat shows no trace rail. The operator console is the only place with the trace rail, which its Trace chip collapses, and it has no glow. Motion: a mid-animation frame of the sheet rising and of a forgotten row collapsing; under reduced motion the same changes are instant with focus and feedback kept.",
+  "scenarios": [
+    {
+      "id": "home-and-memory-sheet-light",
+      "title": "Home matches v3 (light); the memory sheet confirms a guess, corrects the budget and forgets the area, with toasts and focus on the row",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "happy_path", "seed": 42 } }, "note": "seed the world: happy_path, seed 42 (an upcoming AC service)" },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": {
+            "body": {
+              "facts": [
+                { "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" },
+                { "key": "budget", "value": "1500", "source": "explicit", "status": "active" },
+                { "key": "earliest_hour", "value": "9", "source": "inferred", "status": "pending_confirmation" }
+              ]
+            }
+          },
+          "note": "two facts and one guess"
+        },
+        { "command": "api", "args": ["PUT", "/api/v1/dev/model-script"], "options": { "body": { "script": null }, "expect": { "path": "loaded", "equals": false } }, "note": "the default search responder" }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=light" }, "note": "light by default" },
+        { "command": "assert", "options": { "role": "heading", "name": "Good morning", "state": "visible" }, "note": "the greeting, from the backend's clock (09:00 IST)" },
+        { "command": "assert", "options": { "role": "button", "name": "Plumber for a leaking kitchen tap this week", "state": "visible" }, "note": "three suggestions under the composer" },
+        { "command": "assert", "args": ["role=group[name=\"Services\"s] >> role=button"], "options": { "count": 5 }, "note": "five service tiles, text only until ticket 22 adds photos" },
+        { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" }, "note": "the upcoming AC service with its status word" },
+        { "command": "assert", "options": { "role": "region", "name": "Alerts", "text": "Confirm earliest start" }, "note": "the guess waits on the person in Alerts" },
+        { "command": "assert", "args": ["role=region[name=\"Alerts\"s] >> .inferred"], "options": { "count": 2 }, "note": "the guess's icon and value keep the dashed inferred edge" },
+        { "command": "assert", "options": { "role": "region", "name": "Bookings · 14 days", "count": 0 }, "note": "no stat cards" },
+        { "command": "assert", "args": [".glow"], "options": { "count": 0 }, "note": "Send lights only once there is text" },
+        { "command": "fill", "options": { "role": "textbox", "name": "Describe your errand", "value": "Fix a leaking kitchen tap" } },
+        { "command": "assert", "args": [".glow"], "options": { "count": 1 }, "note": "one lime action: Send" },
+        { "command": "assert", "options": { "role": "button", "name": "Start errand", "state": "visible" } },
+        { "command": "screenshot", "args": ["home-light.png"], "note": "home, light, desktop" },
+        { "command": "click", "options": { "role": "button", "name": "Confirm in memory: Earliest start 09:00" } },
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "text": "What Errand keeps about you" }, "note": "the memory sheet opened" },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> [data-guess].inferred"], "options": { "count": 1 }, "note": "the guess sits in the dashed inferred edge, never drawn like a fact" },
+        { "command": "assert", "options": { "role": "listitem", "name": "Earliest start · 09:00", "text": "not used until you confirm" } },
+        { "command": "screenshot", "args": ["memory-light.png"], "note": "the memory sheet, light" },
+        { "command": "click", "args": ["role=listitem[name=\"Earliest start · 09:00\"s] >> role=button[name=\"Confirm\"s]"] },
+        { "command": "assert", "args": ["role=status >> text=Saved: Earliest start · 09:00"], "options": { "count": 1 }, "note": "a toast says what the person just did" },
+        { "command": "assert", "options": { "role": "listitem", "name": "Earliest start · 09:00", "text": "you confirmed" }, "note": "the guess is now a fact" },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> [data-guess]"], "options": { "count": 0 }, "note": "and drawn as one" },
+        { "command": "click", "args": ["role=listitem[name=\"Budget · ₹1,500\"s] >> role=button[name=\"More for budget\"s]"] },
+        { "command": "click", "options": { "role": "menuitem", "name": "Correct" } },
+        { "command": "assert", "args": ["input:focus"], "options": { "count": 1 }, "note": "the correction panel opened with focus in its field" },
+        { "command": "fill", "options": { "role": "textbox", "name": "New budget", "value": "2000" } },
+        { "command": "click", "options": { "role": "button", "name": "Save budget" } },
+        { "command": "assert", "options": { "role": "listitem", "name": "Budget · ₹2,000", "text": "You corrected it" }, "note": "the corrected value" },
+        { "command": "assert", "args": ["role=status >> text=Updated your budget"], "options": { "count": 1 } },
+        { "command": "assert", "args": ["button[data-more=\"budget\"]:focus"], "options": { "count": 1 }, "note": "focus is back on the row's menu" },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"] },
+        { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
+        { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" }, "note": "the row collapsed and its tombstone line arrived" },
+        { "command": "assert", "options": { "role": "listitem", "name": "Area · Koramangala", "count": 0 } },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> button[data-more]:focus"], "options": { "count": 1 }, "note": "focus moved to the next row, not lost" },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": {
+            "expect": [
+              { "path": "facts[*].status", "includes": "superseded" },
+              { "path": "tombstones[*].key", "equals": ["area"] }
+            ]
+          },
+          "note": "world state: the budget was superseded, the area has a tombstone"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Done" } },
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "count": 0 }, "note": "Done closes the sheet" }
+      ]
+    },
+    {
+      "id": "home-and-memory-sheet-dark",
+      "title": "Home and the memory sheet in the dark theme",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "happy_path", "seed": 42 } }, "note": "seed the world: happy_path, seed 42" },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": {
+            "body": {
+              "facts": [
+                { "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" },
+                { "key": "budget", "value": "1500", "source": "explicit", "status": "active" },
+                { "key": "earliest_hour", "value": "9", "source": "inferred", "status": "pending_confirmation" }
+              ]
+            }
+          },
+          "note": "two facts and one guess"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Switch to dark theme" } },
+        { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=dark" } },
+        { "command": "assert", "options": { "role": "region", "name": "Alerts", "text": "Confirm earliest start" } },
+        { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" } },
+        { "command": "screenshot", "args": ["home-dark.png"], "note": "home, dark, desktop" },
+        { "command": "click", "options": { "role": "button", "name": "Memory" } },
+        { "command": "assert", "options": { "role": "listitem", "name": "Earliest start · 09:00", "text": "not used until you confirm" } },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> [data-guess].inferred"], "options": { "count": 1 }, "note": "the dashed edge in dark too" },
+        { "command": "screenshot", "args": ["memory-dark.png"], "note": "the memory sheet, dark" }
+      ]
+    },
+    {
+      "id": "chat-memory-line-opens-the-sheet",
+      "title": "A memory write shows 'Memory updated · View'; View opens the sheet, Escape returns focus to View; the chat has no trace rail",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" },
+        { "command": "api", "args": ["PUT", "/api/v1/dev/memory"], "options": { "body": { "facts": [{ "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" }] } }, "note": "one fact" },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      { "toolCalls": [{ "name": "remember_fact", "input": { "key": "budget", "value": "1500", "source": "explicit", "evidence_quote": "Keep plumbing under 1500 from now on" } }] },
+                      { "text": "Done. I will only show plumbers under ₹1,500." }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the agent remembers the budget the person states"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/chat"] },
+        { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "Keep plumbing under 1500 from now on" } },
+        { "command": "key", "args": ["Enter"] },
+        { "command": "assert", "options": { "text": "I will only show plumbers under" }, "args": ["body"], "note": "the turn finished" },
+        { "command": "assert", "args": ["text=Memory updated"], "options": { "count": 1 }, "note": "one quiet line, no Undo" },
+        { "command": "assert", "options": { "role": "button", "name": "Undo", "count": 0 } },
+        { "command": "assert", "options": { "role": "button", "name": "Show trace", "count": 0 }, "note": "the person's chat never shows the trace rail" },
+        { "command": "assert", "options": { "role": "complementary", "name": "Run trace", "count": 0 } },
+        { "command": "assert", "args": ["#ops-rail"], "options": { "count": 0 } },
+        { "command": "screenshot", "args": ["chat-memory-line.png"], "note": "the line in chat" },
+        { "command": "click", "options": { "role": "button", "name": "View" } },
+        { "command": "assert", "options": { "role": "listitem", "name": "Budget · ₹1,500", "text": "explicit" }, "note": "the sheet shows the fact just remembered" },
+        { "command": "key", "args": ["Escape"] },
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "count": 0 }, "note": "Escape closes the sheet" },
+        { "command": "assert", "args": ["button:focus"], "options": { "text": "View" }, "note": "focus went back to View" },
+        { "command": "api", "args": ["GET", "/api/v1/memory"], "options": { "expect": { "path": "facts[*].key", "includes": "budget" } }, "note": "world state: the budget is remembered" },
+        { "command": "api", "args": ["PUT", "/api/v1/dev/model-script"], "options": { "body": { "script": null }, "expect": { "path": "loaded", "equals": false } }, "note": "unload the script so later suites get the default search responder" }
+      ]
+    },
+    {
+      "id": "ops-trace-rail-collapses-light",
+      "title": "The console's Trace chip collapses and reopens the rail; the console has no glow (light)",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/chat"] },
+        { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" } },
+        { "command": "key", "args": ["Enter"] },
+        { "command": "assert", "options": { "role": "region", "name": "Options for plumber in Koramangala", "state": "visible" } },
+        { "command": "goto", "args": ["/ops/sessions/current"] },
+        { "command": "assert", "args": [".glow"], "options": { "count": 0 }, "note": "the sign-in has no glow" },
+        { "command": "fill", "options": { "label": "Operator token", "value": "{{operator-token}}" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
+        { "command": "assert", "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" }, "note": "the rail is open" },
+        { "command": "assert", "options": { "role": "button", "name": "Trace", "attr": "aria-pressed=true" } },
+        { "command": "assert", "args": [".glow"], "options": { "count": 0 }, "note": "no glow in the console" },
+        { "command": "assert", "options": { "role": "region", "name": "Transcript", "text": "find a plumber in Koramangala this week" } },
+        { "command": "screenshot", "args": ["ops-light.png"], "note": "the console, light" },
+        { "command": "click", "options": { "role": "button", "name": "Trace" } },
+        { "command": "assert", "options": { "role": "button", "name": "Trace", "attr": "aria-pressed=false" } },
+        { "command": "assert", "args": ["#ops-rail"], "options": { "count": 0 }, "note": "the rail collapsed" },
+        { "command": "assert", "options": { "role": "region", "name": "Transcript", "state": "visible" }, "note": "the transcript reflowed into the room" },
+        { "command": "screenshot", "args": ["ops-rail-closed-light.png"] },
+        { "command": "click", "options": { "role": "button", "name": "Trace" } },
+        { "command": "assert", "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls" }, "note": "the rail opened again" },
+        { "command": "api", "args": ["GET", "/api/v1/ops/sessions/current/reads"], "options": { "as": "operator", "expect": { "path": "reads[*].operatorId", "includes": "verify-operator" } }, "note": "world state: the reads were audited" }
+      ]
+    },
+    {
+      "id": "ops-console-dark",
+      "title": "The operator console in the dark theme",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "default", "seed": 42 } }, "note": "seed the world: default, seed 42" }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/chat"] },
+        { "command": "click", "options": { "role": "button", "name": "Switch to dark theme" } },
+        { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=dark" } },
+        { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" } },
+        { "command": "key", "args": ["Enter"] },
+        { "command": "assert", "options": { "role": "region", "name": "Options for plumber in Koramangala", "state": "visible" } },
+        { "command": "goto", "args": ["/ops/sessions/current"] },
+        { "command": "fill", "options": { "label": "Operator token", "value": "{{operator-token}}" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
+        { "command": "assert", "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" } },
+        { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=dark" } },
+        { "command": "assert", "args": [".glow"], "options": { "count": 0 } },
+        { "command": "screenshot", "args": ["ops-dark.png"], "note": "the console, dark" }
+      ]
+    },
+    {
+      "id": "motion-mid-animation",
+      "title": "Mid-animation frames: the memory sheet rising and a forgotten row collapsing",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "happy_path", "seed": 42 } }, "note": "seed the world: happy_path, seed 42" },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": {
+            "body": {
+              "facts": [
+                { "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" },
+                { "key": "budget", "value": "1500", "source": "explicit", "status": "active" },
+                { "key": "earliest_hour", "value": "9", "source": "inferred", "status": "pending_confirmation" }
+              ]
+            }
+          },
+          "note": "two facts and one guess"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" } },
+        { "command": "click", "options": { "role": "button", "name": "Memory" } },
+        { "command": "screenshot", "args": ["mid-sheet-rising.png"], "options": { "animations": "allow", "viewport": true }, "note": "taken while the sheet rises over --dur-slow" },
+        { "command": "assert", "options": { "role": "dialog", "name": "Memory", "state": "visible" }, "note": "the sheet settled open" },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"] },
+        { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
+        { "command": "screenshot", "args": ["mid-row-forget.png"], "options": { "animations": "allow", "viewport": true }, "note": "taken while the row collapses and the tombstone arrives" },
+        { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" } }
+      ]
+    },
+    {
+      "id": "reduced-motion-is-instant",
+      "title": "Under reduced motion the sheet opens at once, a forgotten row goes at once, focus moves and the toast still speaks",
+      "viewport": "desktop",
+      "setup": [
+        { "command": "motion", "args": ["reduce"] },
+        { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "happy_path", "seed": 42 } }, "note": "seed the world: happy_path, seed 42" },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": {
+            "body": {
+              "facts": [
+                { "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" },
+                { "key": "budget", "value": "1500", "source": "explicit", "status": "active" }
+              ]
+            }
+          },
+          "note": "two facts"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" } },
+        { "command": "click", "options": { "role": "button", "name": "Memory" } },
+        { "command": "screenshot", "args": ["reduced-sheet-at-once.png"], "options": { "animations": "allow", "viewport": true }, "note": "the same moment as mid-sheet-rising.png: under reduced motion the sheet is already in place" },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> :focus"], "options": { "count": 1 }, "note": "focus moved into the sheet" },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"] },
+        { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
+        { "command": "screenshot", "args": ["reduced-row-forget.png"], "options": { "animations": "allow", "viewport": true }, "note": "the same moment as mid-row-forget.png: the row is already gone" },
+        { "command": "assert", "args": ["role=status >> text=Forgot your area"], "options": { "count": 1 }, "note": "feedback is kept: the toast" },
+        { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" } },
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> button[data-more=\"budget\"]:focus"], "options": { "count": 1 }, "note": "focus moved to the next row" }
+      ]
+    }
+  ]
+}

@@ -43,9 +43,11 @@ Driving (the root page; targets: SELECTOR, or --role ROLE --name NAME | --label 
   locate TARGET [--operation click|hover|fill]
       Match count, uniqueness and actionability without acting, plus a ready suite step.
   viewport desktop|laptop|tablet|phone|WIDTHxHEIGHT · theme dark|light (the system color scheme)
+  motion reduce|no-preference (the system's prefers-reduced-motion)
 
 Evidence
-  screenshot [NAME.png] [--viewport] · snapshot [NAME.txt] [target options] (ARIA tree)
+  screenshot [NAME.png] [--viewport] [--animations allow] · snapshot [NAME.txt] [target options] (ARIA tree)
+      Screenshots settle animations; --animations allow captures the frame as it is, mid-motion.
   network [--method M] [--path /exact | /prefix*] [--status N] [--since ISO]
   logs [--level error] [--since ISO]                      console messages and page errors
   api GET|POST|PUT|PATCH|DELETE /api/v1/... [--body JSON] [--expect JSON] [--timeout-ms MS]

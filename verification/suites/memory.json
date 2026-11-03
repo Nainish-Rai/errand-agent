@@ -2,7 +2,7 @@
   "version": 1,
   "title": "Memory panel: facts with badges, Correct supersedes, Forget stays forgotten, Confirm activates a guess",
   "feature": "memory",
-  "description": "Ticket 11. The Memory panel beside the chat (Show memory toggle) lists what the agent remembers with explicit/inferred badges. Correct supersedes the fact (the old one is kept as replaced), Forget writes a tombstone that survives a reload, Confirm activates an inferred fact. Every action is checked against GET /api/v1/memory. The chat scenarios show memory filling a new errand and a chat forget reaching the open panel.",
+  "description": "Ticket 11. The Memory panel beside the chat (Show memory toggle) lists what the agent remembers with explicit/inferred badges. Correct supersedes the fact (the old one is kept as replaced), Forget writes a tombstone that survives a reload, Confirm activates an inferred fact. Every action is checked against GET /api/v1/memory. The chat scenarios show memory filling a new errand and a chat forget reaching the open panel. Ticket 23: the panel is v3's memory list; each fact's Correct and Forget sit in its row menu (More for KEY) and a guess keeps its dashed edge with Confirm.",
   "scenarios": [
     {
       "id": "panel-lists-facts-with-badges",
@@ -64,9 +64,9 @@
         },
         {
           "command": "assert",
-          "args": ["role=list[name=\"Remembered facts\"s] >> role=button[name=\"Forget\"s]"],
+          "args": ["role=list[name=\"Remembered facts\"s] >> role=button[name=\"More for\"]"],
           "options": { "count": 3 },
-          "note": "every fact has Correct and Forget"
+          "note": "every fact has its row menu with Correct and Forget"
         },
         {
           "command": "api",
@@ -95,14 +95,15 @@
       "steps": [
         { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
-        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Correct\"s]"] },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"], "note": "ticket 23: a fact's actions sit in its row menu (v3 Memory)" },
+        { "command": "click", "options": { "role": "menuitem", "name": "Correct" } },
         {
           "command": "assert",
           "options": { "role": "textbox", "name": "New area", "value": "Koramangala" },
           "note": "the correction starts from the current value"
         },
         { "command": "fill", "options": { "role": "textbox", "name": "New area", "value": "HSR" } },
-        { "command": "click", "options": { "role": "button", "name": "Save" } },
+        { "command": "click", "options": { "role": "button", "name": "Save area" } },
         {
           "command": "assert",
           "options": { "role": "listitem", "name": "Area · HSR Layout", "text": "explicit" },
@@ -144,7 +145,8 @@
       "steps": [
         { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
-        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Forget\"s]"] },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"], "note": "ticket 23: a fact's actions sit in its row menu (v3 Memory)" },
+        { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
         {
           "command": "assert",
           "options": { "role": "listitem", "name": "Area · Koramangala", "count": 0 },

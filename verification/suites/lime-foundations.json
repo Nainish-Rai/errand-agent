@@ -194,10 +194,10 @@
           "command": "assert",
           "options": {
             "role": "heading",
-            "name": "What errand should I handle?",
+            "name": "Good morning",
             "state": "visible"
           },
-          "note": "home in Lime (light): no hero illustration, the title sits under the bar"
+          "note": "home in Lime (light): the greeting under the bar (ticket 23; the verify clock is 09:00 IST)"
         },
         {
           "command": "assert",
@@ -430,7 +430,7 @@
           "command": "assert",
           "options": {
             "role": "heading",
-            "name": "What errand should I handle?",
+            "name": "Good morning",
             "state": "visible"
           },
           "note": "home in Lime (dark): no hero illustration, the title sits under the bar"

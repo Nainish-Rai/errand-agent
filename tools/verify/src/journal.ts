@@ -37,7 +37,7 @@ export interface ResultLike {
 
 const KNOWN_COMMANDS = new Set([
   "doctor", "goto", "reload", "click", "hover", "fill", "type", "key", "wait", "text", "count", "assert", "locate",
-  "viewport", "theme", "screenshot", "snapshot", "network", "logs", "api", "suite", "cleanup",
+  "viewport", "theme", "motion", "screenshot", "snapshot", "network", "logs", "api", "suite", "cleanup",
 ]);
 
 function statusOf(result: ResultLike): CommandStatus {
