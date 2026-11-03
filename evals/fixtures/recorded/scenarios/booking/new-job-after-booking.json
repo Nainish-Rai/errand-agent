@@ -1,0 +1,163 @@
+{
+  "scenario": "scenarios/booking/new-job-after-booking",
+  "recordedAt": "2026-11-03T14:06:05.773Z",
+  "evalRunId": "7d508dbd-b51b-45f1-889e-f56c5074de8d",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need a plumber in Koramangala this week. Can you help?"
+    },
+    {
+      "say": "I'll go with the cheapest option."
+    },
+    {
+      "card": "approve"
+    },
+    {
+      "say": "Great, thanks. Now I need something else — my mom's AC needs repair at her place in HSR Layout."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that started — let me pull up a few plumbers for Koramangala this week.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "get_provider_insight",
+                "input": {
+                  "provider_ids": [
+                    "prv_plumber_koramangala_4",
+                    "prv_plumber_koramangala_5"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "present_ui",
+                "input": {
+                  "ui": "root = Stack([cards])\ncards = ProviderChoices([a, b], \"Plumbers in Koramangala this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match · earliest slot\", \"4.8★ from 241 reviews, punctual and brings parts, free today from 10 am\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"Lowest price, senior technician, free Thu 6 Nov 8 am onwards\")"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are two good fits:\n\n- **Venkatesh Sanitary Solutions** — best match and earliest availability (Wed, 4 Nov, 10:00 am). Reviews call them punctual, clean and fair on price, and they bring their own parts.\n- **Shiva Sanitary Solutions** — the cheapest option, with a senior technician and slots from Thu, 5 Nov, 8:00 am. One note: a few reviews mention incomplete work, so it's worth confirming the job details with them.\n\nOne review for Venkatesh tried to give instructions to the assistant — I ignored it.\n\nTap a card's Choose button when you've picked one."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "text": "I'll hold the slot for Shiva Sanitary Solutions.",
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_plumber_koramangala_5",
+                  "slot": {
+                    "start": "2026-11-05T08:00:00+05:30",
+                    "end": "2026-11-05T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "The approval card is on screen for Shiva Sanitary Solutions — Thu, 5 Nov, 8:00 am IST, ₹399. Please check the details and tap Approve to confirm it."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Booked — Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST, ₹399. Booking ID: **bkg_0002**."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "HSR Layout",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "That's a new errand. Tap Start in the new chat and I'll pick it up there."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.18798719999999997,
+    "simulatedUser": 0.1855438
+  }
+}
