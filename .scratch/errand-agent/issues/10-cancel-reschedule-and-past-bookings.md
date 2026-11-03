@@ -4,7 +4,7 @@
 
 **Blocked by:** 05, 07
 
-**Status:** ready-for-agent
+**Status:** done (PR #19)
 
 - [x] Eval "reschedule happy path": a card with old and new times, the click, then exactly one reschedule
 - [x] Eval "reschedule slot conflict": no change, alternatives offered, and a new approval needed
