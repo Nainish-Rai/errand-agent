@@ -10,7 +10,7 @@ The agent's instructions change too. When the person asks for a different job an
 
 **Blocked by:** the light-mode chat polish PR (#24, merged). Ticket 21 (the chat restyle) is in flight: rebase onto it when it merges.
 
-**Status:** ready-for-agent
+**Status:** done (PR #28)
 
 - [x] A search refused because the errand isn't editable renders the New errand card, with service, area and when from the search, and never an outcome code
 - [x] Start in a new chat creates a session, saves the draft before the first turn, sends the person's words, and navigates there; the first agent turn already sees the area, so it doesn't ask for it again
