@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T02:23:31.767Z",
+  "ranAt": "2026-11-03T02:35:59.342Z",
   "trials": 1,
   "scenarios": [
     {
@@ -201,6 +201,71 @@
             "drawn": 0
           },
           "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/repeated-confirmation",
+      "description": "Two taps on Approve and two typed yeses still make exactly one booking.",
+      "expected": "both Approve taps get 200 with the same grant; four execute_proposal calls: booked, then already_booked three times, all with the same booking ID; exactly one booking; one intent; book sent once",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/restart-mid-booking",
+      "description": "The backend is killed between sending book and recording its reply; after restart, one booking and the right update.",
+      "expected": "the backend is SIGKILLed while book's reply is held; after restart the startup reconciler confirms the intent through get_booking_status; exactly one booking; the proposal is executed; the session's booking update says Booked with that booking ID",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "The crash and recovery are the backend's; the scripted model covers them offline.",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/slot-taken",
+      "description": "The approved slot is taken: nothing is booked, the next options are offered, and the alternative needs a new approval.",
+      "expected": "execute_proposal → slot_taken with the next options (the taken 08:00 slot not among them); no booking; the alternative is a new pending proposal with no grant; a typed yes → not_approved",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/timeout-after-success-booked",
+      "description": "book times out after the provider booked: the status check finds the booking, nothing is retried, one booking exists.",
+      "expected": "book → timeout, then get_booking_status → booked with the same key; no second book; execute_proposal says booked; exactly one booking; the intent is confirmed after 1 attempt",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/timeout-after-success-not-booked",
+      "description": "book times out and nothing was booked: the status check says so, the retry uses the same key, one booking exists.",
+      "expected": "book → timeout, get_booking_status → not_found, book again with the same key → booked, get_booking_status → booked; exactly one booking; the intent is confirmed after 2 attempts",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
           "pendingInvariants": []
         }
       ]
