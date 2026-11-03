@@ -81,7 +81,7 @@ main > * { min-width: 0; }
 main { padding: var(--space-5) max(16px, 3vw) 64px; display: grid; gap: var(--space-5); max-width: 1680px; margin: 0 auto; }
 
 /* ---- KPI strip ---- */
-.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--surface-card); border: 1px solid var(--edge); border-radius: var(--radius-3); overflow: hidden; }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--surface-card); border: 1px solid var(--edge); border-radius: var(--radius-3); overflow: hidden; }
 .kpi { padding: 14px 18px 12px; border-left: 1px solid var(--edge); position: relative; min-width: 0; }
 .kpi:first-child { border-left: 0; }
 .kpi-label { font-size: var(--text-meta); color: var(--fg-meta); display: flex; gap: 6px; align-items: center; }
@@ -252,6 +252,8 @@ select.chip { padding-right: 6px; }
 .linkbtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 11px; }
 .wf:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 0; }
 .wf-bar .dl { position: absolute; left: calc(100% + 6px); font: 10.5px var(--font-mono); color: var(--fg-meta); white-space: nowrap; }
+/* bars near the right edge carry their label on the left, so it is not cut off */
+.wf-bar.lab-left .dl { left: auto; right: calc(100% + 6px); }
 .wf-bar.turnbar { top: 7px; height: 12px; }
 .wf.hl .wf-row:not(.err):not(.turn) { opacity: .25; }
 .detail { border-left: 1px solid var(--edge); overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; background: var(--surface-card); }
@@ -324,7 +326,7 @@ select.chip { padding-right: 6px; }
 .ticker .col span { height: 1.15em; line-height: 1.15em; text-align: center; }
 
 /* stat strip in the trace drawer */
-.statstrip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--edge); border-radius: 8px; background: var(--surface-card); }
+.statstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); border: 1px solid var(--edge); border-radius: 8px; background: var(--surface-card); }
 .statstrip > div { padding: 7px 12px; border-left: 1px solid var(--edge); min-width: 0; }
 .statstrip > div:first-child { border-left: 0; }
 .statstrip .sl { font-size: 10.5px; color: var(--fg-meta); }
@@ -990,7 +992,7 @@ function renderWaterfall(s, tr, firstOpen) {
   const wf = $("#wf"); wf.textContent = "";
   if (!tr) { wf.append(el("div", { class: "empty", style: "padding:48px 16px" }, "This session's waterfall was not embedded. Only the top sessions by tokens carry spans; raise --max-traces in harness_summary.py to include it.")); wfRows = []; return; }
   // subagent runs become lanes inside the parent trace (orchestrator pattern)
-  const subs = D.sessions.filter((k) => k.subagent && k.parent === s.id).map((k) => ({ k: "sub", n: k.title || k.short, s: k.start_ts - s.start_ts, e: k.start_ts - s.start_ts + k.wall_s, ok: !k.errors, t: k.tokens_total, id: k.id, errs: k.errors }));
+  const subs = D.sessions.filter((k) => k.subagent && k.parent === s.id).map((k) => ({ k: "sub", n: k.title || k.short, s: k.start_ts - s.start_ts, e: k.start_ts - s.start_ts + k.wall_s, ok: !k.errors, t: k.tokens_total, id: k.id, errs: k.errors, c: k.cost_usd ?? undefined }));
   let spans = tr.spans.concat(subs);
   const turnsAll = spans.filter((x) => x.k === "turn");
   if (firstOpen) { collapsed = new Set(turnsAll.length > 12 ? turnsAll.map((_, i) => i) : []); focusTurn = null; wfQuery = ""; $("#wfq").value = ""; $("#wfqKbd").textContent = "⌘F"; }
@@ -1032,7 +1034,7 @@ function renderWaterfall(s, tr, firstOpen) {
     const label = r.turn ? `Turn ${r.gi + 1}` + (r.prompt && r.prompt.type ? ` · ${r.prompt.type}` : "") : x.k === "llm" ? "LLM · " + x.n : x.k === "sub" ? "Subagent · " + x.n : x.k === "ev" ? "Event · " + x.n : x.n;
     const l = X(x.s), w = Math.max(X(x.e) - l, 0), dur = x.e - x.s;
     const isFolded = r.turn && collapsed.has(r.gi);
-    const bar = el("div", { class: "wf-bar k-bar" + (r.turn ? " turnbar" : "") + (bad ? " err" : "") + (x.v && !bad ? " verify" : "") + (isFolded ? " folded" : ""), style: `--kc:var(${kvar});left:${l}%;width:max(${w}%,4px);animation-delay:${Math.min(i * 6, 400)}ms` },
+    const bar = el("div", { class: "wf-bar k-bar" + (r.turn ? " turnbar" : "") + (bad ? " err" : "") + (x.v && !bad ? " verify" : "") + (isFolded ? " folded" : "") + (X(x.e) > 72 && l > 28 ? " lab-left" : ""), style: `--kc:var(${kvar});left:${l}%;width:max(${w}%,4px);animation-delay:${Math.min(i * 6, 400)}ms` },
       bad ? el("span", { class: "glyph", "aria-hidden": "true" }, "✕") : x.r ? el("span", { class: "glyph", "aria-hidden": "true" }, "↻") : x.v ? el("span", { class: "glyph", "aria-hidden": "true" }, "✓") : null,
       el("span", { class: "dl" }, (x.r ? "retry · " : "") + (x.v ? "verify · " : "") + fmtDur(dur) + (x.t ? " · " + fmtK(x.t) + " tok" : "") + (x.c != null ? " · " + fmtUsd(x.c) : "") + (x.err ? " · " + x.err.replace(/_/g, " ") : "") + (r.turn && r.kids.length ? ` · ${r.kids.length} spans` : "")));
     const track = el("div", { class: "wf-track", html: gapCols }); track.append(bar);

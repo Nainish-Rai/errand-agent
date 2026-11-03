@@ -648,6 +648,7 @@ def parse_errand(path, project):
                                              " → ".join(tools[:4]) + (" …" if len(tools) > 4 else "") if tools else "no tool calls")
         fin = finish_session(s)
         if fin:
+            fin["task_type"] = "subagent run" if fin["subagent"] else "errand run"
             mark_verifications(fin["tool_calls"])
             mark_model_retries(fin)
             out.append(fin)
@@ -987,8 +988,9 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
         for x in spans:
             x["s"] = round((x["s"] or t0) - t0, 2)
             x["e"] = round((x["e"] or t0) - t0, 2)
+        # errand traces hold no prompt text, so they carry no snippets
         traces[r["id"]] = {"spans": spans, "truncated": truncated,
-                           "prompt_snippets": [{"t": round(p["ts"] - t0, 1), "type": p["type"], "text": p["snippet"]} for p in s["prompts"]][:60]}
+                           "prompt_snippets": [{"t": round(p["ts"] - t0, 1), "type": p["type"], "text": p["snippet"]} for p in s["prompts"] if s["tool"] != "errand-agent"][:60]}
 
     projects = collections.defaultdict(lambda: {"sessions": 0, "subagent_runs": 0, "tokens": 0, "tool_calls": 0, "errors": 0, "tools": collections.Counter()})
     for r in rows:
@@ -1001,6 +1003,8 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
     proj = sorted(({"project": k, **{kk: (dict(vv) if isinstance(vv, collections.Counter) else vv) for kk, vv in v.items()}} for k, v in projects.items()),
                   key=lambda x: -x["tokens"])
 
+    # eval runs pin the world's clock, so a trace can sit after now; the window still covers it
+    until = max([now] + [s["last"] for s in sessions if s["last"]])
     all_calls = sum(t["tool_calls"] for t in tools.values())
     all_fail = sum(t["failed_tool_calls"] for t in tools.values())
     all_lat = [c["dur"] for s in sessions for c in s["tool_calls"] if c["dur"] is not None and c["dur"] >= 0]
@@ -1016,7 +1020,7 @@ def summarise(sessions, since, now, codex_history_prompts, parse_errors, max_tra
     return {
         "generated_at": dt.datetime.fromtimestamp(now).isoformat(timespec="seconds"),
         "window": {"since": dt.datetime.fromtimestamp(since).isoformat(timespec="seconds"),
-                   "until": dt.datetime.fromtimestamp(now).isoformat(timespec="seconds"), "days": round((now - since) / 86400)},
+                   "until": dt.datetime.fromtimestamp(until).isoformat(timespec="seconds"), "days": round((until - since) / 86400)},
         "timezone": str(dt.datetime.now().astimezone().tzinfo),
         "headline": headline,
         "tools": tools,
@@ -1119,6 +1123,9 @@ def main():
     # the window opens at the oldest session read, so old eval traces still show
     start = min([s["first"] for s in sessions] + ([since] if since else []) or [now])
     out = summarise(sessions, start, now, hist, errors, a.max_traces, tool_names)
+    if not a.codex:
+        for k in [k for k in out["notes"] if k.startswith("codex")]:
+            del out["notes"][k]
     kinds = {"errand": "errand-agent", "claude": "claude-code", "codex": "codex"}
     out["files_scanned"] = {t: sum(1 for j in jobs if kinds[j[0]] == t) for t in tool_names}
     with open(a.out, "w") as fh:

@@ -47,5 +47,7 @@ function python(script: string, args: readonly string[]): void {
 
 python("harness_summary.py", analyzerArgs);
 python("render_dashboard.py", ["--summary", summary, "--out", out]);
+// The build transcripts are the only input with prompt text: prove none of it got through.
+if (values["claude-sessions"]) python("check_redaction.py", [out]);
 console.log(`dashboard: ${out}`);
 console.log(`open it:   open ${JSON.stringify(out)}`);
