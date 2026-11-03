@@ -1,13 +1,14 @@
 "use client";
 
-import { VERIFYING_PROMISE, type ActionIntentView, type ErrandOption, type ExecuteProposalOutput, type ProviderDetails } from "@errand/contracts";
+import { VERIFYING_PROMISE, type ActionIntentView, type ErrandOption, type ExecuteProposalOutput } from "@errand/contracts";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { Spinner } from "@/components/ui/spinner";
+import { ProviderChoiceCards } from "@/features/generated-ui";
 import { BookingReceipt, VerificationBanner, type ReceiptBooking } from "@/features/trust";
 
 import { appApi } from "./backend";
-import { OptionCard } from "./provider-results";
+import { choiceFromOption } from "./provider-results";
 
 // A booking's progress from the action ledger (GET /sessions/:id/action-intents): while `book` is
 // in flight and after it timed out, the chat shows "Checking with the provider…" until the world's
@@ -109,26 +110,5 @@ export function VerifyingExecution({ output, booking }: { readonly output: Execu
  * is a new hold and a new card that needs its own tap.
  */
 export function NextOptions({ options }: { readonly options: readonly ErrandOption[] }) {
-  const [providers, setProviders] = useState<ReadonlyMap<string, ProviderDetails>>(new Map());
-  const ids = options.map((option) => option.providerId).join(",");
-  useEffect(() => {
-    let current = true;
-    appApi
-      .getProviders(ids.split(","))
-      .then((found) => current && setProviders(new Map(found.map((provider) => [provider.id, provider]))))
-      .catch(() => undefined);
-    return () => {
-      current = false;
-    };
-  }, [ids]);
-  return (
-    <section aria-label="Next options">
-      <p className="mb-2 text-sm text-muted-foreground">Next options: choosing one shows a new card to approve</p>
-      <ul className="flex flex-col gap-2">
-        {options.map((option) => (
-          <OptionCard key={option.providerId} option={option} provider={providers.get(option.providerId)} />
-        ))}
-      </ul>
-    </section>
-  );
+  return <ProviderChoiceCards title="Next options" choices={options.map(choiceFromOption)} />;
 }

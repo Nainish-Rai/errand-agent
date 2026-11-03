@@ -1,9 +1,8 @@
 "use client";
 
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { ErrandSearchOutputSchema, type ErrandOption, type OptionTag, type ProviderSummary, type Slot } from "@errand/contracts";
+import { ErrandSearchOutputSchema, type ErrandOption, type OptionTag } from "@errand/contracts";
 
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { ProviderChoiceCards, type ChoiceInput } from "@/features/generated-ui";
 
@@ -18,37 +17,14 @@ const TAG_LABELS: Readonly<Record<OptionTag, string>> = {
   runner_up: "Runner-up",
 };
 
-const slotFormat = new Intl.DateTimeFormat("en-IN", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "Asia/Kolkata",
-});
-
-function formatSlot(slot: Slot): string {
-  return slotFormat.format(new Date(slot.start));
-}
-
-export function OptionCard({ option, provider }: { readonly option: ErrandOption; readonly provider: Pick<ProviderSummary, "name" | "priceInr"> | undefined }) {
-  return (
-    <li className="flex flex-col gap-1.5 rounded-lg border border-interactive/50 bg-card px-3 py-2.5">
-      <div className="flex flex-wrap gap-1">
-        {option.tags.map((tag) => (
-          <Badge key={tag} variant="verified">
-            {TAG_LABELS[tag]}
-          </Badge>
-        ))}
-      </div>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-medium">{provider?.name ?? option.providerId}</span>
-        {provider !== undefined && <span className="shrink-0 tabular-nums">₹{provider.priceInr.toLocaleString("en-IN")}</span>}
-      </div>
-      <p className="text-sm text-muted-foreground">{option.reason}</p>
-      <p className="text-sm text-muted-foreground">Earliest in your window: {formatSlot(option.earliestSlot)}</p>
-    </li>
-  );
+/** A search option as a choice card: core's tags as the highlight, its reason, its earliest slot. */
+export function choiceFromOption(option: ErrandOption): ChoiceInput {
+  return {
+    providerId: option.providerId,
+    highlight: option.tags.map((tag) => TAG_LABELS[tag]).join(" · "),
+    reason: option.reason,
+    earliest: option.earliestSlot,
+  };
 }
 
 function exclusionsLine(overBudget: number, outsideTimeWindow: number): string | undefined {
@@ -86,12 +62,7 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
   if (output.kind !== "found") return <p className="my-2 text-label text-fg-meta">No search for {label}: {output.kind.replaceAll("_", " ")}.</p>;
 
   const optionIds = new Set(output.options.map((option) => option.providerId));
-  const choices: ChoiceInput[] = output.options.map((option) => ({
-    providerId: option.providerId,
-    highlight: option.tags.map((tag) => TAG_LABELS[tag]).join(" · "),
-    reason: option.reason,
-    earliest: option.earliestSlot,
-  }));
+  const choices = output.options.map(choiceFromOption);
   const more: ChoiceInput[] = output.providers
     .filter((provider) => !optionIds.has(provider.id))
     .map((provider) => ({

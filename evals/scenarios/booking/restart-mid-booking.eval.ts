@@ -114,11 +114,14 @@ export default defineEval({
         turns,
         clicks: [],
         taps: [{ tap: "approve", proposalId: proposal.proposalId, status: 200, code: "approved" }],
+        uiTaps: [],
         steps: [{ say: ASK_FOR_PLUMBER }, { say: CHOOSE_CHEAPEST }, { card: "approve" }],
         mode: "offline",
         toolCalls: turns.flatMap((turn) => turn.toolCalls),
         api,
         bookingsBefore,
+        world: { scenario: "happy_path", seed: 42 },
+        clockStart: environment.ERRAND_CLOCK_START,
       };
       const { made } = await bookingChanges(run);
       const actual = `after restart: intent ${intent?.state ?? "missing"} by ${intent?.resolvedBy ?? "nobody"}; ${made.length} booking(s); update: ${intent?.notice?.slice(0, 60) ?? "none"}`;
