@@ -239,10 +239,11 @@ A chat-based errand agent that runs fully locally against a mocked provider worl
     - spend and bookings over time, from `list_bookings`, when the user asks (a line or bar chart)
 
     Chart data comes from the world by ID or query, never as numbers written by the model.
-- **Mock images.** Every mock provider has a service photo and a small gallery, so the cards look real offline.
-  - *Photos:* free-licence stock photos (Unsplash or Pexels) of service scenes: tools, AC units, wiring, pipes, vans. Each service category has a few. A one-off script with a pinned URL list downloads them, and they are committed as small WebP files with a credits file. Nothing is fetched at runtime.
+- **Mock images.** Every mock provider has a thumbnail, a job photo and a small gallery, and every service and kind of service has a photo, so the cards look real offline (ticket 22, v3's Images section).
+  - *Photos:* free-licence Unsplash photos of service scenes: tools, AC units, wiring, pipes. A one-off script (`pnpm images:fetch`) builds them as small WebP files (1:1, 4:3, 16:9, each under 32 KB) that the web app bundles; credits are on `/design`. Nothing is fetched at runtime.
+  - *Keys, not URLs:* the world names an image key; the client resolves only keys in its own registry and shows the fallback for anything else, so tool output can never make the browser fetch.
   - *Logos and avatars:* generated in code as initials monograms.
-  - *No people:* we don't use photos of real people as fake technicians, because pairing a real person's face with made-up reviews isn't fair to them. If people are wanted later, use AI-generated portraits.
+  - *No faces:* we don't use photos of real people's faces as fake technicians, because pairing a real person's face with made-up reviews isn't fair to them. v3 allows home-service workers in their own setting; the two photos with a worker in them show no identifiable face. No stock-model portraits.
 - **Fallback:** if the UI fails to parse, the plain text reply is shown and the trace records the error.
   The UI is never left blank.
 - **Context:** the OpenUI instructions count toward the fixed context budget.

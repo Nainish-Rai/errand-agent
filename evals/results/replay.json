@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T03:53:28.240Z",
+  "ranAt": "2026-11-03T13:08:14.225Z",
   "trials": 1,
   "scenarios": [
     {
@@ -851,6 +851,18 @@
             "parsed": 0,
             "drawn": 0
           },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "trace/only-operators-read-sessions",
+      "description": "Only the person reads their session, and only an operator reads its trace and context log; each operator read is audited.",
+      "expected": "Only the person reads their session, and only an operator reads its trace and context log; each operator read is audited.",
+      "attempts": [
+        {
+          "verdict": "passed",
           "failures": [],
           "pendingInvariants": []
         }
