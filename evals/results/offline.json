@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T03:54:47.482Z",
+  "ranAt": "2026-11-03T04:27:40.169Z",
   "trials": 1,
   "scenarios": [
     {
@@ -211,7 +211,7 @@
       "expected": "the card shows the booking and its fee (none); after the tap: cancel → service_unavailable, list_bookings → upcoming, cancel again with the same key → cancelled, list_bookings → cancelled; one cancellation; Cancelled only after that",
       "attempts": [
         {
-          "verdict": "failed",
+          "verdict": "passed",
           "actual": "execute_proposal → cancelled",
           "costUsd": {
             "agent": 0,
@@ -222,9 +222,7 @@
             "parsed": 0,
             "drawn": 0
           },
-          "failures": [
-            "equals [the retry uses the same key]: expected [\"cancel:grt_8071739981ad35b5cc7a8e6e\",\"cancel:grt_8071739981ad35b5cc7a8e6e\"]; received [\"cancel:grt_[redacted:phone]ad35b5cc7a8e6e\",\"cancel:grt_[redacted:phone]ad35b5cc7a8e6e\"]"
-          ],
+          "failures": [],
           "pendingInvariants": []
         }
       ]
