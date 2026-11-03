@@ -4,6 +4,10 @@ import {
   InjectWorldFaultRequestSchema,
   CorrectMemoryFactRequestSchema,
   DraftErrandRequestSchema,
+  DismissNewErrandRequestSchema,
+  StartNewErrandRequestSchema,
+  type DismissNewErrandResponse,
+  type StartNewErrandResponse,
   MAX_SPEND_MONTHS,
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
@@ -49,6 +53,9 @@ import { confirmInferredFact } from "../../src/core/use-cases/confirm-inferred-f
 import { correctMemoryFact } from "../../src/core/use-cases/correct-memory-fact";
 import { forgetMemoryFact } from "../../src/core/use-cases/forget-memory-fact";
 import { draftErrand } from "../../src/core/use-cases/draft-errand";
+import { dismissNewErrand } from "../../src/core/use-cases/dismiss-new-errand";
+import { listErrandHandoffs } from "../../src/core/use-cases/list-errand-handoffs";
+import { startNewErrand } from "../../src/core/use-cases/start-new-errand";
 import { getAvailability } from "../../src/core/use-cases/get-availability";
 import { getErrand } from "../../src/core/use-cases/get-errand";
 import { getHomeSummary } from "../../src/core/use-cases/get-home-summary";
@@ -69,6 +76,8 @@ import { recordOperatorRead } from "../../src/core/use-cases/record-operator-rea
 import { presentActionIntent, presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
+import { eveSessionToolCalls } from "../lib/eve-session-tool-calls";
+import { presentCardRefusal, presentHandoff, presentHandoffs, presentStartRefusal } from "../lib/handoff-presenter";
 import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
 import { CALLER_AUTH, memoryOwnerOf, memoryOwnerOfRequest } from "../lib/memory-owner";
 import { presentProviderEventOutcome } from "../lib/provider-update-presenter";
@@ -312,6 +321,58 @@ export default defineChannel({
       }
       const refusal = presentDraftRefusal(outcome);
       return failure(refusal.status, refusal.code, refusal.message);
+    }),
+
+    // New errand cards (ticket 24): how this chat's cards were settled, and the chat it started from.
+    GET(`${API_PREFIX}/sessions/:sessionId/handoffs`, async (request, { params }) => {
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
+      return Response.json(presentHandoffs(await listErrandHandoffs(container().errandHandoffs, session.sessionId)));
+    }),
+
+    // StartNewErrand: "Start in a new chat" on a card in this (booked) chat. The new session is the
+    // caller's and starts its errand here, so this claims it, like the composer's draft. Nothing is
+    // booked or held, so no approval is involved.
+    POST(`${API_PREFIX}/sessions/:sessionId/handoffs`, async (request, { params }) => {
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
+      const parsed = StartNewErrandRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const { toolCallId, toSessionId, search } = parsed.data;
+      if (!(await claimCallersSession(toSessionId, session.userId))) return sessionNotFound();
+      const { newErrandDependencies, catalog } = container();
+      const outcome = await startNewErrand({ ...newErrandDependencies, toolCalls: eveSessionToolCalls }, {
+        fromSessionId: session.sessionId,
+        toolCallId,
+        place: { traceId: toSessionId, sessionId: toSessionId },
+        search: { service: search.service, area: search.area, dates: search.date_range },
+      });
+      if (outcome.kind === "moved" || (outcome.kind === "already_settled" && outcome.handoff.kind === "moved")) {
+        const errand = outcome.kind === "moved" && outcome.errand !== undefined ? presentErrand(outcome.errand, catalog) : null;
+        const body: StartNewErrandResponse = { handoff: presentHandoff(outcome.handoff), errand };
+        return Response.json(body);
+      }
+      const refusal = presentStartRefusal(outcome);
+      return failure(refusal.status, refusal.code, refusal.message);
+    }),
+
+    // DismissNewErrand: "Not now". A card that already moved stays moved; the answer says which.
+    POST(`${API_PREFIX}/sessions/:sessionId/handoffs/dismiss`, async (request, { params }) => {
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
+      const parsed = DismissNewErrandRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const { errandHandoffs, wallClock } = container();
+      const outcome = await dismissNewErrand(
+        { handoffs: errandHandoffs, toolCalls: eveSessionToolCalls, clock: wallClock },
+        { fromSessionId: session.sessionId, toolCallId: parsed.data.toolCallId },
+      );
+      if (outcome.kind !== "dismissed" && outcome.kind !== "already_settled") {
+        const refusal = presentCardRefusal(outcome);
+        return failure(refusal.status, refusal.code, refusal.message);
+      }
+      const body: DismissNewErrandResponse = { handoff: presentHandoff(outcome.handoff) };
+      return Response.json(body);
     }),
 
     // Memory: the person's own facts, read from the channel's auth context, never from the body.

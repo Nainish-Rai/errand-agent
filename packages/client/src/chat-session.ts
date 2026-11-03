@@ -6,6 +6,8 @@ export interface ChatClientOptions {
 }
 
 export interface ToolCallView {
+  /** The call's id in the session; a New errand card names its refused search by it. */
+  readonly callId: string;
   readonly name: string;
   readonly state: string;
   readonly input: unknown;
@@ -24,7 +26,7 @@ export interface ChatTurn {
 export function toolCallsIn(messages: readonly EveMessage[]): ToolCallView[] {
   return messages.flatMap((message) =>
     message.parts.flatMap((part) =>
-      part.type === "tool" ? [{ name: part.name, state: part.state, input: part.input, output: part.output }] : [],
+      part.type === "tool" ? [{ callId: part.callId, name: part.name, state: part.state, input: part.input, output: part.output }] : [],
     ),
   );
 }

@@ -25,6 +25,8 @@ import type { RunBudgetStore } from "../core/ports/run-budget-store";
 import type { TraceSink } from "../core/ports/trace-sink";
 import type { OperatorReadLog } from "../core/ports/operator-read-log";
 import type { SessionOwnerStore } from "../core/ports/session-owner-store";
+import type { ErrandHandoffStore } from "../core/ports/errand-handoff-store";
+import type { NewErrandDependencies } from "../core/use-cases/start-new-errand";
 import type { OperatorReadDependencies } from "../core/use-cases/record-operator-read";
 import { admitToolCalls } from "../core/use-cases/admit-tool-calls";
 import { recordModelContext } from "../core/use-cases/record-model-context";
@@ -50,6 +52,7 @@ import { SqliteProviderEventLog } from "../adapters/sqlite/sqlite-provider-event
 import { SqliteWorldStateStore } from "../adapters/sqlite/sqlite-world-state-store";
 import { SqliteOperatorReadLog } from "../adapters/sqlite/sqlite-operator-read-log";
 import { SqliteSessionOwnerStore } from "../adapters/sqlite/sqlite-session-owner-store";
+import { SqliteErrandHandoffStore } from "../adapters/sqlite/sqlite-errand-handoff-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
@@ -132,6 +135,7 @@ class Container {
   #worldStates: SqliteWorldStateStore | undefined;
   #providerEvents: SqliteProviderEventLog | undefined;
   #sessionOwners: SessionOwnerStore | undefined;
+  #errandHandoffs: ErrandHandoffStore | undefined;
   #operatorReads: OperatorReadLog | undefined;
 
   constructor(settings: WorldSettings) {
@@ -371,6 +375,17 @@ class Container {
   /** What the home composer starts an errand with: its chips become the errand before the first model turn. */
   get draftErrandDependencies(): DraftErrandDependencies {
     return { ...this.errandDependencies, calendar: this.clock };
+  }
+
+  /** New errand cards and the chats their jobs moved to (ticket 24). */
+  get errandHandoffs(): ErrandHandoffStore {
+    this.#errandHandoffs ??= new SqliteErrandHandoffStore(this.database);
+    return this.#errandHandoffs;
+  }
+
+  /** The session's own tool calls come from eve, so the agent ring adds `toolCalls`. */
+  get newErrandDependencies(): Omit<NewErrandDependencies, "toolCalls"> {
+    return { ...this.errandDependencies, handoffs: this.errandHandoffs };
   }
 
   /** Everything the home screen reads, on the world's clock. */

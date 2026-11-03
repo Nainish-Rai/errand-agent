@@ -29,6 +29,9 @@ import {
   MemoryFactResponseSchema,
   SeedMemoryResponseSchema,
   SwitchScenarioResponseSchema,
+  DismissNewErrandResponseSchema,
+  GetErrandHandoffsResponseSchema,
+  StartNewErrandResponseSchema,
   type ActionIntentView,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
@@ -38,6 +41,11 @@ import {
   type ProposalView,
   type CorrectMemoryFactRequest,
   type DraftErrandRequest,
+  type DismissNewErrandRequest,
+  type ErrandHandoffView,
+  type GetErrandHandoffsResponse,
+  type StartNewErrandRequest,
+  type StartNewErrandResponse,
   type GetHomeSummaryResponse,
   type ErrandView,
   type ForgetMemoryFactResponse,
@@ -161,6 +169,38 @@ export class ApiClient {
       GetErrandResponseSchema,
     );
     return body.errand;
+  }
+
+  /** How the chat's New errand cards were settled, and the chat it was started from (ticket 24). */
+  async getErrandHandoffs(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetErrandHandoffsResponse> {
+    return await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/handoffs`,
+      { method: "GET", signal: options.signal },
+      GetErrandHandoffsResponseSchema,
+    );
+  }
+
+  /**
+   * "Start in a new chat" on a New errand card in `sessionId`: the refused search's details become
+   * the errand of `request.toSessionId` (a new session), before its first message. A card moved
+   * earlier answers with the chat it went to; a dismissed card (409) throws an ApiRequestError.
+   */
+  async startNewErrand(sessionId: string, request: StartNewErrandRequest): Promise<StartNewErrandResponse> {
+    return await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/handoffs`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      StartNewErrandResponseSchema,
+    );
+  }
+
+  /** "Not now" on a New errand card. Returns how the card is settled: dismissed, or moved by an earlier tap. */
+  async dismissNewErrand(sessionId: string, request: DismissNewErrandRequest): Promise<ErrandHandoffView> {
+    const body = await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/handoffs/dismiss`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      DismissNewErrandResponseSchema,
+    );
+    return body.handoff;
   }
 
   /**

@@ -59,7 +59,7 @@ against the contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`
 `GET /sessions/:id/trace`, `GET /sessions/:id/context` (operators only), `GET /ops/sessions`, `GET /ops/sessions/:id/transcript`, `GET /ops/sessions/:id/reads` (operators only), `GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`,
 `GET /proposals/:id`, `GET /bookings`, `GET /action-intents`, `GET /sessions/:id/action-intents`, `GET /memory`, `PATCH /memory/:key`,
 `DELETE /memory/:key`, `POST /memory/:id/confirm`, `POST /dev/scenario`, `PUT /dev/model-script`,
-`PUT /dev/run-limits`, `PUT /dev/world-fault`, `POST /dev/world-events/provider-cancelled` (a provider cancels a booking; the agent handles the event), `PUT /dev/memory` (seed the person's memory), `GET /home` (the home summary), `POST /sessions/:id/errand` (draft the errand from the composer's chips). `sessions/current` is the chat session the page
+`PUT /dev/run-limits`, `PUT /dev/world-fault`, `POST /dev/world-events/provider-cancelled` (a provider cancels a booking; the agent handles the event), `PUT /dev/memory` (seed the person's memory), `GET /home` (the home summary), `POST /sessions/:id/errand` (draft the errand from the composer's chips). `GET /sessions/:id/handoffs`, `POST /sessions/:id/handoffs`, `POST /sessions/:id/handoffs/dismiss` (New errand cards, ticket 24). `sessions/current` is the chat session the page
 opened (read from its `/eve/v1/session/…` requests). When a ticket adds a route to the client,
 add it to `tools/verify/src/world-api.ts`.
 
