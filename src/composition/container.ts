@@ -189,10 +189,14 @@ class Container {
 }
 
 // One instance per process: the tools and the app API channel must read the same world, so the
-// dev scenario switch reaches the tools.
-let instance: Container | undefined;
+// dev scenario switch reaches the tools. It is kept on globalThis, not in a module variable,
+// because eve bundles the instrumentation apart from the tools and channels: a module variable gave
+// the run trace its own container, with an empty errand store, so it couldn't see the errand a run
+// left behind.
+const INSTANCE = Symbol.for("errand-agent.container");
 
 export function container(): Container {
-  instance ??= new Container({ scenario: "default", seed: DEFAULT_WORLD_SEED });
-  return instance;
+  const holder = globalThis as { [INSTANCE]?: Container };
+  holder[INSTANCE] ??= new Container({ scenario: "default", seed: DEFAULT_WORLD_SEED });
+  return holder[INSTANCE];
 }

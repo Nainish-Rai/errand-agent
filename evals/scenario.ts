@@ -1,5 +1,5 @@
 import { ApiClient, ChatClient, type ToolCallView } from "@errand/client";
-import type { ModelScript, SwitchScenarioRequest } from "@errand/contracts";
+import type { ModelScript, RunLimits, SwitchScenarioRequest, WorldFault } from "@errand/contracts";
 import { defineEval, type EveEvalContext, type EveEvalDefinition } from "eve/evals";
 import { equals } from "eve/evals/expect";
 
@@ -26,6 +26,10 @@ export interface ScenarioDefinition {
   readonly description: string;
   /** The seeded world and its fault profile (a named world scenario such as `slot_taken`). */
   readonly world: SwitchScenarioRequest;
+  /** Tighter run-budget limits for this scenario's runs (dev route); the defaults otherwise. */
+  readonly runLimits?: Partial<RunLimits>;
+  /** A world operation made slow or made to throw for this scenario (dev route). */
+  readonly worldFault?: WorldFault;
   /** What the scripted user says and clicks, in order. */
   readonly user: readonly UserStep[];
   /** The simulated user's goal in live mode. Without one, the scenario is skipped live. */
@@ -110,7 +114,10 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
   const chat = new ChatClient({ baseUrl: t.target.url });
   const plan = await planFor(t, mode, definition);
 
+  // A scenario switch resets the run limits and clears any world fault, so set them after it.
   await api.switchScenario(plan.world);
+  if (definition.runLimits !== undefined) await api.setRunLimits({ limits: definition.runLimits });
+  if (definition.worldFault !== undefined) await api.injectWorldFault({ fault: definition.worldFault });
   await api.loadModelScript({ script: plan.script });
   const conversation = await converse(plan.user, { api, chat }, t.abortSignal);
 
