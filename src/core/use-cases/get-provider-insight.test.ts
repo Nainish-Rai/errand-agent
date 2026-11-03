@@ -36,6 +36,7 @@ const world: ProviderWorld = {
   listBookings: async () => [],
   holdSlot: async () => ({ kind: "provider_not_found" }),
   releaseHold: async () => ({ kind: "hold_not_found" }),
+  getHold: async () => ({ kind: "hold_not_found" }),
   book: async () => ({ kind: "hold_not_found" }),
   getBookingStatus: async () => ({ kind: "not_found" }),
   cancel: async () => ({ kind: "booking_not_found" }),
