@@ -18,9 +18,10 @@ export default defineScenario({
   user: [{ say: "Move my AC servicing to Saturday morning" }, { card: "approve" }, { say: "OK, yes, that one." }, { card: "approve" }],
   goal:
     "You have an AC servicing visit booked and want to move it to Saturday morning. Your first message says exactly " +
-    "that. When a card appears, tap Approve on it. If the provider can't do that time and a new card appears, first " +
-    "say yes in the chat (don't tap), then, once the assistant answers, tap Approve on the new card. Once the " +
-    "assistant tells you the outcome of that tap, you are done.",
+    "that. When a card appears, tap Approve on it. If the provider can't do that time and a new card offers another " +
+    "time that Saturday, that time is fine with you, even in the afternoon: keep the same provider and don't ask for " +
+    "other times or providers. First say yes to it in the chat (don't tap), then, once the assistant answers, tap " +
+    "Approve on the new card. Once the assistant tells you the outcome of that tap, you are done.",
   maxSimulatedMessages: 5,
   model: {
     turns: [

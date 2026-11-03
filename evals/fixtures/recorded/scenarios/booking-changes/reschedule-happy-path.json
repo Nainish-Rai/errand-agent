@@ -1,0 +1,123 @@
+{
+  "scenario": "scenarios/booking-changes/reschedule-happy-path",
+  "recordedAt": "2026-11-03T03:06:36.827Z",
+  "evalRunId": "8d8d249c-11be-423e-b050-287b2f5546f8",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Move my AC servicing to Saturday"
+    },
+    {
+      "say": "2 pm works for me"
+    },
+    {
+      "card": "approve"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll pull up your bookings to find the AC servicing one.",
+            "toolCalls": [
+              {
+                "name": "list_bookings",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Found it — AC servicing with Ravi Aircon Experts on 9 Nov. Let me check what's free on Saturday (7 Nov).",
+            "toolCalls": [
+              {
+                "name": "find_reschedule_slots",
+                "input": {
+                  "booking_id": "bkg_seed_3",
+                  "from": "2026-11-07",
+                  "to": "2026-11-07"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Saturday 7 Nov has a few slots. Since you didn't name a time, I'll match your current 11:00 am slot — the closest is 10:00 am (8:00 am ends an hour early).",
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "reschedule",
+                  "booking_id": "bkg_seed_3",
+                  "slot": {
+                    "start": "2026-11-07T10:00:00+05:30",
+                    "end": "2026-11-07T11:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Saturday 7 Nov is still open with Ravi Aircon Experts, but there's no 10:00 am slot. Available times:",
+            "toolCalls": [
+              {
+                "name": "ask_ui",
+                "input": {
+                  "ui": "root = Stack([picker])\npicker = SlotPicker(\"prv_ac_servicing_koramangala_1\", \"2026-11-07\")"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Pick one of the Saturday slots in the chat above and I'll set up the move for you."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "reschedule",
+                  "booking_id": "bkg_seed_3",
+                  "slot": {
+                    "start": "2026-11-07T14:00:00+05:30",
+                    "end": "2026-11-07T15:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "The card is on screen — it moves Ravi Aircon Experts from Mon 9 Nov 11:00 am to Sat 7 Nov 2:00 pm, same ₹999. Check it and tap Approve."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Moved — Ravi Aircon Experts is now set for Saturday 7 Nov at 2:00 pm instead of Monday 9 Nov 11:00 am. Booking ID bkg_seed_3, same ₹999."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.009268379999999998,
+    "simulatedUser": 0.07066220000000001
+  }
+}

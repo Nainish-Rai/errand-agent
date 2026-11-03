@@ -1,0 +1,123 @@
+{
+  "scenario": "scenarios/booking-changes/reschedule-slot-conflict",
+  "recordedAt": "2026-11-03T03:11:00.613Z",
+  "evalRunId": "42ef4875-7aa3-4f5d-9306-6d0dfe717421",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "reschedule_conflict",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I have an AC servicing appointment booked and I'd like to move it to Saturday morning if possible."
+    },
+    {
+      "card": "approve"
+    },
+    {
+      "say": "That works for me, 2:00 PM on Saturday is fine."
+    },
+    {
+      "card": "approve"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll pull up your bookings to find the AC servicing appointment.",
+            "toolCalls": [
+              {
+                "name": "list_bookings",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Found it — AC servicing with Ravi Aircon Experts. Let me check what slots are free that Saturday morning.",
+            "toolCalls": [
+              {
+                "name": "find_reschedule_slots",
+                "input": {
+                  "booking_id": "bkg_seed_3",
+                  "from": "2026-11-07",
+                  "to": "2026-11-07"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Saturday morning has one open slot — 8:00 to 9:00 AM with the same provider. Let me put that up for approval.",
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "reschedule",
+                  "booking_id": "bkg_seed_3",
+                  "slot": {
+                    "start": "2026-11-07T08:00:00+05:30",
+                    "end": "2026-11-07T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "The reschedule card is on screen — moving your AC servicing (Ravi Aircon Experts, ₹999) from Monday 9 Nov 11:00 AM to Saturday 7 Nov 8:00 AM. Please check the card and tap Approve if it looks right; nothing moves until you do."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Nothing moved — the 8:00 AM Saturday slot was taken before the tap went through. A new card is on screen offering Saturday 7 Nov at 2:00 PM with the same provider and price; the other free Saturday slots are 3:00 PM and 6:00 PM.\n\nDo you want to tap Approve on the 2:00 PM card, or would you rather pick one of the later slots?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Nothing is changed yet — a typed \"yes\" doesn't approve the move, only a tap on the card's Approve button does. The 2:00 PM Saturday card is shown again; please tap Approve ₹999 on it and the move will go through."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Moved — your AC servicing with Ravi Aircon Experts is now Saturday, 7 Nov at 2:00 PM IST (was Monday, 9 Nov at 11:00 AM). Booking ID bkg_seed_3."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.01023648,
+    "simulatedUser": 0.1104223
+  }
+}

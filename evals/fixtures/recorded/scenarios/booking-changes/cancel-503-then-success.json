@@ -1,0 +1,68 @@
+{
+  "scenario": "scenarios/booking-changes/cancel-503-then-success",
+  "recordedAt": "2026-11-03T03:06:03.926Z",
+  "evalRunId": "8d8d249c-11be-423e-b050-287b2f5546f8",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I have an AC servicing visit booked and I need to cancel it."
+    },
+    {
+      "card": "approve"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "list_bookings",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "cancel",
+                  "booking_id": "bkg_seed_3"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Your cancellation card is on screen. Please check it and tap **Approve free cancellation** if everything looks right."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Cancelled: your Ravi Aircon Experts visit on Mon, 9 Nov, 11:00 am IST (booking bkg_seed_3). There’s no cancellation fee."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0058014,
+    "simulatedUser": 0.045118700000000005
+  }
+}
