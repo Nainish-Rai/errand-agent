@@ -18,10 +18,15 @@ const SUGGESTIONS = ["Plumber for a leaking kitchen tap this week", "AC servicin
 
 const clockFormat = new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
-/** Re-renders every few seconds, so "0:42 ago" labels keep moving between refreshes. */
+/**
+ * Re-renders every few seconds, so "0:42 ago" labels keep moving between refreshes. The clock is
+ * read only after mount: the page is prerendered, and every label that uses it waits for the
+ * fetched summary anyway.
+ */
 function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
   useEffect(() => {
+    setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), intervalMs);
     return () => clearInterval(timer);
   }, [intervalMs]);
