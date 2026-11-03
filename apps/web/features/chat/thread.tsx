@@ -133,7 +133,8 @@ function Composer() {
 export function Thread() {
   return (
     <ThreadPrimitive.Root className="flex h-dvh flex-col bg-page">
-      <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto px-4">
+      {/* relative: the scroller contains its absolute children (sr-only labels), so they never stretch the page past the screen. */}
+      <ThreadPrimitive.Viewport className="relative flex flex-1 flex-col overflow-y-auto px-4">
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 pt-14">
           <ThreadPrimitive.Empty>
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
