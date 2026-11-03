@@ -22,14 +22,17 @@ function generator(seed: number): () => number {
 
 export type Chunk = { readonly at: number; readonly text: string };
 
-/** The answer as bursts: each chunk's arrival time and the text so far. */
-export function burstyStream(text: string, seed: number): Chunk[] {
+/**
+ * The answer as bursts: each chunk's arrival time and the text so far. `largestChunk` caps a burst
+ * (140 characters by default; the gallery uses smaller ones so its stream lasts long enough to watch).
+ */
+export function burstyStream(text: string, seed: number, largestChunk = 140): Chunk[] {
   const random = generator(seed);
   const chunks: Chunk[] = [];
   let at = 120;
   let cut = 0;
   while (cut < text.length) {
-    const size = 1 + Math.floor(random() * 140);
+    const size = 1 + Math.floor(random() * largestChunk);
     cut = Math.min(text.length, cut + size);
     chunks.push({ at, text: text.slice(0, cut) });
     at += random() < 0.25 ? 350 + random() * 450 : 10 + random() * 140;

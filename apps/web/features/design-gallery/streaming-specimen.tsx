@@ -10,6 +10,9 @@ import { StreamingAnswer } from "@/features/chat/streaming/streaming-answer";
 // bursty fake model the tests use, so the reveal and the per-word blur-in can be watched (and
 // screenshot mid-stream) without a model. The reduced-motion panel forces the reduced look.
 
+/** Smaller bursts than the tests use, so the stream lasts several seconds. */
+const GALLERY_CHUNK = 24;
+
 export function StreamingSpecimen({ label, reduced = false }: { readonly label: string; readonly reduced?: boolean }) {
   const [run, setRun] = useState(0);
   const [text, setText] = useState(ANSWER);
@@ -17,7 +20,7 @@ export function StreamingSpecimen({ label, reduced = false }: { readonly label: 
 
   useEffect(() => {
     if (run === 0) return;
-    const chunks = burstyStream(ANSWER, 7);
+    const chunks = burstyStream(ANSWER, 7, GALLERY_CHUNK);
     const timers = chunks.map((chunk) => setTimeout(() => setText(chunk.text), chunk.at));
     timers.push(setTimeout(() => setRunning(false), chunks.at(-1)!.at + 30));
     return () => timers.forEach(clearTimeout);
