@@ -99,9 +99,13 @@ export function approvalAmount(proposal: ApprovalProposal): number {
   return proposal.kind === "cancel" ? proposal.fee : proposal.price;
 }
 
-/** "Approve ₹899", the price (a cancellation's fee) on the button; a cancellation with no fee says it is free. */
+/**
+ * "Approve ₹899" for a booking, the money it moves. A cancellation shows its fee, or says it is
+ * free; a move charges nothing new, so its button names the move, not the visit's price.
+ */
 export function approveLabel(proposal: ApprovalProposal): string {
-  if (proposal.kind !== "cancel") return `Approve ${formatRupees(approvalAmount(proposal))}`;
+  if (proposal.kind === "book") return `Approve ${formatRupees(approvalAmount(proposal))}`;
+  if (proposal.kind === "reschedule") return "Approve move";
   return proposal.fee === 0 ? "Approve free cancellation" : `Approve ${formatRupees(proposal.fee)}`;
 }
 

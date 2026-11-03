@@ -97,8 +97,13 @@
         },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Approve ₹899", "count": 4 },
-          "note": "pending booking and reschedule offer Approve with the price"
+          "options": { "role": "button", "name": "Approve ₹899", "count": 2 },
+          "note": "a pending booking offers Approve with the price"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Approve move", "count": 2 },
+          "note": "a reschedule charges nothing new, so its Approve names the move"
         },
         {
           "command": "assert",

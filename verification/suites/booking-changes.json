@@ -233,7 +233,7 @@
           "command": "click",
           "options": {
             "role": "button",
-            "name": "Approve ₹999"
+            "name": "Approve move"
           }
         },
         {
@@ -499,7 +499,7 @@
           "command": "click",
           "options": {
             "role": "button",
-            "name": "Approve ₹999"
+            "name": "Approve move"
           }
         },
         {
@@ -525,7 +525,7 @@
           "command": "assert",
           "options": {
             "role": "button",
-            "name": "Approve ₹999",
+            "name": "Approve move",
             "count": 1
           },
           "note": "exactly one card can still be approved: the fresh one"
@@ -601,7 +601,7 @@
           "command": "click",
           "options": {
             "role": "button",
-            "name": "Approve ₹999"
+            "name": "Approve move"
           }
         },
         {
