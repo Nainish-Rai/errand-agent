@@ -323,7 +323,8 @@ describe("cancel", () => {
     expect(await world.cancel(booked.bookingId, "cancel-1")).toEqual({ kind: "cancelled", bookingId: booked.bookingId });
     expect(await world.cancel(booked.bookingId, "cancel-1")).toEqual({ kind: "cancelled", bookingId: booked.bookingId });
     const bookings = await world.listBookings("dev-user");
-    expect(bookings.find((booking) => booking.bookingId === booked.bookingId)?.status).toBe("cancelled");
+    const cancelled = bookings.find((booking) => booking.bookingId === booked.bookingId);
+    expect([cancelled?.status, cancelled?.cancelledBy]).toEqual(["cancelled", "person"]);
   });
 });
 

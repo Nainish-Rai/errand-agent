@@ -18,6 +18,8 @@ export const BookingSummarySchema = z.object({
   slot: SlotSchema,
   priceInr: z.number(),
   status: z.enum(["upcoming", "completed", "cancelled"]),
+  /** Who cancelled a cancelled booking: the provider (ticket 14) or the person. */
+  cancelledBy: z.enum(["provider", "person"]).nullable(),
 });
 
 export const ListBookingsOutputSchema = z.object({

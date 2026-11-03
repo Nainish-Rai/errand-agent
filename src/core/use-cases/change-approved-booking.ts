@@ -14,7 +14,7 @@ import {
   type RescheduleTerms,
 } from "../approval/proposal";
 import { bookingChangeIntentFor, isResolved, ledgerEvent, type BookingChangeIntent } from "../booking/action-intent";
-import { isChangeable } from "../booking/booking-change";
+import { isCancelledByProvider, isChangeable } from "../booking/booking-change";
 import type { TracePlace } from "../errand/errand-workflow";
 import type { Slot } from "../ports/provider-world";
 import { ledgerDependenciesOf, type BookingDependencies } from "./book-approved-proposal";
@@ -64,8 +64,8 @@ export type ExecuteBookingChangeOutcome =
       readonly changes: readonly TermChange[];
       readonly freshProposal: BookingChangeProposal;
     }
-  /** The booking was completed, cancelled or started since the card. Nothing changed. */
-  | { readonly kind: "booking_unavailable"; readonly proposal: BookingChangeProposal };
+  /** The booking was completed, cancelled (by the provider, or before) or started since the card. Nothing changed. */
+  | { readonly kind: "booking_unavailable"; readonly proposal: BookingChangeProposal; readonly cancelledByProvider: boolean };
 
 function isCancellation(proposal: BookingChangeProposal): proposal is ProposalOf<CancellationTerms> {
   return proposal.terms.action === "cancel";
@@ -153,7 +153,11 @@ async function revalidated(
   if (live !== undefined && fingerprintOf(live, deps.hasher) === grant.fingerprint) return undefined;
   const nowMs = deps.worldClock.now().getTime();
   await deps.proposals.voidGrant(grant.grantId, nowMs);
-  if (live === undefined) return { kind: "booking_unavailable", proposal: await saved(deps, { ...proposal, status: "voided" }) };
+  if (live === undefined) {
+    const booking = await bookingOf(deps.world, proposal.userId, proposal.terms.bookingId);
+    const cancelledByProvider = booking !== undefined && isCancelledByProvider(booking);
+    return { kind: "booking_unavailable", proposal: await saved(deps, { ...proposal, status: "voided" }), cancelledByProvider };
+  }
   const who = { proposalId: deps.ids.next("prp"), sessionId: proposal.sessionId, userId: proposal.userId };
   const fresh = proposeChange(live, who, deps.hasher, nowMs);
   const changes = termChangesBetween(proposal.terms, fresh.terms);

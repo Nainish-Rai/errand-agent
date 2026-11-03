@@ -210,6 +210,12 @@ class FakeWorld implements Partial<ProviderWorld> {
     });
   }
 
+  /** The provider cancels the visit on its side (ticket 14). */
+  cancelByProvider(bookingId: string) {
+    const booking = this.bookings.get(bookingId);
+    if (booking !== undefined) this.bookings.set(bookingId, { ...booking, status: "cancelled", cancelledBy: "provider" });
+  }
+
   async listBookings() {
     this.listCalls.push(1);
     return [...this.bookings.values()];
@@ -231,7 +237,7 @@ class FakeWorld implements Partial<ProviderWorld> {
       this.cancelFailures -= 1;
       return { kind: "service_unavailable" };
     }
-    this.bookings.set(bookingId, { ...booking, status: "cancelled" });
+    this.bookings.set(bookingId, { ...booking, status: "cancelled", cancelledBy: "person" });
     const outcome: CancelOutcome = { kind: "cancelled", bookingId };
     this.#keys.set(key, outcome);
     return outcome;
@@ -448,6 +454,50 @@ describe("cancelling", () => {
     expect(booking?.changes.map((change) => [change.proposal.proposalId, change.grant?.grantId, change.grant?.consumedAtMs !== undefined])).toEqual([
       [proposal.proposalId, grant.grantId, true],
     ]);
+  });
+});
+
+describe("a booking the provider already cancelled", () => {
+  it("gets no cancellation card: the booking says the provider cancelled it", async () => {
+    const setup = setUp();
+    setup.world.cancelByProvider("bkg_seed_3");
+    const outcome = await proposeCancellation(setup.deps, { place: PLACE, userId: USER, bookingId: "bkg_seed_3" });
+    if (outcome.kind !== "not_changeable") throw new Error(outcome.kind);
+    expect(outcome.booking.cancelledBy).toBe("provider");
+    expect(setup.proposals.proposals.size).toBe(0);
+  });
+
+  it("cancelled by the provider after the tap: nothing is sent, the grant is voided, and the outcome says who cancelled", async () => {
+    const setup = setUp();
+    const proposal = await cancellationCard(setup);
+    await approve(setup, proposal);
+    setup.world.cancelByProvider("bkg_seed_3");
+
+    const outcome = await execute(setup);
+    expect(outcome).toMatchObject({ kind: "booking_unavailable", cancelledByProvider: true });
+    expect(setup.world.cancelCalls).toEqual([]);
+    expect((await setup.proposals.grantOf(proposal.proposalId))?.voidedAtMs).toBeDefined();
+  });
+
+  it("cancelled by the provider while the person's cancel was in flight: never confirmed as the person's cancel", async () => {
+    const setup = setUp();
+    const proposal = await cancellationCard(setup);
+    const grant = await approve(setup, proposal);
+    // The process sent cancel, the provider cancelled on its side, and the process died before the reply.
+    await setup.ledger.record({ ...bookingChangeIntentFor(proposal, grant, setup.clock.ms), attempts: 1 });
+    setup.world.cancelByProvider("bkg_seed_3");
+
+    const { resolved } = await reconcilePendingActions(setup.deps, {});
+    expect(resolved.map((intent) => [intent.state, intent.failureReason])).toEqual([["failed", "cancelled_by_provider"]]);
+    const [notice] = await takeBookingNotices(setup.deps, { sessionId: SESSION });
+    expect(notice).toMatchObject({ kind: "change_failed", reason: "cancelled_by_provider" });
+  });
+
+  it("the person's own cancel is marked as theirs", async () => {
+    const setup = setUp();
+    await approve(setup, await cancellationCard(setup));
+    expect((await execute(setup)).kind).toBe("cancelled");
+    expect(setup.world.bookings.get("bkg_seed_3")?.cancelledBy).toBe("person");
   });
 });
 

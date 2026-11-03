@@ -17,6 +17,7 @@ function presentSummary({ booking, area }: BookingRecord): BookingSummary {
     slot: { start: booking.slot.start, end: booking.slot.end },
     priceInr: booking.priceInr,
     status: booking.status,
+    cancelledBy: booking.cancelledBy ?? null,
   };
 }
 
@@ -34,6 +35,7 @@ export function presentBookingHistory(history: BookingHistory): ListBookingsOutp
 }
 
 function notChangeable(booking: Booking): string {
+  if (booking.cancelledBy === "provider") return "That booking was already cancelled by the provider, so it can't be moved.";
   return `That booking is ${booking.status === "upcoming" ? "already under way" : booking.status}, so it can't be moved.`;
 }
 

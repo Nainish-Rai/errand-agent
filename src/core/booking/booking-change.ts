@@ -13,6 +13,11 @@ export function isChangeable(booking: Booking, nowMs: number): boolean {
   return booking.status === "upcoming" && Date.parse(booking.slot.start) > nowMs;
 }
 
+/** The provider cancelled it (ticket 14): the person's cancel or move has nothing left to act on. */
+export function isCancelledByProvider(booking: Booking): boolean {
+  return booking.status === "cancelled" && booking.cancelledBy === "provider";
+}
+
 export function isSameSlot(a: Slot, b: Slot): boolean {
   return Date.parse(a.start) === Date.parse(b.start);
 }
@@ -68,6 +73,8 @@ export function readRescheduleReply(reply: RescheduleOutcome): ChangeReplyReadin
  */
 export function settleChangeFromStatus(intent: BookingChangeIntent, booking: Booking | undefined, lastReply?: string): ChangeSettlement {
   if (booking === undefined) return { kind: "fail", reason: "booking_not_found" };
+  // A cancelled booking reads as the person's cancel only if the person cancelled it.
+  if (isCancelledByProvider(booking)) return { kind: "fail", reason: "cancelled_by_provider" };
   if (showsChange(intent, booking)) return { kind: "confirm" };
   // Completed, or cancelled by someone else while a move was pending: nothing left to change.
   if (booking.status !== "upcoming") return { kind: "fail", reason: "booking_not_changeable" };

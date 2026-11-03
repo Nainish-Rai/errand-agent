@@ -258,7 +258,10 @@ export function presentProposeChangeOutcome(outcome: ProposeBookingChangeOutcome
         kind: "not_changeable",
         bookingId: outcome.booking.bookingId,
         status: outcome.booking.status,
-        message: `That booking is ${outcome.booking.status === "upcoming" ? "already under way" : outcome.booking.status}, so it can't be cancelled or moved.`,
+        message:
+          outcome.booking.cancelledBy === "provider"
+            ? "That booking was already cancelled by the provider, so there is nothing to cancel or move. Offer to find another provider."
+            : `That booking is ${outcome.booking.status === "upcoming" ? "already under way" : outcome.booking.status}, so it can't be cancelled or moved.`,
       };
     case "same_slot":
       return { kind: "same_slot", bookingId: outcome.booking.bookingId, message: "The booking is already at that time. Ask which time they want instead." };
@@ -344,6 +347,7 @@ function changeFailureMessage(action: BookingChangeTerms["action"], reason: stri
   if (reason === "service_unavailable") {
     return `The provider's system kept failing, so ${NOTHING_DONE[action]}: your booking is as it was. I can try again with a new card.`;
   }
+  if (reason === "cancelled_by_provider") return `That booking was already cancelled by the provider, so ${NOTHING_DONE[action]}.`;
   if (reason === "booking_not_found" || reason === "booking_not_changeable") {
     return `That booking can no longer be changed (it's done, cancelled or under way), so ${NOTHING_DONE[action]}.`;
   }
@@ -368,7 +372,10 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
         ? `That booking (${outcome.proposal.terms.bookingId}) is already cancelled; nothing new was done.`
         : `That booking (${outcome.proposal.terms.bookingId}) was already moved; nothing new was done.`;
     case "booking_unavailable":
-      return changeFailureMessage(outcome.proposal.terms.action === "cancel" ? "cancel" : "reschedule", "booking_not_changeable");
+      return changeFailureMessage(
+        outcome.proposal.terms.action === "cancel" ? "cancel" : "reschedule",
+        outcome.cancelledByProvider ? "cancelled_by_provider" : "booking_not_changeable",
+      );
     case "not_approved": {
       const { terms } = outcome.proposal;
       return (

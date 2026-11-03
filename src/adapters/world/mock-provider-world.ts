@@ -288,7 +288,7 @@ export class MockProviderWorld implements ProviderWorld {
     this.#cancelAttempts.set(bookingId, attempt);
     if (attempt <= this.#scenario.cancelFailuresBeforeSuccess) return { kind: "service_unavailable" };
 
-    this.#bookings.set(bookingId, { ...booking, status: "cancelled" });
+    this.#bookings.set(bookingId, { ...booking, status: "cancelled", cancelledBy: "person" });
     const outcome: CancelOutcome = { kind: "cancelled", bookingId };
     this.#keys.set(idempotencyKey, { operation: "cancel", bookingId, outcome });
     return outcome;
