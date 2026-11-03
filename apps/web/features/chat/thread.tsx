@@ -12,6 +12,7 @@ import { ArrowUp, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GeneratedUiPart } from "@/features/generated-ui";
+import { MemoryUpdatedPart } from "@/features/memory-panel/memory-updated-line";
 import { ProviderUpdateNotice } from "@/features/trust";
 
 import { ExecutionPart, ProposalCardPart, useHasPendingApproval } from "./approval-card-part";
@@ -76,6 +77,10 @@ function AssistantMessage() {
               get_provider_insight: ProviderInsight,
               present_ui: GeneratedUiPart,
               ask_ui: GeneratedUiPart,
+              remember_fact: MemoryUpdatedPart,
+              correct_fact: MemoryUpdatedPart,
+              confirm_fact: MemoryUpdatedPart,
+              forget_fact: MemoryUpdatedPart,
             },
             Fallback: ToolStatus,
           },

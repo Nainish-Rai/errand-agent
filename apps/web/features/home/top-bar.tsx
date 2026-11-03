@@ -32,10 +32,10 @@ import {
 import { cn } from "@/lib/utils";
 
 import { errandTitle, stepLabel } from "./errand-words";
-import { providerAlertHref } from "./widgets";
+import { providerAlertHref } from "./home-lists";
 
-// The bar at the top of home: the home switcher, search (a command menu, ⌘K), the theme toggle and the
-// notification bell. The bell counts alerts that need the person; ticket 14 adds the live feed.
+// The bar at the top of home: the home switcher, search (a command menu, ⌘K), memory (the memory sheet),
+// the theme toggle and the notification bell. The bell counts alerts that need the person.
 
 type Summary = GetHomeSummaryResponse;
 
@@ -80,11 +80,12 @@ function HomeSwitcher({ waiting }: { readonly waiting: number }) {
   );
 }
 
-function CommandMenu({ open, onOpenChange, summary, onNewErrand }: {
+function CommandMenu({ open, onOpenChange, summary, onNewErrand, onOpenMemory }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly summary?: Summary;
   readonly onNewErrand: () => void;
+  readonly onOpenMemory: () => void;
 }) {
   const router = useRouter();
   const { toggleTheme } = useTheme();
@@ -106,7 +107,12 @@ function CommandMenu({ open, onOpenChange, summary, onNewErrand }: {
           >
             <MessageSquarePlus /> New errand
           </CommandItem>
-          <CommandItem onSelect={() => go("/chat?rail=memory")}>
+          <CommandItem
+            onSelect={() => {
+              onOpenChange(false);
+              onOpenMemory();
+            }}
+          >
             <Brain /> Open memory
           </CommandItem>
           <CommandItem
@@ -180,7 +186,7 @@ function NotificationBell({ summary }: { readonly summary?: Summary }) {
   );
 }
 
-export function TopBar({ summary, onNewErrand }: { readonly summary?: Summary; readonly onNewErrand: () => void }) {
+export function TopBar({ summary, onNewErrand, onOpenMemory }: { readonly summary?: Summary; readonly onNewErrand: () => void; readonly onOpenMemory: () => void }) {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
@@ -195,7 +201,7 @@ export function TopBar({ summary, onNewErrand }: { readonly summary?: Summary; r
   }, []);
 
   return (
-    <nav aria-label="Home bar" className="absolute inset-x-3 top-2.5 z-20 flex items-center justify-between gap-2">
+    <nav aria-label="Home bar" className="mx-auto flex w-full max-w-[42rem] items-center justify-between gap-2 px-4 pt-3">
       <HomeSwitcher waiting={summary?.counts.waitingOnYou ?? 0} />
       <div className="flex items-center gap-1.5">
         <button type="button" className={glass} onClick={() => setSearching(true)} aria-keyshortcuts="Meta+K Control+K">
@@ -203,10 +209,14 @@ export function TopBar({ summary, onNewErrand }: { readonly summary?: Summary; r
           Search
           <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
         </button>
+        <button type="button" className={glass} onClick={onOpenMemory} aria-haspopup="dialog">
+          <Brain aria-hidden className="size-3.5" />
+          Memory
+        </button>
         <ThemeToggle className="size-7 rounded-control border border-line bg-page" />
         <NotificationBell summary={summary} />
       </div>
-      <CommandMenu open={searching} onOpenChange={setSearching} summary={summary} onNewErrand={onNewErrand} />
+      <CommandMenu open={searching} onOpenChange={setSearching} summary={summary} onNewErrand={onNewErrand} onOpenMemory={onOpenMemory} />
     </nav>
   );
 }
