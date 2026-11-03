@@ -63,6 +63,11 @@ export class ChatClient {
     return session;
   }
 
+  /** An existing session, for a UI that reopens a chat (it replays the session's stream itself). */
+  attachSession(sessionId: string): ClientSession {
+    return this.#sessions.get(sessionId) ?? this.#client.sessions.attach(sessionId);
+  }
+
   /** Starts a session with its first message and waits for the turn to settle. */
   async sendFirstMessage(text: string, options: { readonly signal?: AbortSignal } = {}): Promise<ChatTurn> {
     const { delivery, session } = await this.#client.sessions.create({ message: text });

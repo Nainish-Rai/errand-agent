@@ -9,7 +9,7 @@ export const SessionIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/, "Not a
 
 export const TraceSpanKindSchema = z.enum(["agent", "step", "model", "tool"]);
 export const TraceSpanStatusSchema = z.enum(["running", "ok", "error"]);
-export const TraceEventKindSchema = z.enum(["state_transition", "context", "run_outcome", "memory_used"]);
+export const TraceEventKindSchema = z.enum(["state_transition", "context", "run_outcome", "memory_used", "errand_drafted"]);
 
 const TraceAttributesSchema = z.record(z.string(), z.json());
 
