@@ -1,5 +1,6 @@
 // Memory rows. An explicit fact (the user said it) is solid; an inferred one uses the dashed warn
-// edge, so a guess can always be told from a fact. Confirming applies only to inferred facts.
+// edge, so a guess can always be told from a fact. Confirming applies only to inferred facts that
+// are still waiting for the person: pass `onConfirm` for those and the row shows Confirm first.
 import type { FactOrigin } from "@/components/chip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,11 @@ type MemoryFactRowProps = {
   readonly fact: MemoryFact;
   readonly onCorrect?: () => void;
   readonly onForget?: () => void;
+  /** Only for an inferred fact waiting for confirmation. */
+  readonly onConfirm?: () => void;
 };
 
-export function MemoryFactRow({ fact, onCorrect, onForget }: MemoryFactRowProps) {
+export function MemoryFactRow({ fact, onCorrect, onForget, onConfirm }: MemoryFactRowProps) {
   const inferred = fact.origin === "inferred";
   return (
     <div
@@ -31,6 +34,11 @@ export function MemoryFactRow({ fact, onCorrect, onForget }: MemoryFactRowProps)
         <div className="font-mono text-meta text-fg-meta">{fact.source}</div>
       </div>
       <Badge variant={inferred ? "inferred" : "tag"}>{fact.origin}</Badge>
+      {onConfirm !== undefined && (
+        <Button size="sm" variant="secondary" onClick={onConfirm}>
+          Confirm
+        </Button>
+      )}
       <Button size="sm" variant="ghost" onClick={onCorrect}>
         Correct
       </Button>

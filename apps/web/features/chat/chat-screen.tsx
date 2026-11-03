@@ -1,13 +1,14 @@
 "use client";
 
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
-import { ChatClient, type ClientSession } from "@errand/client";
-import { Activity } from "lucide-react";
+import { ChatClient, DEFAULT_BACKEND_URL, type ClientSession } from "@errand/client";
+import { Activity, Brain } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { MemoryPanel } from "@/features/memory-panel/memory-panel";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 
 import { backendUrl } from "./backend";
@@ -18,6 +19,7 @@ import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
 function BoundThread({ session }: { readonly session: ClientSession }) {
   const { runtime, error, sendText, sessionId, activity } = useEveAssistantRuntime(session);
   const [traceOpen, setTraceOpen] = useState(true);
+  const [memoryOpen, setMemoryOpen] = useState(false);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <SendTextProvider value={sendText}>
@@ -31,6 +33,15 @@ function BoundThread({ session }: { readonly session: ClientSession }) {
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
             <ThemeToggle />
             <Button
+              aria-pressed={memoryOpen}
+              size="sm"
+              variant="outline"
+              onClick={() => setMemoryOpen((open) => !open)}
+            >
+              <Brain />
+              {memoryOpen ? "Hide memory" : "Show memory"}
+            </Button>
+            <Button
               aria-pressed={traceOpen}
               size="sm"
               variant="outline"
@@ -42,6 +53,7 @@ function BoundThread({ session }: { readonly session: ClientSession }) {
           </div>
           <Thread />
         </div>
+        {memoryOpen && <MemoryPanel backendUrl={backendUrl} activity={activity} onClose={() => setMemoryOpen(false)} />}
         {traceOpen && (
           <TracePanel backendUrl={backendUrl} sessionId={sessionId} activity={activity} onClose={() => setTraceOpen(false)} />
         )}

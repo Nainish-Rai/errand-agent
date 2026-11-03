@@ -48,7 +48,7 @@ Evidence
   screenshot [NAME.png] [--viewport] · snapshot [NAME.txt] [target options] (ARIA tree)
   network [--method M] [--path /exact | /prefix*] [--status N] [--since ISO]
   logs [--level error] [--since ISO]                      console messages and page errors
-  api GET|POST|PUT /api/v1/... [--body JSON] [--expect JSON] [--timeout-ms MS]
+  api GET|POST|PUT|PATCH|DELETE /api/v1/... [--body JSON] [--expect JSON] [--timeout-ms MS]
       Through packages/client, so bodies are parsed against the contracts. sessions/current/... is
       the page's chat session. --expect: {"path":"spans[*].name","includes":"..."} (or a list;
       equals, includes, atLeast, length); GET expectations retry, writes are sent once.

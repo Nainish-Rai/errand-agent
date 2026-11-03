@@ -1,0 +1,344 @@
+{
+  "version": 1,
+  "title": "Memory panel: facts with badges, Correct supersedes, Forget stays forgotten, Confirm activates a guess",
+  "feature": "memory",
+  "description": "Ticket 11. The Memory panel beside the chat (Show memory toggle) lists what the agent remembers with explicit/inferred badges. Correct supersedes the fact (the old one is kept as replaced), Forget writes a tombstone that survives a reload, Confirm activates an inferred fact. Every action is checked against GET /api/v1/memory. The chat scenarios show memory filling a new errand and a chat forget reaching the open panel.",
+  "scenarios": [
+    {
+      "id": "panel-lists-facts-with-badges",
+      "title": "The panel lists each remembered fact with its explicit or inferred badge; only the guess offers Confirm",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": {
+            "body": {
+              "facts": [
+                { "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" },
+                { "key": "budget", "value": "1500", "source": "inferred", "status": "pending_confirmation" },
+                { "key": "favourite_technician", "value": "Ravi Kumar", "source": "explicit", "status": "active" }
+              ]
+            }
+          },
+          "note": "seed two explicit facts and one inferred guess"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Memory", "count": 0 },
+          "note": "the panel starts closed"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Hide memory", "attr": "aria-pressed=true" },
+          "note": "the toggle reads as on"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · Koramangala", "text": "explicit" },
+          "note": "an explicit fact has the explicit badge"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Budget · ₹1,500", "text": "inferred" },
+          "note": "a guess has the inferred badge and says it is not used until confirmed"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Budget · ₹1,500", "text": "not used until you confirm" }
+        },
+        {
+          "command": "assert",
+          "args": ["role=listitem[name=\"Budget · ₹1,500\"s] >> role=button[name=\"Confirm\"s]"],
+          "options": { "count": 1 },
+          "note": "the guess offers Confirm"
+        },
+        {
+          "command": "assert",
+          "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Confirm\"s]"],
+          "options": { "count": 0 },
+          "note": "an explicit fact has nothing to confirm"
+        },
+        {
+          "command": "assert",
+          "args": ["role=list[name=\"Remembered facts\"s] >> role=button[name=\"Forget\"s]"],
+          "options": { "count": 3 },
+          "note": "every fact has Correct and Forget"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": {
+            "expect": [
+              { "path": "facts", "length": 3 },
+              { "path": "facts[*].source", "equals": ["explicit", "inferred", "explicit"] },
+              { "path": "facts[*].status", "equals": ["active", "pending_confirmation", "active"] }
+            ]
+          },
+          "note": "world state: the backend holds the same three facts"
+        }
+      ]
+    },
+    {
+      "id": "correct-supersedes",
+      "title": "Correct replaces the area with a new fact; the old one is kept as replaced, never edited",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": { "body": { "facts": [{ "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" }] } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Correct\"s]"] },
+        {
+          "command": "assert",
+          "options": { "role": "textbox", "name": "New area", "value": "Koramangala" },
+          "note": "the correction starts from the current value"
+        },
+        { "command": "fill", "options": { "role": "textbox", "name": "New area", "value": "HSR" } },
+        { "command": "click", "options": { "role": "button", "name": "Save" } },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · HSR Layout", "text": "explicit" },
+          "note": "the new area is current (in the catalog's spelling)"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · Koramangala", "count": 0 },
+          "note": "the old area is no longer current"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Replaced", "text": "Area · Koramangala" },
+          "note": "the old fact is kept, marked replaced and never used"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": {
+            "expect": [
+              { "path": "facts[*].value", "equals": ["Koramangala", "HSR Layout"] },
+              { "path": "facts[*].status", "equals": ["superseded", "active"] }
+            ]
+          },
+          "note": "world state: the old fact is superseded with its value kept, not edited"
+        }
+      ]
+    },
+    {
+      "id": "forget-stays-forgotten-after-reload",
+      "title": "Forget removes the fact and leaves a tombstone, and it is still forgotten after a reload",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": { "body": { "facts": [{ "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" }] } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Forget\"s]"] },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · Koramangala", "count": 0 },
+          "note": "the fact is gone from the current list"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" },
+          "note": "a tombstone line takes its place"
+        },
+        { "command": "reload" },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" },
+          "note": "after a reload it is still forgotten"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · Koramangala", "count": 0 },
+          "note": "and it did not come back"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": {
+            "expect": [
+              { "path": "facts[*].status", "equals": ["forgotten"] },
+              { "path": "tombstones[*].key", "equals": ["area"] }
+            ]
+          },
+          "note": "world state: the fact is forgotten and a tombstone blocks it"
+        }
+      ]
+    },
+    {
+      "id": "confirm-activates-inferred",
+      "title": "Confirm makes an inferred guess active; it stays marked inferred",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": { "body": { "facts": [{ "key": "budget", "value": "1500", "source": "inferred", "status": "pending_confirmation" }] } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        { "command": "click", "args": ["role=listitem[name=\"Budget · ₹1,500\"s] >> role=button[name=\"Confirm\"s]"] },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Budget · ₹1,500", "text": "you confirmed" },
+          "note": "the guess is confirmed"
+        },
+        {
+          "command": "assert",
+          "args": ["role=listitem[name=\"Budget · ₹1,500\"s] >> role=button[name=\"Confirm\"s]"],
+          "options": { "count": 0 },
+          "note": "nothing left to confirm"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Budget · ₹1,500", "text": "inferred" },
+          "note": "it is still shown as inferred"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": {
+            "expect": [
+              { "path": "facts[*].status", "equals": ["active"] },
+              { "path": "facts[*].source", "equals": ["inferred"] }
+            ]
+          },
+          "note": "world state: active and inferred, with a confirmation time"
+        }
+      ]
+    },
+    {
+      "id": "remembered-area-fills-new-errand",
+      "title": "A remembered area fills a new errand without asking, and the agent says it used it",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": { "body": { "facts": [{ "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" }] } }
+        },
+        {
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
+        },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      { "toolCalls": [{ "name": "update_errand", "input": { "service": "plumber", "time_window": { "from": "2026-11-04", "to": "2026-11-10" } } }] },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": { "service": "plumber", "area": "Koramangala", "date_range": { "from": "2026-11-04", "to": "2026-11-10" } }
+                          }
+                        ]
+                      },
+                      { "text": "Using your usual area, Koramangala. Here are the plumbers free this week." }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the scripted model reads the errand tool's remembered area and searches there"
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "I need a plumber this week" } },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "args": ["text=Using your usual area, Koramangala."],
+          "options": { "count": 1 },
+          "note": "the agent says which remembered fact it used"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/errand"],
+          "options": { "expect": [{ "path": "errand.area", "equals": "Koramangala" }, { "path": "errand.question", "equals": null }] },
+          "note": "world state: the errand has the remembered area and asks nothing"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": { "expect": [{ "path": "events[*].name", "includes": "memory → errand: area" }] },
+          "note": "the prefill is a traced patch"
+        }
+      ]
+    },
+    {
+      "id": "chat-forget-reaches-open-panel",
+      "title": "Forgetting in chat shows up in the open Memory panel",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/memory"],
+          "options": { "body": { "facts": [{ "key": "area", "value": "Koramangala", "source": "explicit", "status": "active" }] } }
+        },
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      { "toolCalls": [{ "name": "forget_fact", "input": { "key": "area", "evidence_quote": "forget my usual area" } }] },
+                      { "text": "Done, I've forgotten your usual area." }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Area · Koramangala", "state": "visible" },
+          "note": "the panel shows the area before the chat"
+        },
+        { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "Please forget my usual area" } },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" },
+          "note": "the panel follows the chat's activity"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/memory"],
+          "options": { "expect": [{ "path": "tombstones[*].key", "equals": ["area"] }] },
+          "note": "world state: forgotten through the chat"
+        }
+      ]
+    }
+  ]
+}

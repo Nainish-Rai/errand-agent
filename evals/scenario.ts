@@ -1,5 +1,5 @@
 import { ApiClient, ChatClient, type ToolCallView } from "@errand/client";
-import type { ModelScript, RunLimits, SwitchScenarioRequest, WorldFault } from "@errand/contracts";
+import type { ModelScript, RunLimits, SeedFact, SwitchScenarioRequest, WorldFault } from "@errand/contracts";
 import { defineEval, type EveEvalContext, type EveEvalDefinition } from "eve/evals";
 import { equals } from "eve/evals/expect";
 
@@ -10,8 +10,9 @@ import { modelIdIn, modelScriptFrom, readRecording, writeRecording, type Recordi
 import { ACTUAL_LABEL, type ScenarioRun } from "./scenario-run";
 import { settledTrace } from "./session-trace";
 import { ScriptedUser } from "./users/scripted-user";
+import { ReturningUser } from "./users/returning-user";
 import { DEFAULT_SIMULATED_MESSAGES, SimulatedUser } from "./users/simulated-user";
-import type { ApproveClick, User, UserStep } from "./users/user";
+import { isApprove, type ApproveClick, type User, type UserStep } from "./users/user";
 
 // A scenario is one eval in the eval table, run the same way in all three modes. It declares the
 // world (seed and fault profile), the scripted user, a goal for the simulated user, the scripted
@@ -34,6 +35,13 @@ export interface ScenarioDefinition {
   readonly user: readonly UserStep[];
   /** The simulated user's goal in live mode. Without one, the scenario is skipped live. */
   readonly goal?: string;
+  /**
+   * Goals for later chat sessions in live mode, one per `newSession` step: the same simulated person
+   * coming back with a fresh chat.
+   */
+  readonly laterGoals?: readonly string[];
+  /** What the person's memory holds when the scenario starts. Empty by default, so nothing leaks between scenarios. */
+  readonly memory?: readonly SeedFact[];
   /** Cap on the simulated user's messages (default 3). */
   readonly maxSimulatedMessages?: number;
   /** The offline model's turns: turn n answers the nth user message. */
@@ -54,7 +62,7 @@ interface Plan {
 }
 
 function clicksIn(steps: readonly UserStep[]): ApproveClick[] {
-  return steps.flatMap((step) => ("approve" in step ? [step.approve] : []));
+  return steps.flatMap((step) => (isApprove(step) ? [step.approve] : []));
 }
 
 async function planFor(t: EveEvalContext, mode: EvalMode, definition: ScenarioDefinition): Promise<Plan> {
@@ -70,17 +78,13 @@ async function planFor(t: EveEvalContext, mode: EvalMode, definition: ScenarioDe
       await t.require(recording.clockStart, equals(serverEnvironmentFor("replay").ERRAND_CLOCK_START));
       return { user: new ScriptedUser(recording.user), script: recording.modelScript, world: recording.world, recording };
     }
-    case "live":
+    case "live": {
       if (definition.goal === undefined) return t.skip("No goal for the simulated user.");
-      return {
-        user: new SimulatedUser({
-          goal: definition.goal,
-          clicks: clicksIn(definition.user),
-          maxMessages: definition.maxSimulatedMessages ?? DEFAULT_SIMULATED_MESSAGES,
-        }),
-        script: null,
-        world: definition.world,
-      };
+      const maxMessages = definition.maxSimulatedMessages ?? DEFAULT_SIMULATED_MESSAGES;
+      const later = (definition.laterGoals ?? []).map((goal) => new SimulatedUser({ goal, clicks: [], maxMessages }));
+      const first = new SimulatedUser({ goal: definition.goal, clicks: clicksIn(definition.user), maxMessages });
+      return { user: later.length === 0 ? first : new ReturningUser([first, ...later]), script: null, world: definition.world };
+    }
   }
 }
 
@@ -105,8 +109,10 @@ export function describeRun(run: ScenarioRun): string {
   return [`${run.turns.length} turn${run.turns.length === 1 ? "" : "s"}`, ...tools, ...taps, ...clicks].join("; ");
 }
 
-async function agentCostUsd(api: ApiClient, sessionId: string): Promise<number> {
-  return (await settledTrace(api, sessionId)).totals.costUsd;
+async function agentCostUsd(api: ApiClient, sessionIds: readonly string[]): Promise<number> {
+  let total = 0;
+  for (const sessionId of sessionIds) total += (await settledTrace(api, sessionId)).totals.costUsd;
+  return total;
 }
 
 async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): Promise<void> {
@@ -119,13 +125,22 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
   await api.switchScenario(plan.world);
   if (definition.runLimits !== undefined) await api.setRunLimits({ limits: definition.runLimits });
   if (definition.worldFault !== undefined) await api.injectWorldFault({ fault: definition.worldFault });
+  await api.seedMemory({ facts: [...(definition.memory ?? [])] });
   await api.loadModelScript({ script: plan.script });
   const bookingsBefore = await api.listBookings();
-  const conversation = await converse(plan.user, { api, chat }, t.abortSignal);
+  const { script } = plan;
+  const conversation = await converse(plan.user, { api, chat }, t.abortSignal, {
+    // The offline model counts turns within a session, so a new session plays the rest of the script.
+    beforeNewSession: async (said) => {
+      if (script !== null) await api.loadModelScript({ script: { turns: script.turns.slice(said) } });
+    },
+  });
 
   // Hand every turn to eve so its run-level assertions (succeeded, calledTool, ...) see them all.
-  const session = t.target.attach(conversation.sessionId, { startIndex: 0 });
-  for (const _turn of conversation.turns) await session.nextTurn();
+  for (const sessionId of conversation.sessionIds) {
+    const session = t.target.attach(sessionId, { startIndex: 0 });
+    for (const _turn of conversation.turns.filter((turn) => turn.sessionId === sessionId)) await session.nextTurn();
+  }
 
   const run: ScenarioRun = {
     ...conversation,
@@ -134,7 +149,7 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
     bookingsBefore,
     toolCalls: conversation.turns.flatMap((turn) => turn.toolCalls),
   };
-  const costUsd = { agent: await agentCostUsd(api, run.sessionId), simulatedUser: plan.user.costUsd };
+  const costUsd = { agent: await agentCostUsd(api, run.sessionIds), simulatedUser: plan.user.costUsd };
   const actual = (definition.actual ?? describeRun)(run);
   // Tracked only (soft, no threshold): the reporter reads it for the table's "actual" column.
   t.score({ score: 1, message: actual, metadata: { actual, costUsd } }).label(ACTUAL_LABEL);

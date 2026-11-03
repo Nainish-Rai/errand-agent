@@ -3,7 +3,8 @@ import { z } from "zod";
 
 // What a user does in a scenario: say something in the chat, tap a button on the approval card the
 // chat is showing (through the same endpoints, and with the same follow-up message, as the web
-// app's card), or send a hand-made approve request with an explicit proposal and fingerprint.
+// app's card), send a hand-made approve request with an explicit proposal and fingerprint, or come
+// back later in a new chat session.
 
 export const ApproveClickSchema = z.object({
   proposalId: z.string().min(1),
@@ -17,6 +18,8 @@ export const UserStepSchema = z.union([
   z.object({ say: z.string().min(1) }),
   z.object({ approve: ApproveClickSchema }),
   z.object({ card: CardTapSchema }),
+  /** The next message starts a new chat session, as a person coming back another day would. */
+  z.object({ newSession: z.literal(true) }),
 ]);
 
 export type ApproveClick = z.infer<typeof ApproveClickSchema>;
@@ -36,4 +39,8 @@ export function isSay(step: UserStep): step is { readonly say: string } {
 
 export function isCardTap(step: UserStep): step is { readonly card: CardTap } {
   return "card" in step;
+}
+
+export function isApprove(step: UserStep): step is { readonly approve: ApproveClick } {
+  return "approve" in step;
 }

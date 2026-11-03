@@ -52,16 +52,18 @@ seen (`found 3, expected 8`, `text is "…"`).
 
 ## World state: `api`
 
-`api GET|POST|PUT /api/v1/...` goes through `packages/client`, so the body is parsed against the
-contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`, `GET /sessions/:id/trace`,
-`GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`, `GET /proposals/:id`,
-`GET /bookings`, `POST /dev/scenario`, `PUT /dev/model-script`, `PUT /dev/run-limits`, `PUT /dev/world-fault`. `sessions/current` is the chat session the page
+`api GET|POST|PUT|PATCH|DELETE /api/v1/...` goes through `packages/client`, so the body is parsed
+against the contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`,
+`GET /sessions/:id/trace`, `GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`,
+`GET /proposals/:id`, `GET /bookings`, `GET /memory`, `PATCH /memory/:key`,
+`DELETE /memory/:key`, `POST /memory/:id/confirm`, `POST /dev/scenario`, `PUT /dev/model-script`,
+`PUT /dev/run-limits`, `PUT /dev/world-fault`, `PUT /dev/memory` (seed the person's memory). `sessions/current` is the chat session the page
 opened (read from its `/eve/v1/session/…` requests). When a ticket adds a route to the client,
 add it to `tools/verify/src/world-api.ts`.
 
 `--expect` takes one object or a list: `{"path":"spans[*].name","includes":"execute_tool search_providers"}`,
 `{"path":"totals.toolCalls","equals":1}`, `atLeast`, `length`. GET expectations retry; a write
-(`POST`, `PUT`) is sent exactly once and never replayed.
+(`POST`, `PUT`, `PATCH`, `DELETE`) is sent exactly once and never replayed.
 
 ```sh
 $V api POST /api/v1/dev/scenario --body '{"scenario":"slot_taken","seed":42}'

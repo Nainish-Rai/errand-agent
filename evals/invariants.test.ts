@@ -53,6 +53,7 @@ const BOOKED_OUTPUT: ExecuteProposalOutput = { kind: "booked", proposal: null, b
 function runWith(after: readonly BookingView[], turns: readonly ChatTurn[] = [], before: readonly BookingView[] = [SEEDED]): ScenarioRun {
   return {
     sessionId: "ses",
+    sessionIds: ["ses"],
     turns,
     clicks: [],
     taps: [],

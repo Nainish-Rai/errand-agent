@@ -5,6 +5,9 @@ import {
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
   SetRunLimitsRequestSchema,
+  CorrectMemoryFactRequestSchema,
+  MemoryKeySchema,
+  SeedMemoryRequestSchema,
   SwitchScenarioRequestSchema,
 } from "@errand/contracts";
 
@@ -12,7 +15,7 @@ import {
 // is parsed against its contract. Only routes the client knows are reachable; the tool never builds
 // its own requests to the backend.
 
-export type ApiMethod = "GET" | "POST" | "PUT";
+export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface ApiCall {
   readonly method: ApiMethod;
@@ -99,6 +102,38 @@ const ROUTES: readonly Route[] = [
     handle: async (client) => ({ bookings: await client.listBookings() }),
   },
   {
+    method: "GET",
+    pattern: /^\/memory$/,
+    route: "GET /api/v1/memory",
+    handle: async (client) => await client.listMemory(),
+  },
+  {
+    method: "PATCH",
+    pattern: /^\/memory\/([^/]+)$/,
+    route: "PATCH /api/v1/memory/:key",
+    handle: async (client, match, _url, body) => ({
+      fact: await client.correctMemoryFact(MemoryKeySchema.parse(decodeURIComponent(match[1] ?? "")), CorrectMemoryFactRequestSchema.parse(body)),
+    }),
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/memory\/([^/]+)$/,
+    route: "DELETE /api/v1/memory/:key",
+    handle: async (client, match) => await client.forgetMemoryFact(MemoryKeySchema.parse(decodeURIComponent(match[1] ?? ""))),
+  },
+  {
+    method: "POST",
+    pattern: /^\/memory\/([^/]+)\/confirm$/,
+    route: "POST /api/v1/memory/:id/confirm",
+    handle: async (client, match) => ({ fact: await client.confirmMemoryFact(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "PUT",
+    pattern: /^\/dev\/memory$/,
+    route: "PUT /api/v1/dev/memory",
+    handle: async (client, _match, _url, body) => await client.seedMemory(SeedMemoryRequestSchema.parse(body)),
+  },
+  {
     method: "POST",
     pattern: /^\/dev\/scenario$/,
     route: "POST /api/v1/dev/scenario",
@@ -128,8 +163,8 @@ export const KNOWN_ROUTES = ROUTES.map((route) => route.route);
 
 export function parseApiMethod(value: string | undefined): ApiMethod {
   const method = (value ?? "").toUpperCase();
-  if (method === "GET" || method === "POST" || method === "PUT") return method;
-  throw new Error("api takes GET, POST or PUT");
+  if (method === "GET" || method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") return method;
+  throw new Error("api takes GET, POST, PUT, PATCH or DELETE");
 }
 
 /** Replaces `sessions/current/` with the session the page is chatting in. */

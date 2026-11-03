@@ -2,6 +2,7 @@ import type { ModelScript } from "@errand/contracts";
 import type { LanguageModel } from "ai";
 import { mockModel, type MockModelRequest, type MockModelResponse } from "eve/evals";
 
+import { MEMORY_CONTEXT_HEADING } from "../../core/use-cases/build-model-context";
 import { AREAS, resolveArea, resolveService, SERVICES } from "../world/seed/catalog";
 
 // The offline stand-in for the main model. Like the real model it learns today's date from the
@@ -75,14 +76,20 @@ export interface ScriptPosition {
   readonly step: number;
 }
 
+/** The remembered context eve adds as a user-role message is not the person speaking. */
+function isRememberedContext(text: string): boolean {
+  return text.includes(MEMORY_CONTEXT_HEADING);
+}
+
 /**
  * Read from the conversation itself, not a counter, so a retried or replayed model call gets the
  * same step and two sessions can't push each other's script forward.
  */
-export function positionIn(request: Pick<MockModelRequest, "messages" | "userMessageCount">): ScriptPosition {
-  const lastUser = request.messages.findLastIndex((message) => message.role === "user");
+export function positionIn(request: Pick<MockModelRequest, "messages" | "userMessages">): ScriptPosition {
+  const lastUser = request.messages.findLastIndex((message) => message.role === "user" && !isRememberedContext(message.text));
   const step = request.messages.slice(lastUser + 1).filter((message) => message.role === "assistant").length;
-  return { turn: Math.max(0, request.userMessageCount - 1), step };
+  const said = request.userMessages.filter((text) => !isRememberedContext(text)).length;
+  return { turn: Math.max(0, said - 1), step };
 }
 
 /**

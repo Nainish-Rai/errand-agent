@@ -2,7 +2,7 @@ import { ApiRequestError, type ApiClient, type ChatClient, type ChatTurn } from 
 import { CARD_FOLLOW_UPS } from "@errand/contracts";
 
 import { latestCard } from "./approval-checks";
-import { isCardTap, isSay, type ApproveClick, type CardTap, type User, type UserStep } from "./users/user";
+import { isApprove, isCardTap, isSay, type ApproveClick, type CardTap, type User, type UserStep } from "./users/user";
 
 // Drives one user against the backend, through the same client package the web app uses.
 
@@ -25,7 +25,10 @@ export interface TapOutcome {
 }
 
 export interface Conversation {
+  /** The first chat session. A scenario that comes back later (`newSession`) has more in `sessionIds`. */
   readonly sessionId: string;
+  /** Every chat session, in the order they started. */
+  readonly sessionIds: readonly string[];
   readonly turns: readonly ChatTurn[];
   /** Hand-made approve requests (`{ approve: { proposalId, fingerprint } }` steps). */
   readonly clicks: readonly ClickOutcome[];
@@ -33,6 +36,14 @@ export interface Conversation {
   readonly taps: readonly TapOutcome[];
   /** Every step the user took, in order: what a recording replays. */
   readonly steps: readonly UserStep[];
+}
+
+export interface ConversationHooks {
+  /**
+   * Before the first message of each session after the first, with the number of messages already
+   * said. The offline model counts turns per session, so the scenario reloads the rest of its script.
+   */
+  readonly beforeNewSession?: (messagesSoFar: number) => Promise<void>;
 }
 
 async function statusOf(call: () => Promise<unknown>, success: string): Promise<{ status: number; code: string }> {
@@ -75,18 +86,22 @@ export async function converse(
   user: User,
   clients: { readonly api: ApiClient; readonly chat: ChatClient },
   signal: AbortSignal,
+  hooks: ConversationHooks = {},
 ): Promise<Conversation> {
   const turns: ChatTurn[] = [];
   const clicks: ClickOutcome[] = [];
   const taps: TapOutcome[] = [];
   const steps: UserStep[] = [];
+  const sessionIds: string[] = [];
   let sessionId: string | undefined;
 
   const say = async (text: string) => {
+    if (sessionId === undefined && sessionIds.length > 0) await hooks.beforeNewSession?.(turns.length);
     const turn =
       sessionId === undefined
         ? await clients.chat.sendFirstMessage(text, { signal })
         : await clients.chat.sendMessage(sessionId, text, { signal });
+    if (sessionId === undefined) sessionIds.push(turn.sessionId);
     sessionId = turn.sessionId;
     turns.push(turn);
   };
@@ -100,9 +115,11 @@ export async function converse(
       const outcome = await tapCard(clients.api, turns, step.card);
       taps.push(outcome);
       if (outcome.status === 200) await say(FOLLOW_UP[step.card]);
-    } else clicks.push(await click(clients.api, step.approve));
+    } else if (isApprove(step)) clicks.push(await click(clients.api, step.approve));
+    else sessionId = undefined;
   }
 
-  if (sessionId === undefined) throw new Error("The user never said anything, so there is no session to grade.");
-  return { sessionId, turns, clicks, taps, steps };
+  const [first] = sessionIds;
+  if (first === undefined) throw new Error("The user never said anything, so there is no session to grade.");
+  return { sessionId: first, sessionIds, turns, clicks, taps, steps };
 }

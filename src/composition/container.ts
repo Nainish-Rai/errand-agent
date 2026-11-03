@@ -7,9 +7,12 @@ import type { RunOutcome } from "../core/budget/outcome";
 import type { Clock } from "../core/ports/clock";
 import type { ErrandStore } from "../core/ports/errand-store";
 import type { ProposalStore } from "../core/ports/proposal-store";
+import type { MemoryStore } from "../core/ports/memory-store";
 import type { ServiceCatalog } from "../core/ports/service-catalog";
+import type { ModelContextDependencies } from "../core/use-cases/build-model-context";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
 import type { ProposalDependencies } from "../core/use-cases/proposal-session";
+import type { MemoryDependencies } from "../core/use-cases/memory-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { RunBudgetStore } from "../core/ports/run-budget-store";
@@ -25,6 +28,7 @@ import { databasePath, openDatabase, type Database } from "../adapters/sqlite/da
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
 import { gatedModel } from "../adapters/models/run-budget-gate";
 import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
+import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
@@ -93,6 +97,7 @@ class Container {
   #runLimits: RunLimits = DEFAULT_RUN_LIMITS;
   #worldFault: WorldFault | undefined;
   #proposals: ProposalStore | undefined;
+  #memory: MemoryStore | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -190,6 +195,22 @@ class Container {
       recordModelFailure: () => recordModelFailure(deps, run),
       describe: (exit: RunExit) => describe(exit),
     });
+  }
+
+  /** Memory facts, in the shared database so they outlive the process (ticket 11). */
+  get memory(): MemoryStore {
+    this.#memory ??= new SqliteMemoryStore(this.database);
+    return this.#memory;
+  }
+
+  /** What the memory use cases need. Validity windows use the process clock, pinned in evals. */
+  get memoryDependencies(): MemoryDependencies {
+    return { memory: this.memory, catalog: this.catalog, clock: this.clock };
+  }
+
+  /** What the memory provider needs to build each turn's remembered context. */
+  get modelContextDependencies(): ModelContextDependencies {
+    return { memory: this.memory, errands: this.errands, traceSink: this.traceSink, clock: this.clock, wallClock: this.wallClock };
   }
 
   /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
