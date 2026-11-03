@@ -36,13 +36,30 @@ function collect(value: unknown, into: ProgramElement[]): void {
   for (const nested of Object.values(value)) collect(nested, into);
 }
 
+export interface ParsedProgram {
+  /** Every component call the program draws, depth first; empty when it has no root. */
+  readonly elements: readonly ProgramElement[];
+  /** Why it doesn't parse cleanly; an extra argument the parser dropped is not an error. */
+  readonly errors: readonly string[];
+}
+
+export function parseProgram(program: string): ParsedProgram {
+  const { root, meta } = parser.parse(program);
+  const errors = [
+    ...meta.errors.filter((error) => error.code !== "excess-args").map((error) => `${error.code}: ${error.message}`),
+    ...(root === null ? ["no root"] : []),
+    ...(meta.incomplete ? ["incomplete"] : []),
+    ...meta.unresolved.map((name) => `unresolved ${name}`),
+  ];
+  const elements: ProgramElement[] = [];
+  if (root !== null) collect(root, elements);
+  return { elements, errors };
+}
+
 /** Every component call the program draws, depth first, or undefined when it has no root. */
 export function elementsOf(program: string): ProgramElement[] | undefined {
-  const { root } = parser.parse(program);
-  if (root === null) return undefined;
-  const elements: ProgramElement[] = [];
-  collect(root, elements);
-  return elements;
+  const parsed = parseProgram(program);
+  return parsed.elements.length === 0 ? undefined : [...parsed.elements];
 }
 
 /** The elements of one component, with their props as the contract types them. */

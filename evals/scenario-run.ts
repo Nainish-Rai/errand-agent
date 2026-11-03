@@ -1,5 +1,5 @@
 import type { ApiClient, ToolCallView } from "@errand/client";
-import type { BookingView } from "@errand/contracts";
+import type { BookingView, SwitchScenarioRequest } from "@errand/contracts";
 
 import type { Conversation } from "./conversation";
 import type { EvalMode } from "./modes";
@@ -12,6 +12,10 @@ export interface ScenarioRun extends Conversation {
   readonly api: ApiClient;
   /** The world's bookings right after it was seeded, before the user's first step. */
   readonly bookingsBefore: readonly BookingView[];
+  /** The seeded world the run played in: the truth generated UI is checked against. */
+  readonly world: SwitchScenarioRequest;
+  /** The server clock's start (ERRAND_CLOCK_START) for this mode. */
+  readonly clockStart: string;
 }
 
 /** The tracked score whose metadata carries a run's actual end state, for the eval table. */

@@ -2,6 +2,7 @@ import { ApiRequestError, type ApiClient, type ChatClient, type ChatTurn } from 
 import { CARD_FOLLOW_UPS } from "@errand/contracts";
 
 import { latestCard } from "./approval-checks";
+import { askFormTap, chooseTap, pickTap } from "./generated-ui-taps";
 import { isApprove, isCardTap, isSay, type ApproveClick, type CardTap, type User, type UserStep } from "./users/user";
 
 // Drives one user against the backend, through the same client package the web app uses.
@@ -24,6 +25,12 @@ export interface TapOutcome {
   readonly code: string;
 }
 
+export interface UiTapOutcome {
+  readonly step: UserStep;
+  /** Absent when nothing on screen took the tap. */
+  readonly sent?: string;
+}
+
 export interface Conversation {
   /** The first chat session. A scenario that comes back later (`newSession`) has more in `sessionIds`. */
   readonly sessionId: string;
@@ -34,6 +41,8 @@ export interface Conversation {
   readonly clicks: readonly ClickOutcome[];
   /** Taps on the approval card in the chat (`{ card }` steps). */
   readonly taps: readonly TapOutcome[];
+  /** Taps on generated UI (Choose, the ask form, a pick) and the message each sent, if anything on screen took it. */
+  readonly uiTaps: readonly UiTapOutcome[];
   /** Every step the user took, in order: what a recording replays. */
   readonly steps: readonly UserStep[];
 }
@@ -93,6 +102,7 @@ export async function converse(
   const taps: TapOutcome[] = [];
   const steps: UserStep[] = [];
   const sessionIds: string[] = [];
+  const uiTaps: UiTapOutcome[] = [];
   let sessionId: string | undefined;
 
   const say = async (text: string) => {
@@ -116,10 +126,20 @@ export async function converse(
       taps.push(outcome);
       if (outcome.status === 200) await say(FOLLOW_UP[step.card]);
     } else if (isApprove(step)) clicks.push(await click(clients.api, step.approve));
-    else sessionId = undefined;
+    else if ("newSession" in step) sessionId = undefined;
+    else {
+      const sent =
+        "choose" in step
+          ? await chooseTap(clients.api, turns, step.choose)
+          : "ask" in step
+            ? await askFormTap(clients.api, sessionId, turns, step.ask)
+            : pickTap(turns, step.pick);
+      uiTaps.push(sent === undefined ? { step } : { step, sent });
+      if (sent !== undefined) await say(sent);
+    }
   }
 
   const [first] = sessionIds;
   if (first === undefined) throw new Error("The user never said anything, so there is no session to grade.");
-  return { sessionId: first, sessionIds, turns, clicks, taps, steps };
+  return { sessionId: first, sessionIds, turns, clicks, taps, uiTaps, steps };
 }

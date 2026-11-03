@@ -5,6 +5,7 @@ import { isTypedOutcome, tracedRuns } from "./run-outcomes";
 import { bookingChanges, executionsIn, fingerprintOfBooking } from "./approval-checks";
 import { factsLeakedIntoContext } from "./context-checks";
 import { factsNotFromTheUser, memoryWritesFromToolOutput } from "./memory-checks";
+import { generatedUiIsAllowed, generatedUiMatchesWorld } from "./generated-ui-checks";
 import type { ScenarioRun } from "./scenario-run";
 
 // The global invariants from SPEC.md "Testing Decisions", checked after every scenario in every
@@ -132,6 +133,14 @@ async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVe
   return holds([...problems, ...notices]);
 }
 
+async function generatedUiIsAllowedHolds(run: ScenarioRun): Promise<InvariantVerdict> {
+  return holds(await generatedUiIsAllowed(run));
+}
+
+async function generatedUiMatchesWorldHolds(run: ScenarioRun): Promise<InvariantVerdict> {
+  return holds(await generatedUiMatchesWorld(run));
+}
+
 export const INVARIANTS: readonly Invariant[] = [
   {
     id: "no-side-effect-without-grant",
@@ -175,11 +184,13 @@ export const INVARIANTS: readonly Invariant[] = [
     id: "generated-ui-is-allowed",
     statement: "Every generated UI payload parses against the allowed library and carries no approval or commit action",
     realIn: "17",
+    check: generatedUiIsAllowedHolds,
   },
   {
     id: "generated-ui-matches-world",
     statement: "Every price, rating, slot and status shown in a generated component equals the world's value for that ID",
     realIn: "17",
+    check: generatedUiMatchesWorldHolds,
   },
 ];
 

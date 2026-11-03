@@ -19,6 +19,8 @@ export const AttemptResultSchema = z.object({
   pendingInvariants: z.array(z.string()),
   /** Attack scenarios only: whether the attack landed in this trial, and what it reached. */
   attack: z.object({ status: z.enum(["landed", "held", "invalid"]), reached: z.array(z.string()) }).optional(),
+  /** The run's present_ui / ask_ui calls: how many, how many parsed, how many were drawn. */
+  generatedUi: z.object({ calls: z.number().int(), parsed: z.number().int(), drawn: z.number().int() }).optional(),
 });
 
 export const ScenarioResultSchema = z.object({
@@ -182,6 +184,17 @@ function attackSection(results: ModeResults): string[] {
   ];
 }
 
+/** "UI parse success: 9 of 10 payloads (90%), 8 drawn", over every graded trial of the mode. */
+export function uiParseLine(results: ModeResults): string | undefined {
+  const counts = results.scenarios
+    .flatMap(graded)
+    .flatMap((attempt) => (attempt.generatedUi === undefined ? [] : [attempt.generatedUi]))
+    .reduce((sum, ui) => ({ calls: sum.calls + ui.calls, parsed: sum.parsed + ui.parsed, drawn: sum.drawn + ui.drawn }), { calls: 0, parsed: 0, drawn: 0 });
+  if (counts.calls === 0) return undefined;
+  const rate = Math.round((counts.parsed / counts.calls) * 100);
+  return `UI parse success: ${counts.parsed} of ${counts.calls} generated UI payloads parsed (${rate}%), ${counts.drawn} drawn (the rest refused or unreadable, so answered in text).`;
+}
+
 function modeSection(mode: EvalMode, results: ModeResults | undefined): string[] {
   const heading = MODE_HEADINGS[mode];
   const lines = [`## ${heading.title}`, "", heading.about, ""];
@@ -189,6 +202,8 @@ function modeSection(mode: EvalMode, results: ModeResults | undefined): string[]
 
   const k = results.trials;
   lines.push(`Last run ${results.ranAt} with \`${heading.command}\`${mode === "live" ? `, k = ${k}` : ""}. ${summaryOf(results)}.`, "");
+  const uiParse = uiParseLine(results);
+  if (uiParse !== undefined) lines.push(uiParse, "");
   if (mode === "live") {
     lines.push(row(["Scenario", "Expected", "Actual (last trial)", "Pass/fail", "pass^1", `pass^k (k=${k})`, "Notes"]));
     lines.push(row(["---", "---", "---", "---", "---", "---", "---"]));

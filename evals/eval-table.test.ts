@@ -62,6 +62,13 @@ describe("the eval table", () => {
     expect(table).toContain("cost $0.0630 (agent $0.0030, simulated user $0.0600)");
   });
 
+  it("gives the live UI parse success rate over every graded trial", () => {
+    const ui = (calls: number, parsed: number, drawn: number): AttemptResult => ({ ...passed, generatedUi: { calls, parsed, drawn } });
+    const withUi: ModeResults = { ...live, scenarios: [{ ...scenario, attempts: [ui(3, 3, 2), ui(1, 0, 0), { ...ui(5, 0, 0), verdict: "skipped" }] }] };
+    expect(renderEvalTable({ live: withUi }, invariants)).toContain("UI parse success: 3 of 4 generated UI payloads parsed (75%), 2 drawn");
+    expect(table).not.toContain("UI parse success");
+  });
+
   it("says when a mode hasn't run yet", () => {
     expect(table).toContain("## Replay");
     expect(table).toContain("Not run yet. Run `pnpm eval:replay`.");

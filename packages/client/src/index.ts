@@ -13,4 +13,4 @@ export type { ClientSession, EveMessage, EveMessagePart, EveToolPart } from "eve
 export const DEFAULT_BACKEND_URL = "http://localhost:3100";
 export * from "./generated-ui/answers";
 export * from "./generated-ui/bind";
-export { elementsNamed, elementsOf, type ProgramElement } from "./generated-ui/program";
+export { elementsNamed, elementsOf, parseProgram, type ParsedProgram, type ProgramElement } from "./generated-ui/program";

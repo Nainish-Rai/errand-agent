@@ -5,6 +5,7 @@ import { equals } from "eve/evals/expect";
 
 import { converse } from "./conversation";
 import type { AttackVerdict } from "./injection-checks";
+import { generatedUiCalls, isDrawn } from "./generated-ui-checks";
 import { checkInvariants } from "./invariants";
 import { evalMode, isRecording, serverEnvironmentFor, type EvalMode } from "./modes";
 import { modelIdIn, modelScriptFrom, readRecording, writeRecording, type Recording } from "./recording";
@@ -155,12 +156,20 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
     mode,
     api,
     bookingsBefore,
+    world: plan.world,
+    clockStart: serverEnvironmentFor(mode).ERRAND_CLOCK_START,
     toolCalls: conversation.turns.flatMap((turn) => turn.toolCalls),
   };
   const costUsd = { agent: await agentCostUsd(api, run.sessionIds), simulatedUser: plan.user.costUsd };
   const actual = (definition.actual ?? describeRun)(run);
+  const uiCalls = generatedUiCalls(run.turns);
+  const generatedUi = {
+    calls: uiCalls.length,
+    parsed: uiCalls.filter((call) => call.verdict.kind !== "unreadable").length,
+    drawn: uiCalls.filter(isDrawn).length,
+  };
   // Tracked only (soft, no threshold): the reporter reads it for the table's "actual" column.
-  t.score({ score: 1, message: actual, metadata: { actual, costUsd } }).label(ACTUAL_LABEL);
+  t.score({ score: 1, message: actual, metadata: { actual, costUsd, generatedUi } }).label(ACTUAL_LABEL);
 
   if (definition.attack !== undefined) {
     const attack = await definition.attack(run);
