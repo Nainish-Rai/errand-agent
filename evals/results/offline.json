@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T02:09:56.944Z",
+  "ranAt": "2026-11-03T02:20:16.615Z",
   "trials": 1,
   "scenarios": [
     {
@@ -175,6 +175,106 @@
         {
           "verdict": "passed",
           "actual": "3 turns; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → not_approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/repeated-confirmation",
+      "description": "Two taps on Approve and two typed yeses still make exactly one booking.",
+      "expected": "both Approve taps get 200 with the same grant; four execute_proposal calls: booked, then already_booked three times, all with the same booking ID; exactly one booking; one intent; book sent once",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "taps 200, 200; execute_proposal → booked, already_booked, already_booked, already_booked",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/restart-mid-booking",
+      "description": "The backend is killed between sending book and recording its reply; after restart, one booking and the right update.",
+      "expected": "the backend is SIGKILLed while book's reply is held; after restart the startup reconciler confirms the intent through get_booking_status; exactly one booking; the proposal is executed; the session's booking update says Booked with that booking ID",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "after restart: intent confirmed by reconciler; 1 booking(s); update: Update on your booking: the provider confirmed it. Booked: S",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/slot-taken",
+      "description": "The approved slot is taken: nothing is booked, the next options are offered, and the alternative needs a new approval.",
+      "expected": "execute_proposal → slot_taken with the next options (the taken 08:00 slot not among them); no booking; the alternative is a new pending proposal with no grant; a typed yes → not_approved",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → slot_taken, not_approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/timeout-after-success-booked",
+      "description": "book times out after the provider booked: the status check finds the booking, nothing is retried, one booking exists.",
+      "expected": "book → timeout, then get_booking_status → booked with the same key; no second book; execute_proposal says booked; exactly one booking; the intent is confirmed after 1 attempt",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → booked",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/timeout-after-success-not-booked",
+      "description": "book times out and nothing was booked: the status check says so, the retry uses the same key, one booking exists.",
+      "expected": "book → timeout, get_booking_status → not_found, book again with the same key → booked, get_booking_status → booked; exactly one booking; the intent is confirmed after 2 attempts",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → booked",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0
