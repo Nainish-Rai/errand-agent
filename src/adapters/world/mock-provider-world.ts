@@ -11,6 +11,7 @@ import type {
   ProviderDetails,
   ProviderSummary,
   ProviderWorld,
+  ReleaseHoldOutcome,
   RescheduleOutcome,
   SearchOutcome,
   SearchQuery,
@@ -145,6 +146,14 @@ export class MockProviderWorld implements ProviderWorld {
     this.#holds.set(hold.holdId, hold);
     const { consumed: _consumed, ...visible } = hold;
     return { kind: "held", hold: visible };
+  }
+
+  async releaseHold(holdId: string): Promise<ReleaseHoldOutcome> {
+    const hold = this.#holds.get(holdId);
+    if (hold === undefined || hold.consumed) return { kind: "hold_not_found" };
+    // A released hold is spent: the slot is free again and `book` can no longer use it.
+    hold.consumed = true;
+    return { kind: "released" };
   }
 
   async book(holdId: string, idempotencyKey: string): Promise<BookOutcome> {

@@ -6,8 +6,10 @@ import { DEFAULT_RUN_LIMITS, type RunExit, type RunKey, type RunLimits } from ".
 import type { RunOutcome } from "../core/budget/outcome";
 import type { Clock } from "../core/ports/clock";
 import type { ErrandStore } from "../core/ports/errand-store";
+import type { ProposalStore } from "../core/ports/proposal-store";
 import type { ServiceCatalog } from "../core/ports/service-catalog";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
+import type { ProposalDependencies } from "../core/use-cases/proposal-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { RunBudgetStore } from "../core/ports/run-budget-store";
@@ -18,9 +20,11 @@ import type { RunBudgetDependencies } from "../core/use-cases/run-budget-session
 import type { SettleRunDependencies } from "../core/use-cases/settle-run";
 import { startModelTurn } from "../core/use-cases/start-model-turn";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
+import { randomIds, sha256Hasher } from "../adapters/crypto/node-crypto";
 import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
 import { gatedModel } from "../adapters/models/run-budget-gate";
+import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
@@ -28,7 +32,7 @@ import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
 import { SqliteRunBudgetStore } from "../adapters/sqlite/run-budget-store";
 import { faultyWorld, type WorldFault } from "../adapters/world/faulty-world";
-import { MockProviderWorld } from "../adapters/world/mock-provider-world";
+import { DEV_USER_ID, MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
 
@@ -88,6 +92,7 @@ class Container {
   /** Dev only: limits a scenario set for the runs that start after it, and a fault in the world. */
   #runLimits: RunLimits = DEFAULT_RUN_LIMITS;
   #worldFault: WorldFault | undefined;
+  #proposals: ProposalStore | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -108,19 +113,33 @@ class Container {
     return this.#database;
   }
 
+  /** Proposals and grants, in the SQLite database so an approval survives a restart. */
+  get proposals(): ProposalStore {
+    this.#proposals ??= new SqliteProposalStore(this.database);
+    return this.#proposals;
+  }
+
+  /**
+   * The world's user for the local-dev principal: the channel's auth context says who is calling,
+   * and locally that is always the one dev user. Real auth maps its principals here instead.
+   */
+  readonly devUserId = DEV_USER_ID;
+
   get worldSettings(): WorldSettings {
     return this.#settings;
   }
 
   /**
    * Dev only: replace the world with a freshly seeded one for the named scenario. A new scenario
-   * starts clean: default run limits and no world fault, whatever the last one set.
+   * starts clean: default run limits, no world fault, and no proposals or grants (they name the
+   * old world's holds and bookings, whose ids the new world reuses).
    */
-  switchScenario(settings: WorldSettings): WorldSettings {
+  async switchScenario(settings: WorldSettings): Promise<WorldSettings> {
     this.#settings = settings;
     this.#world = this.#buildWorld(settings);
     this.#runLimits = DEFAULT_RUN_LIMITS;
     this.#worldFault = undefined;
+    await this.proposals.discardAll();
     return settings;
   }
 
@@ -176,6 +195,18 @@ class Container {
   /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
   get errandDependencies(): ErrandDependencies & { readonly world: ProviderWorld } {
     return { errands: this.errands, catalog: this.catalog, traceSink: this.traceSink, clock: this.wallClock, world: this.world };
+  }
+
+  /** What the hold, propose, approve, decline and execute use cases need. Holds and grants run on the world's clock. */
+  get proposalDependencies(): ProposalDependencies {
+    return {
+      errand: this.errandDependencies,
+      world: this.world,
+      proposals: this.proposals,
+      hasher: sha256Hasher,
+      ids: randomIds,
+      worldClock: this.clock,
+    };
   }
 
   modelFor(role: ModelRole): LanguageModel {

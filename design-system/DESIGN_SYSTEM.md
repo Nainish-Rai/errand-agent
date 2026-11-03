@@ -119,7 +119,7 @@ Working now · Waiting on you · Upcoming bookings · Alerts · Bookings activit
 
 | Component | States |
 |---|---|
-| Approval card | variants for book, cancel (shows the fee) and reschedule (old time beside new). States: pending, approving, approved, voided ("price changed ₹899 → ₹1,050"), expired. Material details sit in a fixed key–value table. Actions are Approve (with the price on the button), Other options and Decline. *Approve* is used only here; *confirm* is only for inferred facts |
+| Approval card | variants for book (provider, job, time in IST, price, address, cancellation terms), cancel (shows the fee) and reschedule (old time beside new). States: pending, approving, approved, voided ("price changed ₹899 → ₹1,050"), expired, declined (the hold was released). Material details sit in a fixed key–value table. Actions are Approve (with the price on the button), Other options and Decline. *Approve* is used only here; *confirm* is only for inferred facts |
 | Booking receipt | verified booking ID (mono), provider, slot and price. States: booked, checking, failed |
 | Verification banner | "Checking with the provider…" with a promised update |
 | Provider-cancelled alert | the cancelled booking, "N replacements ready" and See options |

@@ -3,6 +3,7 @@ import {
   API_PREFIX,
   InjectWorldFaultRequestSchema,
   LoadModelScriptRequestSchema,
+  ProposalStatusSchema,
   SetRunLimitsRequestSchema,
   SwitchScenarioRequestSchema,
 } from "@errand/contracts";
@@ -69,6 +70,33 @@ const ROUTES: readonly Route[] = [
     pattern: /^\/sessions\/([^/]+)\/errand$/,
     route: "GET /api/v1/sessions/:id/errand",
     handle: async (client, match) => ({ errand: await client.getErrand(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/sessions\/([^/]+)\/proposals$/,
+    route: "GET /api/v1/sessions/:id/proposals",
+    handle: async (client, match) => ({ proposals: await client.listSessionProposals(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/proposals$/,
+    route: "GET /api/v1/proposals?status=",
+    handle: async (client, _match, url) => {
+      const status = url.searchParams.get("status");
+      return { proposals: await client.listProposals(status === null ? {} : { status: ProposalStatusSchema.parse(status) }) };
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/proposals\/([^/]+)$/,
+    route: "GET /api/v1/proposals/:id",
+    handle: async (client, match) => ({ proposal: await client.getProposal(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/bookings$/,
+    route: "GET /api/v1/bookings",
+    handle: async (client) => ({ bookings: await client.listBookings() }),
   },
   {
     method: "POST",

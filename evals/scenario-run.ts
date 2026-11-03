@@ -1,4 +1,5 @@
 import type { ApiClient, ToolCallView } from "@errand/client";
+import type { BookingView } from "@errand/contracts";
 
 import type { Conversation } from "./conversation";
 import type { EvalMode } from "./modes";
@@ -9,6 +10,8 @@ export interface ScenarioRun extends Conversation {
   readonly toolCalls: readonly ToolCallView[];
   /** The app API, for reading world state and logs after the run. */
   readonly api: ApiClient;
+  /** The world's bookings right after it was seeded, before the user's first step. */
+  readonly bookingsBefore: readonly BookingView[];
 }
 
 /** The tracked score whose metadata carries a run's actual end state, for the eval table. */

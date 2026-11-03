@@ -54,7 +54,8 @@ seen (`found 3, expected 8`, `text is "…"`).
 
 `api GET|POST|PUT /api/v1/...` goes through `packages/client`, so the body is parsed against the
 contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`, `GET /sessions/:id/trace`,
-`POST /dev/scenario`, `PUT /dev/model-script`, `PUT /dev/run-limits`, `PUT /dev/world-fault`. `sessions/current` is the chat session the page
+`GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`, `GET /proposals/:id`,
+`GET /bookings`, `POST /dev/scenario`, `PUT /dev/model-script`, `PUT /dev/run-limits`, `PUT /dev/world-fault`. `sessions/current` is the chat session the page
 opened (read from its `/eve/v1/session/…` requests). When a ticket adds a route to the client,
 add it to `tools/verify/src/world-api.ts`.
 
@@ -74,6 +75,8 @@ $V api POST /api/v1/dev/scenario --body '{"scenario":"slot_taken","seed":42}'
 - Trace panel: toggle button `Hide trace` / `Show trace` (`aria-pressed`); `complementary "Run trace"`
   with summary `N model calls · N tool calls · …`, close button `Close the trace`, `tree "Steps"`
   with `treeitem`s named `chat errand-script …` (model) and `search_providers tool …` (tool).
+- Approval card in chat (ticket 05): region `Approve booking`, buttons `Approve ₹PRICE`, `Other options`,
+  `Decline`; after Approve the card reads `Approved` and the receipt is region `Booked`.
 - `/design`: heading `Errand design system`; `html[data-theme]`; approval cards are
   `region "Approve booking" | "Approve cancellation" | "Approve reschedule"` (each state in both panels).
 

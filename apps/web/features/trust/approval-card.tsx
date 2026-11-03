@@ -21,7 +21,17 @@ export type ApprovalProvider = {
 
 /** What approving commits to. The amount on the button is the money this approval moves. */
 export type ApprovalProposal =
-  | { readonly kind: "book"; readonly service: string; readonly slot: string; readonly price: number; readonly priceNote?: string }
+  | {
+      readonly kind: "book";
+      readonly service: string;
+      readonly slot: string;
+      readonly price: number;
+      readonly priceNote?: string;
+      /** Where the visit happens. */
+      readonly address?: string;
+      /** The provider's own cancellation terms. */
+      readonly cancellationTerms?: string;
+    }
   | { readonly kind: "cancel"; readonly service: string; readonly slot: string; readonly bookingId: string; readonly fee: number }
   | {
       readonly kind: "reschedule";
@@ -42,7 +52,9 @@ export type ApprovalState =
   | { readonly status: "approving" }
   | { readonly status: "approved" }
   | { readonly status: "voided"; readonly change: ApprovalChange }
-  | { readonly status: "expired"; /** e.g. "09:12". */ readonly expiredAt: string };
+  | { readonly status: "expired"; /** e.g. "09:12". */ readonly expiredAt: string }
+  /** The person declined (or asked for other options); the hold was released. */
+  | { readonly status: "declined" };
 
 export type ApprovalCardProps = {
   readonly proposal: ApprovalProposal;
@@ -104,6 +116,8 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
           ),
         },
       );
+      if (proposal.address !== undefined) rows.push({ label: "Where", value: proposal.address });
+      if (proposal.cancellationTerms !== undefined) rows.push({ label: "Cancel", value: proposal.cancellationTerms });
       break;
     case "cancel":
       rows.push(
@@ -200,6 +214,16 @@ export function ApprovalCard(props: ApprovalCardProps) {
               Other options
             </Button>
           </TrustActions>
+        </TrustCard>
+      );
+    case "declined":
+      return (
+        <TrustCard label={title}>
+          <TrustHeader title={title} status={<StatusMark kind="cancelled" label="Declined" />} />
+          <Notice tone="info" lead={<span aria-hidden className="text-fg-meta">✕</span>}>
+            You declined. {nothingDone[proposal.kind]}
+          </Notice>
+          <DetailTable faded rows={detailRows(proposal, provider, undefined)} />
         </TrustCard>
       );
     case "expired":

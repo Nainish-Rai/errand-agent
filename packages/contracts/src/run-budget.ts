@@ -28,6 +28,7 @@ export const WorldOperationSchema = z.enum([
   "getProvider",
   "listBookings",
   "holdSlot",
+  "releaseHold",
   "book",
   "getBookingStatus",
   "cancel",

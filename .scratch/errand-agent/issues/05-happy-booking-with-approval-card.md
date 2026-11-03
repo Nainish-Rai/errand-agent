@@ -4,11 +4,13 @@
 
 **Blocked by:** 04, 18
 
-**Status:** ready-for-agent
+**Status:** done (PR #10)
 
-- [ ] Eval "happy booking": exactly one booking exists in the world, it matches the approved fingerprint, and its grant is consumed
-- [ ] Eval: a user who types "yes" without clicking gets the card shown again, and no booking is made
-- [ ] Eval: Decline creates no booking and releases the hold
-- [ ] Core tests: a grant is single-use, expires no later than the hold, and can't be created from model output
-- [ ] The global invariant "no side effect without a consumed matching grant" is now real and passes on every scenario
+- [x] Eval "happy booking": exactly one booking exists in the world, it matches the approved fingerprint, and its grant is consumed
+- [x] Eval: a user who types "yes" without clicking gets the card shown again, and no booking is made
+- [x] Eval: Decline creates no booking and releases the hold
+- [x] Core tests: a grant is single-use, expires no later than the hold, and can't be created from model output
+- [x] The global invariant "no side effect without a consumed matching grant" is now real and passes on every scenario
 - [ ] The approval card is the design system's fixed Approval card (pending, approving, approved, voided and expired states, built on the agents-ui question-card), shown inside the assistant-ui thread
+
+Not met as written: the card is ticket 18's fixed `ApprovalCard` (on `features/trust/trust-surface`), shown inside the assistant-ui thread with all its states; there is no agents-ui question-card in the repo to build it on. The voided state renders but is first reached in ticket 06.

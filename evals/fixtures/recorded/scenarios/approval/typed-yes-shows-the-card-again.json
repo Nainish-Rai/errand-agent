@@ -1,0 +1,113 @@
+{
+  "scenario": "scenarios/approval/typed-yes-shows-the-card-again",
+  "recordedAt": "2026-11-03T00:54:09.291Z",
+  "evalRunId": "ca4537b2-d013-4b26-96f8-7978c6c09974",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need a plumber in Koramangala sometime this week. Can you help me find one?"
+    },
+    {
+      "say": "I want the cheapest one, Shiva Sanitary Solutions please."
+    },
+    {
+      "say": "yes"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are your plumber options in Koramangala:\n\n- **Venkatesh Sanitary Solutions** — **Best match & earliest** — ₹499, rated 4.8, earliest slot **Wed, 4 Nov, 10:00 am IST**\n- **Shiva Sanitary Solutions** — **Cheapest** — ₹399, rated 4.5, earliest slot **Thu, 5 Nov, 8:00 am IST**\n\nWhich one would you like to book?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_plumber_koramangala_5",
+                  "slot": {
+                    "start": "2026-11-05T08:00:00+05:30",
+                    "end": "2026-11-05T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Please check the approval card and tap **Approve ₹399** if everything looks right."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Nothing is booked yet—a typed “yes” doesn’t count. Please tap **Approve ₹399** on the approval card."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0065052,
+    "simulatedUser": 0.057149099999999994
+  }
+}

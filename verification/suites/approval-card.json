@@ -1,0 +1,1252 @@
+{
+  "version": 1,
+  "title": "Approval card: choosing shows the fixed card; only a tap on Approve books, exactly once; Decline and a typed yes book nothing",
+  "feature": "approval-card",
+  "description": "Ticket 05. Choosing an option holds the slot and shows the fixed approval card (provider, time in IST, address, price, cancellation terms; Approve ₹PRICE, Other options, Decline) in the assistant-ui thread. A tap on Approve posts the card's fingerprint to the approve route; the agent executes and the world then holds exactly one booking whose grant has that fingerprint and is consumed. Decline books nothing and frees the slot. A typed yes books nothing and shows the same card again.",
+  "scenarios": [
+    {
+      "id": "approve-books-exactly-one",
+      "title": "Choose the cheapest plumber, see the card, tap Approve ₹399: one booking with the card's fingerprint, grant consumed, receipt shows the verified booking ID",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path (every book succeeds), seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, Thu 5 Nov at 8:00 am IST, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the happy-booking conversation into the scripted model (the scenarios/approval/happy-booking eval's turns)"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Options for plumber in Koramangala",
+            "text": "Cheapest"
+          },
+          "note": "the tagged options render"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "choosing an option shows the fixed approval card with the held provider"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Thu, 5 Nov, 8:00 am IST"
+          },
+          "note": "the date and time, in IST"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Koramangala, Bengaluru"
+          },
+          "note": "the address"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Free cancellation"
+          },
+          "note": "the provider's cancellation terms"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "left"
+          },
+          "note": "the hold's countdown"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "Approve shows the held price"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Other options",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Decline",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "note": "the turn finished: the agent asks for the tap"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].fingerprint",
+                "equals": [
+                  "fp_ae4d893101b52350d8d2e352f36814a9d6e42eabe0744eca3f293134f6bbbd35"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              },
+              {
+                "path": "proposals[*].terms.priceInr",
+                "equals": [
+                  399
+                ]
+              }
+            ]
+          },
+          "note": "world state: one pending proposal for the held quote, no grant yet"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: only the seeded history, nothing booked yet"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Booked",
+            "text": "bkg_0002"
+          },
+          "note": "the receipt shows the verified booking ID"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Booking ID bkg_0002"
+          },
+          "note": "the agent says Booked with the booking ID"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Approved"
+          },
+          "note": "the card turned approved"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "count": 0
+          },
+          "note": "no Approve button is left to click"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 4
+              },
+              {
+                "path": "bookings[*].approval.grantFingerprint",
+                "equals": [
+                  null,
+                  null,
+                  "fp_ae4d893101b52350d8d2e352f36814a9d6e42eabe0744eca3f293134f6bbbd35",
+                  null
+                ]
+              },
+              {
+                "path": "bookings[*].approval.grantConsumed",
+                "equals": [
+                  null,
+                  null,
+                  true,
+                  null
+                ]
+              },
+              {
+                "path": "bookings[*].bookingId",
+                "includes": "bkg_0002"
+              }
+            ]
+          },
+          "note": "world state: exactly one new booking, and it carries the approved fingerprint with its grant consumed"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "executed"
+                ]
+              },
+              {
+                "path": "proposals[*].bookingId",
+                "equals": [
+                  "bkg_0002"
+                ]
+              },
+              {
+                "path": "proposals[*].grant.consumed",
+                "equals": [
+                  true
+                ]
+              }
+            ]
+          },
+          "note": "world state: the proposal was executed once"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/errand"
+          ],
+          "options": {
+            "expect": {
+              "path": "errand.state",
+              "equals": "done"
+            }
+          },
+          "note": "the errand is done"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ]
+    },
+    {
+      "id": "decline-books-nothing",
+      "title": "Decline on the card: no booking, no grant, the held slot is free again",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path (every book succeeds), seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "text": "Okay, I've let the slot go and nothing was booked. Want to pick another option?"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the decline conversation (the scenarios/approval/decline-books-nothing eval's turns)"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Options for plumber in Koramangala",
+            "text": "Cheapest"
+          },
+          "note": "the tagged options render"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "choosing an option shows the fixed approval card with the held provider"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Thu, 5 Nov, 8:00 am IST"
+          },
+          "note": "the date and time, in IST"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Koramangala, Bengaluru"
+          },
+          "note": "the address"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Free cancellation"
+          },
+          "note": "the provider's cancellation terms"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "left"
+          },
+          "note": "the hold's countdown"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "Approve shows the held price"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Other options",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Decline",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "note": "the turn finished: the agent asks for the tap"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].fingerprint",
+                "equals": [
+                  "fp_ae4d893101b52350d8d2e352f36814a9d6e42eabe0744eca3f293134f6bbbd35"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              },
+              {
+                "path": "proposals[*].terms.priceInr",
+                "equals": [
+                  399
+                ]
+              }
+            ]
+          },
+          "note": "world state: one pending proposal for the held quote, no grant yet"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: only the seeded history, nothing booked yet"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Decline"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Declined"
+          },
+          "note": "the card shows it was declined"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "nothing was booked"
+          },
+          "note": "the agent confirms nothing was booked"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: no booking"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "declined"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: declined, no grant"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/providers/prv_plumber_koramangala_5"
+          ],
+          "options": {
+            "expect": {
+              "path": "provider.freeSlots[*].start",
+              "includes": "2026-11-05T08:00:00+05:30"
+            }
+          },
+          "note": "world state: the hold was released, the slot is free again"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script"
+        }
+      ]
+    },
+    {
+      "id": "typed-yes-shows-the-card-again",
+      "title": "Typing yes instead of tapping: nothing is booked and the same card is shown again",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path (every book succeeds), seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Nothing is booked yet: only a tap on Approve ₹399 on the card can book it. Here's the card again."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the typed-yes conversation (the scenarios/approval/typed-yes-shows-the-card-again eval's turns)"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Options for plumber in Koramangala",
+            "text": "Cheapest"
+          },
+          "note": "the tagged options render"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "choosing an option shows the fixed approval card with the held provider"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Thu, 5 Nov, 8:00 am IST"
+          },
+          "note": "the date and time, in IST"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Koramangala, Bengaluru"
+          },
+          "note": "the address"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Free cancellation"
+          },
+          "note": "the provider's cancellation terms"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "left"
+          },
+          "note": "the hold's countdown"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "Approve shows the held price"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Other options",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Decline",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "note": "the turn finished: the agent asks for the tap"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].fingerprint",
+                "equals": [
+                  "fp_ae4d893101b52350d8d2e352f36814a9d6e42eabe0744eca3f293134f6bbbd35"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              },
+              {
+                "path": "proposals[*].terms.priceInr",
+                "equals": [
+                  399
+                ]
+              }
+            ]
+          },
+          "note": "world state: one pending proposal for the held quote, no grant yet"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: only the seeded history, nothing booked yet"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "yes"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Here's the card again."
+          },
+          "note": "the agent answers the typed yes"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "count": 2
+          },
+          "note": "the card is shown again"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "count": 2
+          },
+          "note": "both show the same pending Approve"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: no booking"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: still pending, and the typed yes minted no grant"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script"
+        }
+      ]
+    }
+  ]
+}
