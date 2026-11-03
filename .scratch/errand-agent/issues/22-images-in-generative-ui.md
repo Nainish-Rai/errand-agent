@@ -10,7 +10,7 @@ Images are local, licensed assets shipped with the app (the v3 Unsplash set, cre
 
 **Blocked by:** 20
 
-**Status:** ready-for-agent
+**Status:** done (PR #26)
 
 - [x] Image assets and their credits live in the app; the credits are visible on a page
 - [x] A tool result containing an image URL, or an unknown asset key, renders the fallback and never fetches anything: an eval or test proves it
