@@ -113,7 +113,7 @@ export function SpendChart({ months, title }: { readonly months: number; readonl
       label="Spend chart"
       rows={bars.map((bar) => [bar.label, `${rupees(bar.spendInr)}, ${bar.bookings} booking${bar.bookings === 1 ? "" : "s"}`])}
     >
-      <LineChart data={bars.map((bar) => ({ month: bar.label, spend: bar.spendInr }))} categoryKey="month" height={180} condensed legend={false} />
+      <LineChart data={bars.map((bar) => ({ month: bar.label, spend: bar.spendInr }))} categoryKey="month" height={180} condensed legend={false} variant="linear" />
     </ChartFrame>
   );
 }
