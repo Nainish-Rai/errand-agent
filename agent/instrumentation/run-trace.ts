@@ -255,6 +255,13 @@ export default defineInstrumentation({
 
     "model.call.started": (event, ctx) => {
       const { scope } = event;
+      // The context wrapper logs this call's context against its chat span (ticket 12).
+      if (scope.turnId !== undefined) {
+        container().modelCallPlaces.callStarted(
+          { sessionId: scope.sessionId, turnId: scope.turnId },
+          { traceId: scope.rootSessionId, sessionId: scope.sessionId, spanId: event.idempotencyKey },
+        );
+      }
       return open(
         {
           type: "span",
@@ -282,7 +289,10 @@ export default defineInstrumentation({
       );
     },
 
-    "model.call.settled": closeModelCall,
+    "model.call.settled": (event, ctx) => {
+      if (event.scope.turnId !== undefined) container().modelCallPlaces.callSettled({ sessionId: event.scope.sessionId, turnId: event.scope.turnId });
+      return closeModelCall(event, ctx);
+    },
 
     "call.requested": (event, ctx) => {
       const { scope } = event;

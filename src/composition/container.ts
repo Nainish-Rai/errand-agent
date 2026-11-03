@@ -2,6 +2,7 @@ import path from "node:path";
 
 import type { LanguageModel } from "ai";
 
+import { CONTEXT_BUDGET } from "../core/context/context-budget";
 import { DEFAULT_RUN_LIMITS, type RunExit, type RunKey, type RunLimits } from "../core/budget/run-budget";
 import type { RunOutcome } from "../core/budget/outcome";
 import type { Clock } from "../core/ports/clock";
@@ -21,6 +22,7 @@ import type { ProviderWorld } from "../core/ports/provider-world";
 import type { RunBudgetStore } from "../core/ports/run-budget-store";
 import type { TraceSink } from "../core/ports/trace-sink";
 import { admitToolCalls } from "../core/use-cases/admit-tool-calls";
+import { recordModelContext } from "../core/use-cases/record-model-context";
 import { recordModelFailure } from "../core/use-cases/record-model-failure";
 import type { RunBudgetDependencies } from "../core/use-cases/run-budget-session";
 import type { SettleRunDependencies } from "../core/use-cases/settle-run";
@@ -39,6 +41,7 @@ import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { reviewReadersFor } from "../adapters/review-reader/select-review-readers";
+import { contextBudgetedModel, ModelCallPlaces } from "../adapters/tracing/context-log-middleware";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
 import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
@@ -95,6 +98,8 @@ class Container {
     sanitizer: new Sanitizer({ secrets: runtimeSecrets() }),
   });
   readonly modelPricing: ModelPricing = new PriceTable();
+  /** Which chat span each run's current model call is, so its context event can name it (ticket 12). */
+  readonly modelCallPlaces = new ModelCallPlaces();
   readonly #errandRecords = new InMemoryErrandStore();
   readonly errands: ErrandStore = this.#errandRecords;
   /** Provider alerts for the home screen; empty until ticket 14 raises them. */
@@ -198,11 +203,19 @@ class Container {
 
   /**
    * The role's model held to one run's budget: every model call, and every tool call it asks for,
-   * is charged to `run` first (see src/adapters/models/run-budget-gate.ts).
+   * is charged to `run` first (see src/adapters/models/run-budget-gate.ts), and every call's
+   * context is packed into the fixed context budget and logged (src/adapters/tracing/context-log-middleware.ts).
    */
   budgetedModelFor(role: ModelRole, run: RunKey, describe: (outcome: RunOutcome) => string): LanguageModel {
     const deps = this.runBudgetDependencies;
-    return gatedModel(this.modelFor(role), {
+    // Inside the gate: a call the run budget stops is never packed or logged.
+    const contextBudgeted = contextBudgetedModel(this.modelFor(role), {
+      budget: CONTEXT_BUDGET,
+      run,
+      places: this.modelCallPlaces,
+      record: (request) => recordModelContext({ traceSink: this.traceSink, clock: this.wallClock }, request),
+    });
+    return gatedModel(contextBudgeted, {
       startModelTurn: () => startModelTurn(deps, run),
       admitToolCalls: (count) => admitToolCalls(deps, { run, count }),
       recordModelFailure: () => recordModelFailure(deps, run),
@@ -223,7 +236,14 @@ class Container {
 
   /** What the memory provider needs to build each turn's remembered context. */
   get modelContextDependencies(): ModelContextDependencies {
-    return { memory: this.memory, errands: this.errands, traceSink: this.traceSink, clock: this.clock, wallClock: this.wallClock };
+    return {
+      memory: this.memory,
+      errands: this.errands,
+      traceSink: this.traceSink,
+      budget: CONTEXT_BUDGET,
+      clock: this.clock,
+      wallClock: this.wallClock,
+    };
   }
 
   /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
