@@ -1,10 +1,12 @@
 import type { MemoryEvidence } from "../../src/core/memory/memory-fact";
 import { MEMORY_CONTEXT_HEADING } from "../../src/core/use-cases/build-model-context";
+import { isProviderUpdate } from "./provider-update-presenter";
 
 // Where the words a memory tool quotes come from. The model says what the person said; this checks
 // it against the conversation the model was actually given: the person's latest message, an earlier
 // message of theirs, or a tool's result. Core decides what to trust; this only reports what it found.
-// The remembered context eve adds as a user-role message is not the person speaking, so it never counts.
+// The remembered context eve adds as a user-role message is not the person speaking, so it never counts,
+// and neither does a provider update the backend put in the chat (ticket 14).
 
 export interface MessageLike {
   readonly role: string;
@@ -54,7 +56,7 @@ export function personsMessages(messages: readonly MessageLike[]): string[] {
   return messages
     .filter((message) => message.role === "user")
     .map(userTextOf)
-    .filter((text) => text.trim() !== "" && !text.includes(MEMORY_CONTEXT_HEADING));
+    .filter((text) => text.trim() !== "" && !text.includes(MEMORY_CONTEXT_HEADING) && !isProviderUpdate(text));
 }
 
 export function evidenceFor(quote: string, messages: readonly MessageLike[], sessionId: string): MemoryEvidence {

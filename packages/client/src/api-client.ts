@@ -20,6 +20,7 @@ import {
   ListActionIntentsResponseSchema,
   LoadModelScriptResponseSchema,
   SetRunLimitsResponseSchema,
+  SimulateProviderCancellationResponseSchema,
   ListMemoryResponseSchema,
   MemoryFactResponseSchema,
   SeedMemoryResponseSchema,
@@ -51,6 +52,8 @@ import {
   type ProviderDetails,
   type SetRunLimitsRequest,
   type SetRunLimitsResponse,
+  type SimulateProviderCancellationRequest,
+  type SimulateProviderCancellationResponse,
   type SeedMemoryRequest,
   type SeedMemoryResponse,
   type SwitchScenarioRequest,
@@ -298,6 +301,18 @@ export class ApiClient {
       "/dev/world-fault",
       { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
       InjectWorldFaultResponseSchema,
+    );
+  }
+
+  /**
+   * Dev only: a provider cancels a booking and the mock world emits the event, which the backend
+   * handles as it would a real one. Passing an `eventId` the world already sent redelivers it.
+   */
+  async simulateProviderCancellation(request: SimulateProviderCancellationRequest): Promise<SimulateProviderCancellationResponse> {
+    return await this.#request(
+      "/dev/world-events/provider-cancelled",
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      SimulateProviderCancellationResponseSchema,
     );
   }
 

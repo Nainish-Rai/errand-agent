@@ -35,7 +35,7 @@ const whenFormat = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
 });
 
-function when(start: string): string {
+export function when(start: string): string {
   return `${whenFormat.format(new Date(start))} IST`;
 }
 
