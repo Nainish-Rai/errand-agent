@@ -17,3 +17,5 @@ next-env.d.ts
 # generated dashboards and summaries hold run and session data (see observatory/README.md)
 observatory/out/
 __pycache__/
+# the backend SQLite database (ERRAND_DATA_DIR overrides)
+data/

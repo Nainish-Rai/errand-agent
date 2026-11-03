@@ -10,6 +10,7 @@ import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { TraceSink } from "../core/ports/trace-sink";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
+import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
@@ -69,6 +70,7 @@ class Container {
   readonly catalog: ServiceCatalog = worldCatalog;
   #world: MockProviderWorld;
   #settings: WorldSettings;
+  #database: Database | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -78,6 +80,15 @@ class Container {
 
   get world(): ProviderWorld {
     return this.#world;
+  }
+
+  /**
+   * The process's SQLite database, opened on first use. Stores that must survive a restart take it
+   * and run their own migrations (see src/adapters/sqlite/database.ts).
+   */
+  get database(): Database {
+    this.#database ??= openDatabase(databasePath());
+    return this.#database;
   }
 
   get worldSettings(): WorldSettings {
