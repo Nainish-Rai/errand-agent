@@ -202,8 +202,9 @@
         { "command": "key", "args": ["Enter"] },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Options for electrician in Jayanagar", "state": "visible" },
-          "note": "turn two ran in the same chat"
+          "args": ["text=I found 8 providers. The top options:"],
+          "options": { "count": 2, "timeoutMs": 15000 },
+          "note": "turn two ran in the same chat (the scripted responder answers any search the same way)"
         },
         { "command": "goto", "args": ["/ops/sessions/current"] },
         {

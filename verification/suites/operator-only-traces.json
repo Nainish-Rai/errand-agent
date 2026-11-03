@@ -129,7 +129,8 @@
         { "command": "click", "options": { "role": "button", "name": "Sign in" } },
         {
           "command": "assert",
-          "options": { "role": "alert", "text": "That token doesn't open the console." },
+          "args": ["role=alert >> text=That token doesn't open the console."],
+          "options": { "state": "visible" },
           "note": "the console refuses the token"
         },
         {
