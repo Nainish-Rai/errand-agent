@@ -391,23 +391,38 @@ export function AlertsList({ summary, nowMs, onOpenMemory }: { readonly summary?
         </EmptyLine>
       }
     >
-      <Rows label="Recent alerts">
-        {approvals.map((approval) => (
-          <Reveal as="li" key={`approval:${approval.proposalId}`}>
-            {approvalRow(approval)}
-          </Reveal>
-        ))}
-        {facts.map((fact) => (
-          <Reveal as="li" key={`fact:${fact.id}`}>
-            {guessRow(fact, onOpenMemory)}
-          </Reveal>
-        ))}
-        {alerts.slice(0, 4).map((alert) => (
-          <Reveal as="li" key={alertKey(alert)}>
-            {alertRow(alert, nowMs)}
-          </Reveal>
-        ))}
-      </Rows>
+      {/* Two lists under one heading: what waits on the person (cards and guesses), then what happened. */}
+      <div className="flex flex-col [&>*+*]:border-t [&>*+*]:border-line">
+        <Presence>
+          {approvals.length + facts.length > 0 && (
+            <Reveal key="waiting">
+              <Rows label="Waiting on you">
+                {approvals.map((approval) => (
+                  <Reveal as="li" key={`approval:${approval.proposalId}`}>
+                    {approvalRow(approval)}
+                  </Reveal>
+                ))}
+                {facts.map((fact) => (
+                  <Reveal as="li" key={`fact:${fact.id}`}>
+                    {guessRow(fact, onOpenMemory)}
+                  </Reveal>
+                ))}
+              </Rows>
+            </Reveal>
+          )}
+          {alerts.length > 0 && (
+            <Reveal key="recent">
+              <Rows label="Recent alerts">
+                {alerts.slice(0, 4).map((alert) => (
+                  <Reveal as="li" key={alertKey(alert)}>
+                    {alertRow(alert, nowMs)}
+                  </Reveal>
+                ))}
+              </Rows>
+            </Reveal>
+          )}
+        </Presence>
+      </div>
     </Section>
   );
 }
