@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { parseApiCaller } from "./browser-session";
 import { parseArguments } from "./cli-arguments";
 import { writeHtmlReport } from "./html-report";
 import { cleanUrl, isAllowed, runOrigins } from "./network-guard";
@@ -98,6 +99,8 @@ describe("world API expectations", () => {
   it("puts the page's session into sessions/current", () => {
     expect(resolveSession("/api/v1/sessions/current/trace", "wrun_1")).toBe("/api/v1/sessions/wrun_1/trace");
     expect(() => resolveSession("/api/v1/sessions/current/trace", undefined)).toThrow(/No chat session/);
+    expect(resolveSession("/ops/sessions/current", "wrun_1")).toBe("/ops/sessions/wrun_1");
+    expect(resolveSession("/chat/current?rail=memory", "wrun_1")).toBe("/chat/wrun_1?rail=memory");
   });
 });
 
@@ -119,6 +122,7 @@ describe("suite manifests", () => {
       "generated-ui.json",
       "home.json",
       "memory.json",
+      "operator-only-traces.json",
       "provider-cancellation.json",
       "review-insight.json",
       "run-budget.json",
@@ -139,6 +143,19 @@ describe("suite manifests", () => {
   it("has no command that runs page script", () => {
     const step = { command: ["e", "val"].join(""), args: ["1"] };
     expect(() => validateSuite(scenario([step, { command: "assert", args: ["html"], options: { count: 1 } }]))).toThrow(/unsupported command/);
+  });
+
+  it("counts an api step with an expected status as an assertion", () => {
+    const refused = { command: "api", args: ["GET", "/api/v1/sessions/current/trace"], options: { status: 404 } };
+    expect(() => validateSuite(scenario([{ command: "goto", args: ["/chat"] }, refused]))).not.toThrow();
+    expect(stepOptions(refused)).toEqual({ status: "404" });
+  });
+
+  it("calls the API as the person unless a step says operator or other-person", () => {
+    expect(parseApiCaller(undefined)).toBe("person");
+    expect(parseApiCaller("operator")).toBe("operator");
+    expect(parseApiCaller("other-person")).toBe("other-person");
+    expect(() => parseApiCaller("admin")).toThrow(/person, operator or other-person/);
   });
 
   it("turns JSON options into command options", () => {

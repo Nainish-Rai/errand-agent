@@ -85,7 +85,7 @@ function entries(value: unknown): MemoryContextEntry[] {
 
 /** Each turn's memory context in a session, as the run trace logged it. */
 export async function memoryContextsOf(run: ScenarioRun, sessionId: string): Promise<LoggedMemoryContext[]> {
-  const trace = await settledTrace(run.api, sessionId);
+  const trace = await settledTrace(run.operatorApi, sessionId);
   return trace.events
     .filter((event) => event.kind === "context" && event.name === "memory context")
     .map((event) => ({
@@ -96,7 +96,7 @@ export async function memoryContextsOf(run: ScenarioRun, sessionId: string): Pro
 
 /** The `memory_used` events of a session: memory filling in the errand. */
 export async function memoryPrefillsOf(run: ScenarioRun, sessionId: string): Promise<string[]> {
-  const trace = await settledTrace(run.api, sessionId);
+  const trace = await settledTrace(run.operatorApi, sessionId);
   return trace.events.filter((event) => event.kind === "memory_used").map((event) => event.name);
 }
 

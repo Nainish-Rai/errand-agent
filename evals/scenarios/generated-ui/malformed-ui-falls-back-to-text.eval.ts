@@ -32,7 +32,7 @@ export default defineScenario({
     const verdict = calls[0]?.verdict;
     t.check(verdict?.kind === "unreadable" && verdict.errors.length > 0, equals(true)).label("the tool result names the parse errors");
 
-    const traced = await tracedUiVerdicts(run.api, run.sessionId);
+    const traced = await tracedUiVerdicts(run.operatorApi, run.sessionId);
     t.check(traced.map((event) => event.verdict), equals(["unreadable"]));
     t.check(traced[0]?.errors.length !== 0, equals(true)).label("the parse errors are in the trace");
     t.check((run.turns.at(-1)?.reply ?? "").trim().length > 0, equals(true)).label("the reply is text");

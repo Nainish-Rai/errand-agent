@@ -102,11 +102,11 @@
         {
           "command": "assert",
           "options": {
-            "role": "complementary",
-            "name": "Run trace",
-            "text": "Send a message and the run shows up here."
+            "role": "button",
+            "name": "Show trace",
+            "count": 0
           },
-          "note": "the trace panel is open before the first message"
+          "note": "the person's chat has no trace toggle (ticket 19)"
         },
         {
           "command": "fill",
@@ -194,15 +194,6 @@
           "note": "world state: only the area is missing"
         },
         {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Errand states",
-            "text": "start → gathering"
-          },
-          "note": "the trace panel picked up the new session and shows the first transition"
-        },
-        {
           "command": "click",
           "options": {
             "role": "button",
@@ -254,6 +245,35 @@
             "count": 0
           },
           "note": "the chips are gone once answered"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Sign in"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Errand states",
+            "text": "start → gathering"
+          },
+          "note": "the operator console's trace panel shows the session's first transition"
         },
         {
           "command": "assert",
@@ -313,6 +333,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "events[*].name",

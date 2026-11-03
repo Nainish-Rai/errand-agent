@@ -284,7 +284,7 @@
         {
           "command": "api",
           "args": ["GET", "/api/v1/sessions/current/trace"],
-          "options": { "expect": [{ "path": "events[*].name", "includes": "memory → errand: area" }] },
+          "options": { "as": "operator", "expect": [{ "path": "events[*].name", "includes": "memory → errand: area" }] },
           "note": "the prefill is a traced patch"
         }
       ]

@@ -56,7 +56,7 @@ export default defineScenario({
     await t.require(card?.terms.action, equals("cancel"));
     t.check([card?.terms.slot.start, card?.terms.priceInr], equals([AC_BOOKING.slot.start, 0])).label("the card shows the booking and its fee");
 
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(trace.worldCalls, equals(["cancel service_unavailable", "list_bookings upcoming", "cancel cancelled", "list_bookings cancelled"])).label(
       "the 503 is retried after a status read, and the success is read back",
     );

@@ -66,6 +66,7 @@
           "command": "api",
           "args": ["GET", "/api/v1/sessions/current/trace"],
           "options": {
+            "as": "operator",
             "expect": [
               { "path": "spans[*].name", "includes": "execute_tool search_providers" },
               { "path": "totals.toolCalls", "equals": 1 }

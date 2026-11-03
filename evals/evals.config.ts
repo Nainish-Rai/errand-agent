@@ -1,6 +1,7 @@
 import { defineEvalConfig } from "eve/evals";
 
 import { evalMode, isRecording, serverEnvironmentFor, trialsFor } from "./modes";
+import { authEnvironment } from "./operator";
 import { evalTableReporter } from "./reporter";
 
 // `pnpm eval` runs offline (the default). ERRAND_EVAL_MODE=replay or live switches the mode; see
@@ -9,7 +10,9 @@ import { evalTableReporter } from "./reporter";
 
 const mode = evalMode();
 isRecording(); // refuses ERRAND_EVAL_RECORD outside live mode before anything runs
-Object.assign(process.env, serverEnvironmentFor(mode));
+// The auth secret is made up here, once: the scenarios read it back from the environment to sign
+// the operator's and the second person's tokens.
+Object.assign(process.env, serverEnvironmentFor(mode), authEnvironment());
 const trials = trialsFor(mode);
 
 export default defineEvalConfig({

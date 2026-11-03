@@ -1,11 +1,17 @@
 import { localDev, routeAuth, type AuthFn } from "eve/channels/auth";
 
-// Whose memory a request reads and writes. It always comes from the channel's auth context, never
-// from a request body or a model's tool input. Locally that is eve's fixed `local-dev` caller;
-// real auth later means changing CALLER_AUTH and nothing else.
+import { accessToken } from "./access-token";
 
-/** The route auth walk shared by the chat channel and the app API, so both see the same person. */
-export const CALLER_AUTH: readonly AuthFn<Request>[] = [localDev()];
+// Whose memory a request reads and writes. It always comes from the channel's auth context, never
+// from a request body or a model's tool input. Locally that is eve's fixed `local-dev` caller, unless
+// the request carries a valid access token (another person, or an operator); real auth later means
+// changing CALLER_AUTH and nothing else.
+
+/**
+ * The route auth walk shared by the chat channel and the app API, so both see the same person. The
+ * token comes first: a request that carries one is that person, never the local-dev stand-in.
+ */
+export const CALLER_AUTH: readonly AuthFn<Request>[] = [accessToken(), localDev()];
 
 interface Caller {
   readonly principalId: string;

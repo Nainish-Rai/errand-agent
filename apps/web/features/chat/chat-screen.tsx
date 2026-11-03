@@ -2,17 +2,15 @@
 
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { ChatClient, type ClientSession } from "@errand/client";
-import { Activity, Brain, House } from "lucide-react";
+import { Brain, House } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { Spinner } from "@/components/ui/spinner";
 import { MemoryPanel } from "@/features/memory-panel/memory-panel";
 import { GeneratedUiHostProvider, GeneratedUiTheme } from "@/features/generated-ui";
-import { TracePanel } from "@/features/trace-panel/trace-panel";
 
 import { appApi, backendUrl } from "./backend";
 import { BookingSessionProvider } from "./booking-progress";
@@ -20,11 +18,11 @@ import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
 import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
 
-// The chat at /chat/[sessionId]. The side panels share one right rail: the trace or the memory,
-// never both, so the conversation keeps its width. Below the lg breakpoint the rail overlays the
-// chat instead of squeezing it.
+// The chat at /chat/[sessionId]. The memory panel opens in a right rail; below the lg breakpoint it
+// overlays the chat instead of squeezing it. The run trace, the context log, token counts and costs
+// are not here: they are for operators, in the console at /ops (ticket 19).
 
-export type Rail = "trace" | "memory";
+export type Rail = "memory";
 
 /** Where a link can open the chat: a side panel, and a proposal's approval card to scroll to. */
 export interface ChatEntry {
@@ -68,20 +66,19 @@ function useFocusProposal(proposalId: string | undefined) {
   }, [proposalId]);
 }
 
-function RailToggle({ rail, shows, onChange }: { readonly rail: Rail | undefined; readonly shows: Rail; readonly onChange: (rail: Rail | undefined) => void }) {
-  const open = rail === shows;
-  const noun = shows === "trace" ? "trace" : "memory";
+function MemoryToggle({ rail, onChange }: { readonly rail: Rail | undefined; readonly onChange: (rail: Rail | undefined) => void }) {
+  const open = rail === "memory";
   return (
-    <Button aria-pressed={open} size="sm" variant="outline" onClick={() => onChange(open ? undefined : shows)}>
-      {shows === "trace" ? <Activity /> : <Brain />}
-      {open ? `Hide ${noun}` : `Show ${noun}`}
+    <Button aria-pressed={open} size="sm" variant="outline" onClick={() => onChange(open ? undefined : "memory")}>
+      <Brain />
+      {open ? "Hide memory" : "Show memory"}
     </Button>
   );
 }
 
 function BoundThread({ session, entry }: { readonly session: ClientSession; readonly entry: ChatEntry }) {
   const { runtime, error, sendText, sessionId, activity } = useEveAssistantRuntime(session);
-  const [rail, setRail] = useState<Rail | undefined>(entry.rail ?? "trace");
+  const [rail, setRail] = useState<Rail | undefined>(entry.rail);
   useFocusProposal(entry.proposalId);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -105,18 +102,13 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
             </div>
             <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md bg-background">
               <ThemeToggle />
-              {/* One rail, two views: pressing the other view switches the rail, pressing the open one closes it. */}
-              <ButtonGroup aria-label="Side panel">
-                <RailToggle rail={rail} shows="memory" onChange={setRail} />
-                <RailToggle rail={rail} shows="trace" onChange={setRail} />
-              </ButtonGroup>
+              <MemoryToggle rail={rail} onChange={setRail} />
             </div>
             <BookingSessionProvider sessionId={sessionId}>
               <Thread />
             </BookingSessionProvider>
           </div>
           {rail === "memory" && <MemoryPanel backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
-          {rail === "trace" && <TracePanel backendUrl={backendUrl} sessionId={sessionId} activity={activity} onClose={() => setRail(undefined)} />}
         </div>
         </GeneratedUiTheme>
         </GeneratedUiHostProvider>

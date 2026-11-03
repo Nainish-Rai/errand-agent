@@ -62,7 +62,7 @@ export interface TracedTransitions {
 /** The errand's own history beside the trace's, so a scenario can check every transition was traced. */
 export async function tracedTransitions(run: ScenarioRun): Promise<TracedTransitions> {
   const errand = await run.api.getErrand(run.sessionId);
-  const trace = await settledTrace(run.api, run.sessionId);
+  const trace = await settledTrace(run.operatorApi, run.sessionId);
   return {
     inErrand: (errand?.transitions ?? []).map((transition) => `${transition.from ?? "start"} → ${transition.to}`),
     inTrace: trace.events.filter((event) => event.kind === "state_transition").map((event) => event.name),

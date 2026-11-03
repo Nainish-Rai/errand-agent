@@ -24,13 +24,13 @@ export default defineScenario({
   },
   async expect(t, run) {
     t.succeeded();
-    const [traced] = await tracedRuns(run.api, run.sessionId);
+    const [traced] = await tracedRuns(run.operatorApi, run.sessionId);
     const outcome = traced?.outcomes[0];
     await t.require(outcome !== undefined, equals(true));
     t.check(outcome?.kind, equals("budget_exhausted")).label("the run ends budget_exhausted");
     t.check(outcome?.limit, equals("model_turns")).label("on the model-turn limit");
 
-    const trace = await settledTrace(run.api, run.sessionId);
+    const trace = await settledTrace(run.operatorApi, run.sessionId);
     t.check(trace.totals.modelCalls, equals(MODEL_TURNS)).label("the model is called exactly up to the cap");
     t.check(trace.totals.toolCalls, equals(MODEL_TURNS - 1)).label("no tool call runs on the last turn");
 

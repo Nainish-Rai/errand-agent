@@ -2,11 +2,13 @@ import { ApiClient, ChatClient } from "@errand/client";
 import { defineEval } from "eve/evals";
 import { equals, satisfies } from "eve/evals/expect";
 
+import { operatorClient } from "../operator";
 import { settledTrace } from "../session-trace";
 
 // A run leaves a trace with every span kind the trace panel draws: the turn (`invoke_agent`), its
 // model runs (`agent.step`), the model calls (`chat`, with tokens and cost) and the tool call
-// (`execute_tool`, with its arguments and result). Read through the same client the web app uses.
+// (`execute_tool`, with its arguments and result). Read through the same client the web app uses,
+// as an operator: the person who chatted can't read it (see trace/only-operators-read-sessions).
 
 interface SearchArguments {
   readonly service?: string;
@@ -27,7 +29,7 @@ export default defineEval({
     await session.nextTurn();
     t.succeeded();
 
-    const trace = await settledTrace(api, turn.sessionId);
+    const trace = await settledTrace(await operatorClient(t.target.url), turn.sessionId);
     const kinds = [...new Set(trace.spans.map((span) => span.kind))].sort();
     await t.require(kinds, equals(["agent", "model", "step", "tool"]));
     t.check(trace.spans.every((span) => span.status === "ok" && span.durationMs !== undefined), equals(true));

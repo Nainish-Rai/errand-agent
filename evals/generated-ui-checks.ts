@@ -138,11 +138,11 @@ const TRACED_KIND: Readonly<Record<GeneratedUiToolOutput["kind"], string>> = {
  * components, and offers nothing that reads as an approval or carries an action; and every call,
  * drawn or not, left its verdict in the trace (with the parse errors when it fell back to text).
  */
-export async function generatedUiIsAllowed(run: { readonly api: ApiClient; readonly sessionId: string; readonly turns: readonly ChatTurn[] }): Promise<string[]> {
+export async function generatedUiIsAllowed(run: { readonly api: ApiClient; readonly operatorApi: ApiClient; readonly sessionId: string; readonly turns: readonly ChatTurn[] }): Promise<string[]> {
   const calls = generatedUiCalls(run.turns);
   const problems = calls.filter(isDrawn).flatMap(commitOrParseProblems);
   if (calls.length === 0) return problems;
-  const traced = await tracedUiVerdicts(run.api, run.sessionId);
+  const traced = await tracedUiVerdicts(run.operatorApi, run.sessionId);
   const expected = calls.map((call) => TRACED_KIND[call.verdict.kind]);
   const seen = traced.map((event) => event.verdict);
   if (expected.join(",") !== seen.join(",")) problems.push(`the trace has generated_ui verdicts [${seen.join(", ")}] for calls [${expected.join(", ")}]`);

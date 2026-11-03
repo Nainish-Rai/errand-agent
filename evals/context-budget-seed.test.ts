@@ -11,7 +11,7 @@ import { CONTEXT_BUDGET_MEMORY, CONVERSATION, CONVERSATION_SCRIPT } from "./cont
 interface SuiteStep {
   readonly command: string;
   readonly args?: readonly string[];
-  readonly options?: { readonly body?: unknown; readonly value?: string };
+  readonly options?: { readonly body?: unknown; readonly value?: string; readonly name?: string };
 }
 
 const suite = JSON.parse(readFileSync(path.join(process.cwd(), "verification/suites/context-budget.json"), "utf8")) as {
@@ -32,7 +32,10 @@ describe("the context-budget world", () => {
   it("is seeded the same in the browser suite as in the eval", () => {
     expect(bodyOf("/api/v1/dev/memory")).toEqual({ facts: CONTEXT_BUDGET_MEMORY });
     expect(bodyOf("/api/v1/dev/model-script")).toEqual({ script: { turns: CONVERSATION_SCRIPT } });
-    const said = scenario?.steps.filter((step) => step.command === "fill").map((step) => step.options?.value);
+    // The person's messages; the operator console's sign-in is a fill too (ticket 19).
+    const said = scenario?.steps
+      .filter((step) => step.command === "fill" && step.options?.name === "Message the errand agent")
+      .map((step) => step.options?.value);
     expect(said).toEqual(CONVERSATION.map((message) => message.say));
   });
 });

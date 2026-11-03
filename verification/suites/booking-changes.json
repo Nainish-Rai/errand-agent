@@ -745,20 +745,13 @@
           ]
         },
         {
-          "command": "click",
-          "options": {
-            "role": "button",
-            "name": "Close the trace"
-          }
-        },
-        {
           "command": "assert",
           "options": {
             "role": "complementary",
             "name": "Run trace",
             "count": 0
           },
-          "note": "on a phone the trace rail covers the chat: close it"
+          "note": "the person's chat has no trace rail (ticket 19), so nothing covers the chat on a phone"
         },
         {
           "command": "fill",
@@ -897,6 +890,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "spans[*].name",

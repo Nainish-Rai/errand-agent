@@ -29,6 +29,8 @@ import {
   type GetProviderResponse,
   type GetProvidersResponse,
   type GetWorldFaultResponse,
+  type ListOperatorReadsResponse,
+  type ListOperatorSessionsResponse,
   type InjectWorldFaultResponse,
   type ListActionIntentsResponse,
   type LoadModelScriptResponse,
@@ -37,7 +39,7 @@ import {
   type SwitchScenarioResponse,
 } from "@errand/contracts";
 import { defineChannel, DELETE, GET, PATCH, POST, PUT } from "eve/channels";
-import { localDev, routeAuth } from "eve/channels/auth";
+import { routeAuth } from "eve/channels/auth";
 
 import { container } from "../../src/composition/container";
 import { approveProposal } from "../../src/core/use-cases/approve-proposal";
@@ -59,6 +61,9 @@ import { getSpend } from "../../src/core/use-cases/get-spend";
 import { listBookings } from "../../src/core/use-cases/list-bookings";
 import { getProposal, listProposals } from "../../src/core/use-cases/list-proposals";
 import { listActionIntents } from "../../src/core/use-cases/reconcile-pending-actions";
+import { listOperatorReads } from "../../src/core/use-cases/list-operator-reads";
+import { listOperatorSessions } from "../../src/core/use-cases/list-operator-sessions";
+import { recordOperatorRead } from "../../src/core/use-cases/record-operator-read";
 import { presentActionIntent, presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
@@ -69,6 +74,9 @@ import { EveSessionNotifier } from "../lib/session-notifier";
 import { presentConfirmOutcome, presentCorrectOutcome, presentFact, presentMemory, presentTombstone } from "../lib/memory-presenter";
 import { presentSessionContext } from "../lib/context-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
+import { presentSessionTranscript } from "../lib/transcript-presenter";
+import { operatorOf } from "../lib/operator";
+import { claimCallersSession, isCallersSession, sessionNotFound } from "../lib/session-access";
 import { presentProviderDetails } from "../lib/world-presenter";
 
 // The app API: everything a client needs besides chat, at /api/v1 on the same origin as /eve/v1.
@@ -90,9 +98,44 @@ function isDevelopment(): boolean {
  * body. A Response means the caller isn't authenticated and is the answer to send.
  */
 async function callerOf(request: Request): Promise<string | Response> {
-  const auth = await routeAuth(request, [localDev()]);
+  const auth = await routeAuth(request, CALLER_AUTH);
   if (auth instanceof Response) return auth;
   return appUserOf(auth) ?? failure(401, "unauthorized", "Sign in first.");
+}
+
+interface CallersSession {
+  readonly userId: string;
+  readonly sessionId: string;
+}
+
+/**
+ * The caller and the session a session-scoped read names, or the response to send: 401 for no
+ * caller, 400 for a malformed id, and 404 for a session that isn't theirs (or doesn't exist).
+ */
+async function callersSessionOf(request: Request, rawSessionId: string | undefined): Promise<CallersSession | Response> {
+  const userId = await callerOf(request);
+  if (userId instanceof Response) return userId;
+  const sessionId = SessionIdSchema.safeParse(rawSessionId);
+  if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+  if (!(await isCallersSession(sessionId.data, userId))) return sessionNotFound();
+  return { userId, sessionId: sessionId.data };
+}
+
+interface OperatorsSession {
+  readonly operatorId: string;
+  readonly sessionId: string;
+}
+
+/**
+ * The operator and the session they asked about, or a 404 for anyone who isn't an operator: the
+ * trace, context and transcript routes don't exist for them, whatever session they name.
+ */
+async function operatorsSessionOf(request: Request, rawSessionId: string | undefined): Promise<OperatorsSession | Response> {
+  const operatorId = await operatorOf(request);
+  if (operatorId === undefined) return sessionNotFound();
+  const sessionId = SessionIdSchema.safeParse(rawSessionId);
+  if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+  return { operatorId, sessionId: sessionId.data };
 }
 
 function invalidBody(issues: readonly { readonly message: string }[]): Response {
@@ -162,30 +205,74 @@ export default defineChannel({
       return new Response(bytes, { headers: { "content-type": "image/webp", "cache-control": "public, max-age=86400" } });
     }),
 
-    // The trace panel polls this while a run is going; a session with no trace yet reads as empty.
-    GET(`${API_PREFIX}/sessions/:sessionId/trace`, async (_request, { params }) => {
-      const sessionId = SessionIdSchema.safeParse(params.sessionId);
-      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
-      const trace = await getSessionTrace(container().traceSink, sessionId.data);
+    // The operator console's trace panel polls this while a run is going; a session with no trace
+    // yet reads as empty. Operators only (everyone else gets 404), and every read is audited.
+    GET(`${API_PREFIX}/sessions/:sessionId/trace`, async (request, { params }) => {
+      const read = await operatorsSessionOf(request, params.sessionId);
+      if (read instanceof Response) return read;
+      await recordOperatorRead(container().operatorReadDependencies, { ...read, kind: "trace" });
+      const trace = await getSessionTrace(container().traceSink, read.sessionId);
       // The spans are stamped with the wall clock, so "now" must be too: a pinned clock here made
       // running spans look as long as the pin's offset from today.
       return Response.json(presentSessionTrace(trace, container().wallClock.now().getTime()));
     }),
 
     // The context log: every model call's context against the budget, and what was left out and why.
-    GET(`${API_PREFIX}/sessions/:sessionId/context`, async (_request, { params }) => {
-      const sessionId = SessionIdSchema.safeParse(params.sessionId);
-      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
-      return Response.json(presentSessionContext(await getSessionContext(container().traceSink, sessionId.data)));
+    // Operators only, audited like the trace.
+    GET(`${API_PREFIX}/sessions/:sessionId/context`, async (request, { params }) => {
+      const read = await operatorsSessionOf(request, params.sessionId);
+      if (read instanceof Response) return read;
+      await recordOperatorRead(container().operatorReadDependencies, { ...read, kind: "context" });
+      return Response.json(presentSessionContext(await getSessionContext(container().traceSink, read.sessionId)));
+    }),
+
+    // The operator console: every session, one session's transcript, and who has read it.
+    GET(`${API_PREFIX}/ops/sessions`, async (request) => {
+      if ((await operatorOf(request)) === undefined) return failure(404, "not_found", "No such route.");
+      const { sessionOwners, errands, catalog } = container();
+      const sessions = await listOperatorSessions({ owners: sessionOwners, errands });
+      const body: ListOperatorSessionsResponse = {
+        sessions: sessions.map((session) => ({
+          sessionId: session.sessionId,
+          ownerId: session.ownerId,
+          startedAt: new Date(session.claimedAtMs).toISOString(),
+          errand: session.errand === undefined ? null : presentErrand(session.errand, catalog),
+        })),
+      };
+      return Response.json(body);
+    }),
+
+    GET(`${API_PREFIX}/ops/sessions/:sessionId/transcript`, async (request, { params }) => {
+      const read = await operatorsSessionOf(request, params.sessionId);
+      if (read instanceof Response) return read;
+      await recordOperatorRead(container().operatorReadDependencies, { ...read, kind: "transcript" });
+      return Response.json(await presentSessionTranscript(read.sessionId));
+    }),
+
+    GET(`${API_PREFIX}/ops/sessions/:sessionId/reads`, async (request, { params }) => {
+      const read = await operatorsSessionOf(request, params.sessionId);
+      if (read instanceof Response) return read;
+      const summaries = await listOperatorReads(container().operatorReadDependencies.reads, read.sessionId);
+      const body: ListOperatorReadsResponse = {
+        sessionId: read.sessionId,
+        reads: summaries.map((summary) => ({
+          operatorId: summary.operatorId,
+          kind: summary.kind,
+          reads: summary.reads,
+          firstReadAt: new Date(summary.firstAtMs).toISOString(),
+          lastReadAt: new Date(summary.lastAtMs).toISOString(),
+        })),
+      };
+      return Response.json(body);
     }),
 
     // The session's errand: its details, workflow state and what is still missing. Null before
     // the person has asked for anything.
-    GET(`${API_PREFIX}/sessions/:sessionId/errand`, async (_request, { params }) => {
-      const sessionId = SessionIdSchema.safeParse(params.sessionId);
-      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+    GET(`${API_PREFIX}/sessions/:sessionId/errand`, async (request, { params }) => {
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
       const { errands, catalog } = container();
-      const errand = await getErrand(errands, sessionId.data);
+      const errand = await getErrand(errands, session.sessionId);
       const body: GetErrandResponse = { errand: errand === undefined ? null : presentErrand(errand, catalog) };
       return Response.json(body);
     }),
@@ -209,6 +296,8 @@ export default defineChannel({
       if (userId instanceof Response) return userId;
       const sessionId = SessionIdSchema.safeParse(params.sessionId);
       if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      // The draft starts the session's errand before its first message, so it claims the session.
+      if (!(await claimCallersSession(sessionId.data, userId))) return sessionNotFound();
       const parsed = DraftErrandRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
       const { draftErrandDependencies, catalog } = container();
@@ -356,11 +445,9 @@ export default defineChannel({
     }),
 
     GET(`${API_PREFIX}/sessions/:sessionId/proposals`, async (request, { params }) => {
-      const userId = await callerOf(request);
-      if (userId instanceof Response) return userId;
-      const sessionId = SessionIdSchema.safeParse(params.sessionId);
-      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
-      const standings = await listProposals(container().proposalDependencies, { userId, sessionId: sessionId.data });
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
+      const standings = await listProposals(container().proposalDependencies, session);
       const body: ListProposalsResponse = { proposals: standings.map(presentProposalView) };
       return Response.json(body);
     }),
@@ -385,11 +472,9 @@ export default defineChannel({
     }),
 
     GET(`${API_PREFIX}/sessions/:sessionId/action-intents`, async (request, { params }) => {
-      const userId = await callerOf(request);
-      if (userId instanceof Response) return userId;
-      const sessionId = SessionIdSchema.safeParse(params.sessionId);
-      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
-      const standings = await listActionIntents(container().bookingDependencies, { userId, sessionId: sessionId.data });
+      const session = await callersSessionOf(request, params.sessionId);
+      if (session instanceof Response) return session;
+      const standings = await listActionIntents(container().bookingDependencies, session);
       const body: ListActionIntentsResponse = { intents: standings.map(presentActionIntent) };
       return Response.json(body);
     }),

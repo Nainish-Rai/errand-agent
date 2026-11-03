@@ -19,6 +19,7 @@ import {
 } from "../../booking-conversation";
 import { checkInvariants } from "../../invariants";
 import { evalMode, serverEnvironmentFor } from "../../modes";
+import { authEnvironment, operatorClient } from "../../operator";
 import { ACTUAL_LABEL, type ScenarioRun } from "../../scenario-run";
 
 // Ticket 07, "restart mid-booking". The backend is really killed (SIGKILL to the process group
@@ -66,7 +67,7 @@ export default defineEval({
       traces: path.join(root, "traces"),
       logs: path.join(root, "logs"),
     };
-    const environment = { ...serverEnvironmentFor("offline") };
+    const environment = { ...serverEnvironmentFor("offline"), ...authEnvironment() };
     const port = await freePort();
     const start = { appRoot: appRoot(), directories, port, environment };
     let backend: BackendProcess | undefined;
@@ -102,6 +103,7 @@ export default defineEval({
 
       backend = await startBackend(start);
       api = new ApiClient({ baseUrl: backend.url });
+      const operatorApi = await operatorClient(backend.url);
       t.log(`restarted backend pid ${backend.pid}`);
 
       const [intent] = await api.listSessionActionIntents(sessionId);
@@ -120,6 +122,7 @@ export default defineEval({
         mode: "offline",
         toolCalls: turns.flatMap((turn) => turn.toolCalls),
         api,
+        operatorApi,
         bookingsBefore,
         world: { scenario: "happy_path", seed: 42 },
         clockStart: environment.ERRAND_CLOCK_START,

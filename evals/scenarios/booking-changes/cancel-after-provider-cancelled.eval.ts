@@ -58,7 +58,7 @@ export default defineScenario({
     t.check([booking?.status, booking?.cancelledBy], equals(["cancelled", "provider"])).label("the booking stays the provider's cancellation");
     t.check(booking?.changes.length, equals(0)).label("no cancellation was approved");
     for (const sessionId of run.sessionIds) {
-      const trace = await bookingTrace(run.api, sessionId);
+      const trace = await bookingTrace(run.operatorApi, sessionId);
       t.check(trace.worldCalls.filter((call) => call.startsWith("cancel")), equals([])).label("no cancel is sent");
     }
   },

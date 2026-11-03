@@ -38,7 +38,7 @@ export default defineScenario({
   },
   async expect(t, run) {
     t.succeeded();
-    const [traced] = await tracedRuns(run.api, run.sessionId);
+    const [traced] = await tracedRuns(run.operatorApi, run.sessionId);
     const outcome = traced?.outcomes[0];
     await t.require(outcome !== undefined, equals(true));
     t.check(outcome?.kind, equals("budget_exhausted")).label("the run ends budget_exhausted");
@@ -48,7 +48,7 @@ export default defineScenario({
       satisfies((ms: number | undefined) => ms !== undefined && ms < WALL_CLOCK_MS + SLACK_MS, `under ${WALL_CLOCK_MS + SLACK_MS} ms`),
     ).label("the run ends within the deadline, not when the slow search would have answered");
 
-    const trace = await settledTrace(run.api, run.sessionId);
+    const trace = await settledTrace(run.operatorApi, run.sessionId);
     const search = trace.spans.find((span) => span.name === "execute_tool search_providers");
     t.check(search?.status, equals("error")).label("the search call was cut off");
 

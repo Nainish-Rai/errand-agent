@@ -74,7 +74,7 @@ export default defineScenario({
     t.check(between[0]?.kind, equals("not_approved")).label("a typed yes moves nothing");
     t.check(between.at(-1)?.kind, equals("rescheduled")).label("the tap on the fresh card moves it");
 
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(
       trace.worldCalls.filter((call) => call.startsWith("reschedule")),
       equals(["reschedule slot_conflict", "reschedule rescheduled"]),

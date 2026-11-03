@@ -38,7 +38,7 @@ export default defineScenario({
     t.check([intent?.state, intent?.attempts, intent?.resolvedBy], equals(["confirmed", 2, "execution"]));
     t.check(intent?.bookingId, equals(made[0]?.bookingId)).label("the ledger names the world's booking");
 
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(trace.worldCalls.slice(0, 3), equals(["book timeout", "get_booking_status not_found", "book booked"])).label(
       "the status is checked before the retry",
     );

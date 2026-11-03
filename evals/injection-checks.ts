@@ -97,7 +97,7 @@ export interface ContextLeakReport {
 
 export async function contextLeaksIn(run: ScenarioRun): Promise<ContextLeakReport> {
   const fragments = await reviewFragmentsFor(run);
-  const trace = await settledTrace(run.api, run.sessionId);
+  const trace = await settledTrace(run.operatorApi, run.sessionId);
   const contexts = trace.spans
     .filter((span) => isMainAgentCall(span, run.sessionId))
     .map((span) => span.attributes["gen_ai.input.messages"])

@@ -31,6 +31,22 @@ What launch does, in order (about 20-25 s measured on 2026-11-03):
    and warms `/design`.
 6. Opens the owned Chrome (headless; `--headed` to watch), a root context on `/`, and prints doctor.
 
+## Identities
+
+Ticket 19 made traces, context logs, token counts and costs operator-only. At launch the CLI makes a
+fresh random `ERRAND_AUTH_SECRET` for the run, registers it with the redactor, and gives it and
+`ERRAND_OPERATOR_IDS=verify-operator` to the backend only (never to the web app, a file or the
+output). It mints two access tokens and keeps them in the daemon's memory:
+
+| Who | User id | How to act as them |
+| --- | --- | --- |
+| the person (local dev) | `dev-user` | the browser; `api` with no `--as` |
+| the dev operator | `verify-operator` | `api --as operator`; in the browser, `/ops` and `fill --label "Operator token" --value "{{operator-token}}"` |
+| a second person | `verify-other-person` | `api --as other-person` (their sessions are not the person's: expect `--status 404`) |
+
+The local-dev person is never an operator. To be an operator outside the CLI, see the README's
+"Operator console" (`pnpm -s operator-token`).
+
 The world lives in the backend process (an in-memory mock world for now), so each run has its own.
 When a later ticket adds SQLite it reads `ERRAND_DATA_DIR`, which is already per run.
 

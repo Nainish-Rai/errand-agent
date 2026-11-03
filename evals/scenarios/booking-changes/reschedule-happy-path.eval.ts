@@ -78,7 +78,7 @@ export default defineScenario({
       t.check([change?.grantFingerprint, proposal.fingerprint], equals([fingerprint, fingerprint])).label("the grant is for the card's fingerprint");
     }
 
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(
       trace.worldCalls.filter((call) => call.startsWith("reschedule")),
       equals(["reschedule rescheduled"]),

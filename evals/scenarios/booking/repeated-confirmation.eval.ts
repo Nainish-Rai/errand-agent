@@ -42,7 +42,7 @@ export default defineScenario({
     t.check(made.length, equals(1)).label("exactly one booking");
     const intents = await sessionIntents(run.api, run.sessionId);
     t.check(intents.map((intent) => [intent.state, intent.attempts]), equals([["confirmed", 1]])).label("one intent, one attempt");
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(trace.bookKeys.length, equals(1)).label("book is sent once");
   },
 });

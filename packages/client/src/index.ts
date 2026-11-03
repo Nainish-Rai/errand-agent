@@ -1,3 +1,4 @@
+export { mintAccessToken } from "./access-token";
 export { ApiClient, ApiRequestError, type ApiClientOptions } from "./api-client";
 export {
   ChatClient,

@@ -32,7 +32,7 @@ export default defineScenario({
     const { made } = await bookingChanges(run);
     t.check(made.length, equals(1)).label("exactly one booking");
 
-    const trace = await bookingTrace(run.api, run.sessionId);
+    const trace = await bookingTrace(run.operatorApi, run.sessionId);
     t.check(trace.worldCalls, equals(["book timeout", "get_booking_status booked"])).label("the status is checked, and nothing is retried");
     t.check(trace.retries, equals(0)).label("no retry");
     t.check(trace.ledger, equals(["recorded → pending", "pending → pending", "pending → unknown", "unknown → confirmed"])).label("the ledger's transitions are traced");

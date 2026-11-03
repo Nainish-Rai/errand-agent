@@ -8,8 +8,10 @@ import type { EvalMode } from "./modes";
 export interface ScenarioRun extends Conversation {
   readonly mode: EvalMode;
   readonly toolCalls: readonly ToolCallView[];
-  /** The app API, for reading world state and logs after the run. */
+  /** The app API as the person who chatted, for reading world state after the run. */
   readonly api: ApiClient;
+  /** The app API as an operator: the only caller the trace and context log routes answer. */
+  readonly operatorApi: ApiClient;
   /** The world's bookings right after it was seeded, before the user's first step. */
   readonly bookingsBefore: readonly BookingView[];
   /** The seeded world the run played in: the truth generated UI is checked against. */

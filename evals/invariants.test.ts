@@ -105,6 +105,7 @@ function runWith(
     world: { scenario: "happy_path", seed: 42 },
     clockStart: "2026-11-04T09:00:00+05:30",
     api: { listBookings: async () => after, listActionIntents: async () => intents } as unknown as ScenarioRun["api"],
+    operatorApi: {} as unknown as ScenarioRun["operatorApi"],
   };
 }
 
@@ -410,12 +411,13 @@ function line(entry: MemoryFactView): string {
 }
 
 function runWithContext(calls: readonly ModelCallContext[]): ScenarioRun {
-  const api = {
-    listMemory: async () => ({ facts: [AREA, FORGOTTEN, GUESS, LATER], tombstones: [] }),
+  const api = { listMemory: async () => ({ facts: [AREA, FORGOTTEN, GUESS, LATER], tombstones: [] }) };
+  // Only an operator may read the trace and the context log, so only the operator's client has them.
+  const operatorApi = {
     getSessionTrace: async () => ({ sessionId: "ses", generatedAtMs: 0, spans: [{ status: "ok" }], events: [], totals: {} }),
     getSessionContext: async () => ({ sessionId: "ses", calls }),
   };
-  return { ...runWith([]), api: api as unknown as ScenarioRun["api"] };
+  return { ...runWith([]), api: api as unknown as ScenarioRun["api"], operatorApi: operatorApi as unknown as ScenarioRun["operatorApi"] };
 }
 
 describe("no-forgotten-fact-in-context", () => {
@@ -462,12 +464,11 @@ const CARD = ['root = Stack([cards])', 'cards = ProviderChoices([a])', `a = Prov
 function uiRun(turns: readonly ChatTurn[], { priceInr = 399, traced = ["drawable"] }: { priceInr?: number; traced?: readonly string[] } = {}): ScenarioRun {
   const provider = { id: SHIVA, name: "Shiva Sanitary Solutions", priceInr, rating: 4.5, reviewCount: 3, photos: [], freeSlots: [], attributes: [] };
   const events = traced.map((kind) => ({ kind: "generated_ui", attributes: { "errand.ui.verdict": kind, "errand.ui.errors": kind === "unreadable" ? ["no root"] : [] } }));
-  const api = {
-    listBookings: async () => [],
-    getProviders: async () => [provider],
+  const api = { listBookings: async () => [], getProviders: async () => [provider] } as unknown as ScenarioRun["api"];
+  const operatorApi = {
     getSessionTrace: async () => ({ sessionId: "ses", generatedAtMs: 0, spans: [{ status: "ok" }], events, totals: { costUsd: 0 } }),
-  } as unknown as ScenarioRun["api"];
-  return { ...runWith([], turns), api };
+  } as unknown as ScenarioRun["operatorApi"];
+  return { ...runWith([], turns), api, operatorApi };
 }
 
 describe("generated-ui-is-allowed", () => {
