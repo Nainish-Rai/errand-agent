@@ -394,10 +394,10 @@
         {
           "command": "assert",
           "args": [
-            "[data-slot=\"tool-call\"]"
+            "[data-slot=\"tool-call\"]:has-text(\"Asking the provider\")"
           ],
           "options": {
-            "text": "Asking the provider"
+            "state": "visible"
           },
           "note": "the tracker: a running ToolCall row while the provider answers"
         },
