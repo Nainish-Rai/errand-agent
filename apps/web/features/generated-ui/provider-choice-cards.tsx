@@ -10,11 +10,12 @@ import { useState } from "react";
 import { Money } from "@/components/money";
 import { Skeleton } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
+import { initialsOf, Photo } from "@/features/images";
 
 import { useGeneratedUiHost, useProviders } from "./bound-data";
 import { ProviderDetailsPanel } from "./provider-details";
 
-// Provider choice cards: a service photo, the model's highlight, name, rating, price, earliest
+// Provider choice cards: a job photo, the model's highlight, name, rating, price, earliest
 // slot, the model's one-line reason, and Choose and Details. Up to three show in a row; "See all"
 // opens a carousel of every option. Every fact on a card is the world's (bound by provider id).
 // Choose only sends "I'll take …" as the person; the agent then holds the slot and shows the fixed
@@ -28,7 +29,7 @@ export interface ChoiceInput extends ProviderChoiceProps {
 const ROW = 3;
 
 function ChoiceCard({ choice, onDetails, detailsOpen }: { readonly choice: BoundChoice; readonly onDetails: () => void; readonly detailsOpen: boolean }) {
-  const { api, send } = useGeneratedUiHost();
+  const { send } = useGeneratedUiHost();
   const running = useAuiState((state) => state.thread.isRunning);
   const [chosen, setChosen] = useState(false);
   const slot = choice.earliestSlot === undefined ? undefined : slotLabel(choice.earliestSlot);
@@ -39,20 +40,14 @@ function ChoiceCard({ choice, onDetails, detailsOpen }: { readonly choice: Bound
       data-provider-id={choice.providerId}
       className="flex h-full min-w-0 flex-col overflow-hidden rounded-panel border border-line bg-surface"
     >
-      <div className="relative aspect-[3/2] bg-surface-2">
-        {choice.photo === undefined ? (
-          <div className="grid h-full place-items-center text-xs text-fg-3">No photo</div>
-        ) : (
-          <img src={api.photoUrl(choice.photo.src)} alt={choice.photo.alt} className="size-full object-cover" loading="lazy" />
-        )}
+      {/* A job photo flush with the card's edge, clipped by its radius; text never sits on it (v3 Images). */}
+      <Photo imageKey={choice.photo} ratio="landscape" fallback={initialsOf(choice.name)} className="w-full" />
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
         {choice.highlight !== undefined && (
-          // The tag's tint is translucent; a solid card surface under it keeps it readable on a light photo.
-          <div className="absolute top-2 left-2 rounded-md bg-surface">
+          <div className="self-start">
             <Tag text={choice.highlight} size="sm" variant="info" />
           </div>
         )}
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-3">
         <h3 className="m-0 text-sm font-medium text-fg">{choice.name}</h3>
         <div className="flex items-center justify-between gap-2 text-xs text-fg-3">
           <span className="inline-flex items-center gap-1 tabular-nums" aria-label={`Rated ${choice.rating} from ${choice.reviewCount} reviews`}>
@@ -90,7 +85,7 @@ function CardsSkeleton({ count }: { readonly count: number }) {
     <div aria-busy className="grid grid-cols-1 gap-2 sm:grid-cols-3">
       {Array.from({ length: Math.min(count, ROW) }, (_, index) => (
         <div key={index} className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
-          <Skeleton className="aspect-[3/2] h-auto" />
+          <Skeleton className="aspect-[4/3] h-auto" />
           <Skeleton className="w-2/3" />
           <Skeleton className="w-1/2" />
         </div>

@@ -139,4 +139,32 @@ try {
 for (const photo of CDN_PHOTOS) {
   for (const ratio of photo.ratios) console.log(`${photo.key}-${ratio}.webp ${await downloadCrop(photo, ratio)} bytes`);
 }
-console.log(`Wrote ${DESIGN_SYSTEM_PHOTOS.length + CDN_PHOTOS.length} photos to ${path.relative(ROOT, ASSETS)}`);
+
+/** The web app's import map, so every file is bundled by name and nothing else can be drawn. */
+function importMap(): string {
+  const photos = [...DESIGN_SYSTEM_PHOTOS, ...CDN_PHOTOS];
+  const name = (key: string, ratio: Ratio) => `${key.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase())}_${ratio}`;
+  const field = { "1x1": "square", "4x3": "landscape", "16x9": "wide" } as const;
+  return [
+    "// Written by scripts/fetch-stock-images.ts (pnpm images:fetch); don't edit by hand.",
+    "// Every photo file the app ships, by image key and crop. Alt text and credits are in registry.ts.",
+    'import type { ImageKey } from "@errand/contracts";',
+    'import type { StaticImageData } from "next/image";',
+    "",
+    ...photos.flatMap((photo) => photo.ratios.map((ratio) => `import ${name(photo.key, ratio)} from "./assets/${photo.key}-${ratio}.webp";`)),
+    "",
+    "export interface PhotoFiles {",
+    "  readonly square?: StaticImageData;",
+    "  readonly landscape?: StaticImageData;",
+    "  readonly wide?: StaticImageData;",
+    "}",
+    "",
+    "export const PHOTO_FILES = {",
+    ...photos.map((photo) => `  "${photo.key}": { ${photo.ratios.map((ratio) => `${field[ratio]}: ${name(photo.key, ratio)}`).join(", ")} },`),
+    "} as const satisfies Record<ImageKey, PhotoFiles>;",
+    "",
+  ].join("\n");
+}
+
+await writeFile(path.join(ASSETS, "..", "assets.ts"), importMap());
+console.log(`Wrote ${DESIGN_SYSTEM_PHOTOS.length + CDN_PHOTOS.length} photos to ${path.relative(ROOT, ASSETS)} and their import map`);

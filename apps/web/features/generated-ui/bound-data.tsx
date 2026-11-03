@@ -8,6 +8,7 @@ import {
   type ErrandView,
   type GetAvailabilityResponse,
   type GetSpendResponse,
+  type ListServiceOptionsResponse,
   type ListMemoryResponse,
   type ProviderDetails,
   type ProviderInsightView,
@@ -82,6 +83,12 @@ export function useAvailability(providerIds: readonly string[]): Loaded<GetAvail
 export function useSpend(months: number): Loaded<GetSpendResponse> {
   const { api } = useGeneratedUiHost();
   return useRead(`spend:${months}`, () => api.getSpend(months));
+}
+
+/** The world's services and kinds of service, with their facts and image keys. */
+export function useServiceOptions(): Loaded<ListServiceOptionsResponse> {
+  const { api } = useGeneratedUiHost();
+  return useRead("service-options", () => api.listServiceOptions());
 }
 
 export function useBookings(): Loaded<readonly BookingView[]> {

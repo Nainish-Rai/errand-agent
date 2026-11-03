@@ -20,6 +20,7 @@ import { Toast } from "@/components/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ListRow, MiniBarChart, NeedsYouDot, Widget } from "@/components/widget";
+import { providerMedia } from "@/features/images";
 import {
   ApprovalCard,
   BookingReceipt,
@@ -32,9 +33,11 @@ import {
   type ApprovalProvider,
 } from "@/features/trust";
 
+import { ImageSpecimens, PhotoCredits } from "./image-specimens";
 import { StreamingSpecimen } from "./streaming-specimen";
 
-const ravi: ApprovalProvider = { name: "Ravi Plumbing", initials: "RP", tone: 1, rating: 4.7 };
+const raviMedia = providerMedia("plumber-at-work", "Ravi Plumbing");
+const ravi: ApprovalProvider = { name: "Ravi Plumbing", initials: "RP", tone: 1, rating: 4.7, media: raviMedia };
 const booking: ApprovalProposal = {
   kind: "book",
   service: "Kitchen tap repair",
@@ -52,7 +55,7 @@ const reschedule: ApprovalProposal = {
   toSlot: "Fri 7 Nov · 16:00",
   price: 899,
 };
-const receipt = { provider: "Ravi Plumbing", slot: "Thu 6 Nov · 09:00", price: 899 };
+const receipt = { provider: "Ravi Plumbing", slot: "Thu 6 Nov · 09:00", price: 899, media: raviMedia };
 const bookingsPerDay = [2, 4.5, 1, 0, 3, 6, 2.5, 0.5, 4, 8, 3.5, 0, 5.5, 9];
 const ranges = [
   { value: "14d", label: "14 days" },
@@ -257,6 +260,10 @@ function Panel({ theme }: { readonly theme: Theme }) {
         <StreamingSpecimen label="Streaming answer, reduced motion" reduced />
       </Section>
 
+      <Section title="Images">
+        <ImageSpecimens />
+      </Section>
+
       <Section title="Approval card · fixed, never generated">
         <Caption>pending</Caption>
         <ApprovalCard proposal={booking} provider={ravi} state={{ status: "pending", holdLeft: "8:42 left" }} />
@@ -312,6 +319,7 @@ export function DesignGallery() {
         <Panel theme="dark" />
         <Panel theme="light" />
       </div>
+      <PhotoCredits />
     </main>
   );
 }

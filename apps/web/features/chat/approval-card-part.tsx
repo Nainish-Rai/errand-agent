@@ -19,6 +19,7 @@ import { ApprovalCard, BookingReceipt, ChangeReceipt, type ApprovalChange, type 
 
 import { appApi } from "./backend";
 import { NextOptions, receiptActions, RunningExecution, VerifyingExecution } from "./booking-progress";
+import { useProviderMedia } from "./provider-image";
 import { useSendText } from "./send-text";
 
 // The fixed approval card inside the assistant-ui thread. The tool result only says which
@@ -232,6 +233,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
   const proposal = useProposal(card.proposalId);
   const running = useAuiState((state) => state.thread.isRunning);
   const holdLeft = useHoldLeft(proposal);
+  const media = useProviderMedia(proposal?.terms.providerId, proposal?.terms.providerName);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
   const isLead = useIsLeadCard(proposal?.status === "pending" && proposal.holdSecondsLeft > 0);
@@ -277,6 +279,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
             initials: initialsOf(proposal.terms.providerName),
             tone: toneOf(proposal.terms.providerId),
             rating: proposal.terms.rating,
+            ...(media === undefined ? {} : { media }),
           }}
           state={stateOf(proposal, busy, holdLeft)}
           emphasis={isLead ? "lead" : "quiet"}
@@ -300,11 +303,11 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
 }
 
 /** The receipt for a cancel or reschedule card once execute_proposal settled it, or undefined for anything else. */
-function changeReceiptOf(output: ExecuteProposalOutput): ReactNode {
+function changeReceiptOf(output: ExecuteProposalOutput, media: ReactNode | undefined): ReactNode {
   const terms = output.proposal?.terms;
   if (terms === undefined || terms.action === "book") return undefined;
   const fromSlot = terms.action === "cancel" ? terms.slot : terms.fromSlot;
-  const booking = { bookingId: terms.bookingId, provider: terms.providerName, slot: slotLabel(fromSlot.start) };
+  const booking = { bookingId: terms.bookingId, provider: terms.providerName, slot: slotLabel(fromSlot.start), ...(media === undefined ? {} : { media }) };
   switch (output.kind) {
     case "cancelled":
       return <ChangeReceipt booking={booking} state={{ status: "cancelled", fee: terms.priceInr }} />;
@@ -350,11 +353,14 @@ function receiptOf(output: ExecuteProposalOutput) {
 export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   const send = useSendText();
   const parsed = ExecuteProposalOutputSchema.safeParse(result);
+  const terms = parsed.success ? parsed.data.proposal?.terms : undefined;
+  const media = useProviderMedia(terms?.providerId, terms?.providerName);
   if (result === undefined || !parsed.success) return <RunningExecution />;
   const output = parsed.data;
-  const booking = receiptOf(output);
+  const receipt = receiptOf(output);
+  const booking = receipt === undefined || media === undefined ? receipt : { ...receipt, media };
   if (output.kind === "not_approved" && output.proposal !== null) return <LiveApprovalCard card={output.proposal} />;
-  const change = changeReceiptOf(output);
+  const change = changeReceiptOf(output, media);
   if (change !== undefined) {
     // A refused move: nothing moved, and under it the fresh card for the closest free time.
     return (
