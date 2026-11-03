@@ -412,7 +412,11 @@ export async function startRuntime(options: LaunchOptions, paths: RunPaths, reda
     state.timings.backendReadyMs = Date.now() - started;
     // The first request compiles a route; warm the routes the seed suites open.
     await waitUntil("web", web, async () => (await fetch(state.urls.web, { signal: AbortSignal.timeout(60_000) })).ok, deadline);
-    await fetch(`${state.urls.web}/design`, { signal: AbortSignal.timeout(60_000) }).catch(() => undefined);
+    // Dynamic segments compile on their first request too: an unknown id compiles the page without
+    // needing a session. Unwarmed, the composer's first jump to /chat/<id> waits ~10-15 s in dev.
+    for (const route of ["/design", "/chat", "/chat/warmup", "/ops", "/ops/sessions/warmup"]) {
+      await fetch(`${state.urls.web}${route}`, { signal: AbortSignal.timeout(60_000) }).catch(() => undefined);
+    }
     state.timings.webReadyMs = Date.now() - started;
     state.status = "ready";
     save();
