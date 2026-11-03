@@ -1,0 +1,1382 @@
+{
+  "version": 1,
+  "title": "Generated UI in chat: photo choice cards, Choose leads to the fixed card, the ask form, charts, and the text fallback",
+  "feature": "generated-ui",
+  "description": "Ticket 17. Search options render as provider choice cards with service photos and world facts; Choose sends an ordinary message, the agent holds the slot and shows the fixed approval card, and nothing is booked until Approve. An ask form shows only the missing field and fills the errand. Charts show the world's numbers. A pick-one list offering Approve is refused and never drawn, and a tapped Yes books nothing. A program that doesn't parse falls back to text with the parse error in the trace.",
+  "scenarios": [
+    {
+      "id": "choice-cards-choose-then-approve",
+      "title": "Photo choice cards; Choose Shiva holds the slot and shows the approval card; nothing is booked until Approve ₹399",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the booking script: search, then hold and propose, then execute"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "two tagged options as choice cards in one row"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Search results for plumber in Koramangala",
+            "count": 0
+          },
+          "note": "one component: no second, plain list of the same providers"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=img"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the card has its service photo"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"]"
+          ],
+          "options": {
+            "text": "₹399"
+          },
+          "note": "the world's price on the card"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"]"
+          ],
+          "options": {
+            "text": "Cheapest"
+          },
+          "note": "the tag as the card's highlight"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"]"
+          ],
+          "options": {
+            "text": "Earliest: Thu, 5 Nov, 8:00 am IST"
+          },
+          "note": "the world's earliest slot"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "theme",
+          "args": [
+            "light"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=img"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the same cards in the light theme"
+        },
+        {
+          "command": "theme",
+          "args": [
+            "dark"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "back in the dark theme"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "See all 8"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 8
+          },
+          "note": "See all lists all eight plumbers in a carousel"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Show fewer"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "back to the row of options"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Details\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Shiva Sanitary Solutions details",
+            "text": "Cancellation:"
+          },
+          "note": "Details opens the provider panel with its terms"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Shiva Sanitary Solutions details\"] >> role=img"
+          ],
+          "options": {
+            "count": 4
+          },
+          "note": "a gallery of four service photos"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: only the seeded history, nothing booked"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Choose\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "I'll take Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST."
+          },
+          "note": "Choose sent an ordinary message as the person"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "the agent held the slot and shows the fixed approval card"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "only the fixed card has an Approve button"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "note": "the turn finished"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: Choose booked nothing"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: one pending proposal, no grant"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Booked",
+            "text": "bkg_0002"
+          },
+          "note": "Approve booked it: the receipt shows the verified booking ID"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 4
+              },
+              {
+                "path": "bookings[*].providerId",
+                "includes": "prv_plumber_koramangala_5"
+              }
+            ]
+          },
+          "note": "world state: exactly one new booking, after Approve"
+        }
+      ]
+    },
+    {
+      "id": "ask-form-fills-the-errand",
+      "title": "A request missing only when gets an ask form with just that field; sending it fills the errand (light theme)",
+      "theme": "light",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "update_errand",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "ask_ui",
+                            "input": {
+                              "ui": "root = Stack([form])\nform = AskForm([\"timeWindow\"], \"When should the plumber come?\")"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "When should the plumber come?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "update_errand",
+                            "input": {
+                              "time_window": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the ask script: update, ask_ui with an AskForm of timeWindow; then update and search"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "I need a plumber in Koramangala"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "form",
+            "name": "When should the plumber come?",
+            "state": "visible"
+          },
+          "note": "the ask form renders"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=form[name=\"When should the plumber come?\"] >> role=group"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "only the missing field (When), plus the optional budget"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "group",
+            "name": "Area",
+            "count": 0
+          },
+          "note": "the area, already known, is not asked"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=form[name=\"When should the plumber come?\"] >> role=option[name=\"This week\"]"
+          ]
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=form[name=\"When should the plumber come?\"] >> role=button[name=\"Send\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "When: This week"
+          },
+          "note": "the form sent an ordinary message"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "the search ran once the errand was complete"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/errand"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "errand.missing",
+                "equals": []
+              },
+              {
+                "path": "errand.timeWindow.from",
+                "equals": "2026-11-04"
+              },
+              {
+                "path": "errand.area",
+                "equals": "Koramangala"
+              },
+              {
+                "path": "errand.state",
+                "equals": "choosing"
+              }
+            ]
+          },
+          "note": "world state: the errand is filled and choosing"
+        }
+      ]
+    },
+    {
+      "id": "charts-show-world-numbers",
+      "title": "Price, free-slots-per-day and spend charts render with the world's numbers (light, then dark)",
+      "theme": "light",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "present_ui",
+                            "input": {
+                              "ui": "root = Stack([prices, days, spend])\nprices = PriceChart([\"prv_plumber_koramangala_1\", \"prv_plumber_koramangala_4\", \"prv_plumber_koramangala_5\", \"prv_plumber_koramangala_8\"], \"Prices compared\")\ndays = SlotsPerDayChart([\"prv_plumber_koramangala_1\", \"prv_plumber_koramangala_4\", \"prv_plumber_koramangala_5\", \"prv_plumber_koramangala_8\"], \"Free slots this week\")\nspend = SpendChart(6, \"What you spent\")"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are their prices and free slots side by side, and what you've spent lately."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the charts script: search, then present_ui with three charts"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Compare four of them for me, and show what I've spent lately."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-chart",
+            "count": 3
+          },
+          "note": "three charts"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=figure[name=\"Price chart\"] >> role=row"
+          ],
+          "options": {
+            "count": 4
+          },
+          "note": "a price row per compared plumber"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=figure[name=\"Price chart\"] >> role=row[name=\"Shiva Sanitary Solutions ₹399\"]"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the world's price, not the model's"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=figure[name=\"Price chart\"] >> role=row[name=\"Venkatesh Sanitary Solutions ₹499\"]"
+          ],
+          "options": {
+            "count": 1
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=figure[name=\"Free slots per day\"] >> role=group[name=\"Pick a day\"] >> role=button"
+          ],
+          "options": {
+            "count": 7
+          },
+          "note": "a day button per day this week"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "figure",
+            "name": "Spend chart",
+            "state": "visible"
+          },
+          "note": "the spend chart"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Here are their prices and free slots side by side"
+          },
+          "note": "the turn finished"
+        },
+        {
+          "command": "theme",
+          "args": [
+            "dark"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-chart",
+            "count": 3
+          },
+          "note": "the same three charts in the dark theme"
+        }
+      ]
+    },
+    {
+      "id": "approve-option-refused-yes-books-nothing",
+      "title": "A pick-one list offering Approve is refused and never drawn; tapping Yes in the allowed list books nothing",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "ask_ui",
+                            "input": {
+                              "ui": "root = Stack([q])\nq = PickOne(\"Shall I book it?\", [PickOption(\"Approve ₹399\"), PickOption(\"Not yet\")])"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "ask_ui",
+                            "input": {
+                              "ui": "root = Stack([q])\nq = PickOne(\"Ready for me to go on?\", [PickOption(\"Yes\"), PickOption(\"Not yet\")])"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Nothing is booked yet: only a tap on Approve ₹399 on the card can book it."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the no-authority script: hold and propose, a refused Approve list, an allowed Yes list; then execute"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "the fixed approval card"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Ready for me to go on?",
+            "state": "visible"
+          },
+          "note": "the allowed pick-one list is drawn"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Shall I book it?",
+            "count": 0
+          },
+          "note": "the list offering Approve was refused and never drawn"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "count": 1
+          },
+          "note": "the only Approve button is the fixed card's"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-ui-fallback",
+            "count": 1
+          },
+          "note": "the refused part says the reply carries it in text"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Ready for me to go on?\"] >> role=button[name=\"Yes\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Nothing is booked yet"
+          },
+          "note": "the agent tried to book and core refused without a grant"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings",
+                "length": 3
+              },
+              {
+                "path": "bookings[*].approval",
+                "equals": [
+                  null,
+                  null,
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: the tapped Yes booked nothing"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending"
+                ]
+              },
+              {
+                "path": "proposals[*].grant",
+                "equals": [
+                  null
+                ]
+              }
+            ]
+          },
+          "note": "world state: no grant"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/trace"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "events[*].name",
+                "includes": "ask: refused"
+              },
+              {
+                "path": "events[*].name",
+                "includes": "ask: drawable"
+              }
+            ]
+          },
+          "note": "the refusal and the drawn list are in the trace"
+        }
+      ]
+    },
+    {
+      "id": "malformed-ui-falls-back-to-text",
+      "title": "A program that doesn't parse is not drawn; the reply is text and the parse error is in the trace",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "present_ui",
+                            "input": {
+                              "ui": "root = Stack([cards\ncards = ProviderChoices([ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\""
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "The cheapest is Shiva Sanitary Solutions."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the malformed script: search, then a present_ui that doesn't parse"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the first turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Which is the cheapest?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-ui-fallback",
+            "state": "visible"
+          },
+          "note": "the unparsed program is not drawn"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "The cheapest is Shiva Sanitary Solutions."
+          },
+          "note": "the reply says it in text"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-ui",
+            "count": 0
+          },
+          "note": "no generated UI on screen"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/trace"
+          ],
+          "options": {
+            "expect": {
+              "path": "events[*].name",
+              "includes": "present: unreadable"
+            }
+          },
+          "note": "the parse failure is in the trace"
+        }
+      ]
+    }
+  ]
+}

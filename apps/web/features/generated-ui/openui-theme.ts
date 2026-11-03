@@ -1,6 +1,5 @@
-// OpenUI's theme, built from the same semantic roles as everything else. OpenUI is not installed yet
-// (ticket 17 adds it; @openuidev/react-ui pulls in d3, katex and react-markdown). This is the one
-// mapping module it will use:
+// OpenUI's theme, built from the same semantic roles and type scale as everything else. This is the
+// one mapping module generated UI uses (generated-ui-theme.tsx):
 //
 //   const theme = createTheme(buildOpenUiTheme());
 //   <ThemeProvider mode={openUiMode(useTheme().theme)} lightTheme={theme} darkTheme={theme}>
@@ -64,7 +63,60 @@ export type OpenUiThemeOverrides = {
   readonly radiusS: string;
   readonly radiusM: string;
   readonly radiusL: string;
-};
+} & Readonly<Record<OpenUiTextStyle, string>>;
+
+/**
+ * OpenUI's compound `font:` styles. Its defaults are 12-16px Inter; ours are the chat's scale
+ * (--text-meta … --text-title), so a chip or a date picker reads like the rest of the thread.
+ */
+type OpenUiTextStyle =
+  | "textLabelXs"
+  | "textLabelXsHeavy"
+  | "textLabelSm"
+  | "textLabelSmHeavy"
+  | "textLabelDefault"
+  | "textLabelDefaultHeavy"
+  | "textLabelLg"
+  | "textLabelLgHeavy"
+  | "textBodyXs"
+  | "textBodySm"
+  | "textBodyDefault"
+  | "textBodyDefaultHeavy"
+  | "textBodyLg"
+  | "textHeadingXs"
+  | "textHeadingSm"
+  | "textHeadingMd"
+  | "textNumbersXs"
+  | "textNumbersSm"
+  | "textNumbersDefault";
+
+const REGULAR = "400";
+const HEAVY = "560";
+const text = (weight: string, size: string, family = "var(--font-sans)") => `${weight} var(--${size})/1.35 ${family}`;
+
+function textStyles(): Record<OpenUiTextStyle, string> {
+  return {
+    textLabelXs: text(REGULAR, "text-meta"),
+    textLabelXsHeavy: text(HEAVY, "text-meta"),
+    textLabelSm: text(REGULAR, "text-label"),
+    textLabelSmHeavy: text(HEAVY, "text-label"),
+    textLabelDefault: text(REGULAR, "text-label"),
+    textLabelDefaultHeavy: text(HEAVY, "text-label"),
+    textLabelLg: text(REGULAR, "text-body"),
+    textLabelLgHeavy: text(HEAVY, "text-body"),
+    textBodyXs: text(REGULAR, "text-meta"),
+    textBodySm: text(REGULAR, "text-label"),
+    textBodyDefault: text(REGULAR, "text-body"),
+    textBodyDefaultHeavy: text(HEAVY, "text-body"),
+    textBodyLg: text(REGULAR, "text-panel"),
+    textHeadingXs: text(HEAVY, "text-body"),
+    textHeadingSm: text(HEAVY, "text-panel"),
+    textHeadingMd: text(HEAVY, "text-title"),
+    textNumbersXs: text(REGULAR, "text-meta", "var(--font-mono)"),
+    textNumbersSm: text(REGULAR, "text-label", "var(--font-mono)"),
+    textNumbersDefault: text(REGULAR, "text-body", "var(--font-mono)"),
+  };
+}
 
 const role = (name: SemanticRole) => `var(--${name})`;
 
@@ -120,6 +172,7 @@ export function buildOpenUiTheme(): OpenUiThemeOverrides {
     radiusS: "var(--radius-1)",
     radiusM: "var(--radius-2)",
     radiusL: "var(--radius-3)",
+    ...textStyles(),
   };
 }
 

@@ -17,17 +17,17 @@ Mock images: every provider in the world has a service photo and a small gallery
 
 **Blocked by:** 04, 05, 18
 
-**Status:** ready-for-agent
+**Status:** done (PR #17)
 
-- [ ] Spike result recorded: how OpenUI's assistant-ui tools are wired to eve's server-side tools, and how *ask* resumes the turn
-- [ ] Eval: a request missing the time window renders an *ask* form containing only that field; submitting it fills the errand without a typed reply
-- [ ] Eval: every generated payload parses against the library, and none contains an approval or commit action (global invariant)
-- [ ] Eval: a scripted model that writes a wrong price into a comparison card still shows the world's price, because the data is bound by ID
-- [ ] Eval: an *ask* answer such as "approve" creates no grant
-- [ ] Eval: clicking **Choose** on a card holds the slot and shows the fixed approval card; no booking happens until that card is clicked
-- [ ] Eval: chart values equal the world's data for the IDs or query, even when the scripted model writes other numbers
-- [ ] Every mock provider has a photo and gallery from local files, with no network at runtime, and each photo's licence and source are listed in the credits file
-- [ ] Dark-theme screenshots of the choice cards, a chart, and the fallback are attached
-- [ ] Eval: a malformed UI payload falls back to text and the trace records the parse error
-- [ ] Live mode reports the UI parse success rate for MiniMax in the eval table
-- [ ] The OpenUI instructions count toward the context budget
+- [x] Spike result recorded: how OpenUI's assistant-ui tools are wired to eve's server-side tools, and how *ask* resumes the turn
+- [x] Eval: a request missing the time window renders an *ask* form containing only that field; submitting it fills the errand without a typed reply
+- [x] Eval: every generated payload parses against the library, and none contains an approval or commit action (global invariant)
+- [x] Eval: a scripted model that writes a wrong price into a comparison card still shows the world's price, because the data is bound by ID
+- [x] Eval: an *ask* answer such as "approve" creates no grant
+- [x] Eval: clicking **Choose** on a card holds the slot and shows the fixed approval card; no booking happens until that card is clicked
+- [x] Eval: chart values equal the world's data for the IDs or query, even when the scripted model writes other numbers
+- [x] Every mock provider has a photo and gallery from local files, with no network at runtime, and each photo's licence and source are listed in the credits file
+- [x] Dark-theme screenshots of the choice cards, a chart, and the fallback are attached
+- [x] Eval: a malformed UI payload falls back to text and the trace records the parse error
+- [x] Live mode reports the UI parse success rate for MiniMax in the eval table
+- [x] The OpenUI instructions count toward the context budget

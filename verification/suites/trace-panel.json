@@ -43,6 +43,7 @@
           "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
         },
         { "command": "key", "args": ["Enter"] },
+        { "command": "click", "options": { "role": "button", "name": "See all 8" }, "note": "ticket 17: every provider is behind See all, in a carousel" },
         {
           "command": "assert",
           "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],
@@ -164,6 +165,14 @@
           "args": [
             "Enter"
           ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "See all 8"
+          },
+          "note": "ticket 17: every provider is behind See all, in a carousel"
         },
         {
           "command": "assert",

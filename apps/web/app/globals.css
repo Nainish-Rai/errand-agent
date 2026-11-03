@@ -1,7 +1,10 @@
 /* The web app's only colour source is the generated design tokens. This file maps them onto Tailwind
  * and the UI libraries; it introduces no colours, durations or roles of its own (`pnpm check:tokens`).
  * Fonts (Geist, Geist Mono) are loaded in app/layout.tsx under the family names the tokens use. */
+/* OpenUI's styles sit in their own layer: above Tailwind's reset, below our components and utilities. */
+@layer theme, base, openui, components, utilities;
 @import "tailwindcss";
+@import "@openuidev/react-ui/layered/styles/index.css";
 @import "@errand/design-tokens/tokens.css";
 @source "../node_modules/streamdown/dist/*.js";
 

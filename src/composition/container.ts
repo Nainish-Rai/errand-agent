@@ -16,6 +16,8 @@ import type { DraftErrandDependencies } from "../core/use-cases/draft-errand";
 import type { HomeSummaryDependencies } from "../core/use-cases/get-home-summary";
 import type { AlertFeed } from "../core/ports/alert-feed";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
+import type { GeneratedUiDependencies } from "../core/use-cases/generated-ui-session";
+import type { ProviderPhotoFiles } from "../core/ports/provider-photo-files";
 import type { ProposalDependencies } from "../core/use-cases/proposal-session";
 import type { MemoryDependencies } from "../core/use-cases/memory-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
@@ -54,6 +56,8 @@ import { faultyWorld, WorldPause, type WorldFault } from "../adapters/world/faul
 import { DEV_USER_ID, MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { isScenarioName, scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
+import { PROVIDER_PHOTO_DIRECTORY, providerPhotoFilesIn } from "../adapters/world/provider-photos";
+import { generatedUiInstructions, openUiLangReader } from "../adapters/generated-ui/openui-lang-reader";
 
 // Main: the only place that constructs adapters. The agent and its channels ask this module for
 // use-case dependencies and never import an adapter themselves.
@@ -334,6 +338,18 @@ class Container {
   get bookingDependencies(): BookingDependencies {
     return { ...this.proposalDependencies, ledger: this.ledger };
   }
+
+
+  /** What the present and ask (generated UI) use cases need: the OpenUI Lang reader and the world that confirms ids. */
+  get generatedUiDependencies(): GeneratedUiDependencies {
+    return { reader: openUiLangReader, world: this.world, errands: this.errands, memory: this.memory, traceSink: this.traceSink, clock: this.wallClock };
+  }
+
+  /** The generated-UI library's part of the model's instructions (it counts toward the context budget). */
+  readonly generatedUiInstructions: string = generatedUiInstructions();
+
+  /** The committed provider photos the app API serves. */
+  readonly providerPhotoFiles: ProviderPhotoFiles = providerPhotoFilesIn(path.resolve(process.cwd(), PROVIDER_PHOTO_DIRECTORY));
 
   modelFor(role: ModelRole): LanguageModel {
     const selection = parseModelSelection(process.env.ERRAND_MODELS);

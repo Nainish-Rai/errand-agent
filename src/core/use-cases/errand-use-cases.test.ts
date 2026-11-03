@@ -46,7 +46,7 @@ const catalog: ServiceCatalog = {
 
 function providerAt(id: string, priceInr: number, rating: number, start: string): ProviderSummary {
   const end = start.replace(/T(\d\d)/, (_, hour: string) => `T${String(Number(hour) + 1).padStart(2, "0")}`);
-  return { id, name: id, service: "plumber", area: "Koramangala", priceInr, rating, reviewCount: 50, freeSlots: [{ start, end }], attributes: [] };
+  return { id, name: id, service: "plumber", area: "Koramangala", priceInr, rating, reviewCount: 50, freeSlots: [{ start, end }], attributes: [], photos: [] };
 }
 
 const PROVIDERS = [

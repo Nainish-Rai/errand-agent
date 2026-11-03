@@ -4,6 +4,7 @@ import {
   InjectWorldFaultRequestSchema,
   CorrectMemoryFactRequestSchema,
   DraftErrandRequestSchema,
+  MAX_SPEND_MONTHS,
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
   MemoryKeySchema,
@@ -21,7 +22,9 @@ import {
   type ForgetMemoryFactResponse,
   type MemoryFactResponse,
   type SeedMemoryResponse,
+  type GetAvailabilityResponse,
   type GetErrandResponse,
+  type GetSpendResponse,
   type GetProviderResponse,
   type GetProvidersResponse,
   type GetWorldFaultResponse,
@@ -41,6 +44,7 @@ import { confirmInferredFact } from "../../src/core/use-cases/confirm-inferred-f
 import { correctMemoryFact } from "../../src/core/use-cases/correct-memory-fact";
 import { forgetMemoryFact } from "../../src/core/use-cases/forget-memory-fact";
 import { draftErrand } from "../../src/core/use-cases/draft-errand";
+import { getAvailability } from "../../src/core/use-cases/get-availability";
 import { getErrand } from "../../src/core/use-cases/get-errand";
 import { getHomeSummary } from "../../src/core/use-cases/get-home-summary";
 import { listMemoryFacts } from "../../src/core/use-cases/list-memory-facts";
@@ -48,6 +52,7 @@ import { seedMemory } from "../../src/core/use-cases/seed-memory";
 import { getProviders } from "../../src/core/use-cases/get-providers";
 import { getSessionContext } from "../../src/core/use-cases/get-session-context";
 import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
+import { getSpend } from "../../src/core/use-cases/get-spend";
 import { listBookings } from "../../src/core/use-cases/list-bookings";
 import { getProposal, listProposals } from "../../src/core/use-cases/list-proposals";
 import { listActionIntents } from "../../src/core/use-cases/reconcile-pending-actions";
@@ -111,6 +116,45 @@ export default defineChannel({
       if (provider === undefined) return failure(404, "provider_not_found", "No provider has that id.");
       const body: GetProviderResponse = { provider: presentProviderDetails(provider) };
       return Response.json(body);
+    }),
+
+    // GetAvailability: free slots per day this week, per provider. The slots-per-day chart draws it,
+    // so its numbers are the world's, never the model's.
+    GET(`${API_PREFIX}/availability`, async (request) => {
+      const ids = (new URL(request.url).searchParams.get("providerIds") ?? "")
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+      if (ids.length === 0) return failure(400, "missing_ids", "Pass ?providerIds=<id>,<id>.");
+      if (ids.length > MAX_PROVIDER_IDS) return failure(400, "too_many_ids", `Ask for at most ${MAX_PROVIDER_IDS} providers.`);
+      const { world, clock } = container();
+      const availability = await getAvailability({ world, clock }, ids);
+      const body: GetAvailabilityResponse = {
+        days: availability.days.map((day) => ({ ...day, byProvider: day.byProvider.map((entry) => ({ ...entry })) })),
+        unknownProviderIds: [...availability.unknownProviderIds],
+      };
+      return Response.json(body);
+    }),
+
+    // GetSpend: spend and bookings per month from the world's bookings, for the spend chart.
+    GET(`${API_PREFIX}/spend`, async (request) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const months = Number(new URL(request.url).searchParams.get("months") ?? "6");
+      if (!Number.isInteger(months) || months < 1 || months > MAX_SPEND_MONTHS) {
+        return failure(400, "invalid_months", `Pass ?months= from 1 to ${MAX_SPEND_MONTHS}.`);
+      }
+      const { world, clock } = container();
+      const body: GetSpendResponse = { months: (await getSpend({ world, clock }, { userId, months })).map((month) => ({ ...month })) };
+      return Response.json(body);
+    }),
+
+    // The committed provider photos (src/adapters/world/assets), so every client shows the same
+    // images and nothing is fetched from the internet at runtime.
+    GET(`${API_PREFIX}/assets/providers/:file`, async (_request, { params }) => {
+      const bytes = await container().providerPhotoFiles.read(params.file ?? "");
+      if (bytes === undefined) return failure(404, "photo_not_found", "No provider photo has that name.");
+      return new Response(bytes, { headers: { "content-type": "image/webp", "cache-control": "public, max-age=86400" } });
     }),
 
     // The trace panel polls this while a run is going; a session with no trace yet reads as empty.

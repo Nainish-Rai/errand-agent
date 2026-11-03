@@ -38,6 +38,7 @@
           "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
         },
         { "command": "key", "args": ["Enter"] },
+        { "command": "click", "options": { "role": "button", "name": "See all 8" }, "note": "ticket 17: every provider is behind See all, in a carousel" },
         {
           "command": "assert",
           "options": { "role": "region", "name": "Search results for plumber in Koramangala", "text": "8 plumber in Koramangala" },
@@ -51,7 +52,8 @@
         },
         {
           "command": "assert",
-          "options": { "role": "region", "name": "Search results for plumber in Koramangala", "text": "Venkatesh Sanitary Solutions ₹499" },
+          "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=article[name=\"Venkatesh Sanitary Solutions\"]"],
+          "options": { "text": "₹499" },
           "note": "a seeded provider with its price"
         },
         {
@@ -101,6 +103,7 @@
           "note": "Send is enabled once there is text"
         },
         { "command": "click", "options": { "role": "button", "name": "Send" } },
+        { "command": "click", "options": { "role": "button", "name": "See all 8" }, "note": "ticket 17: every provider is behind See all, in a carousel" },
         {
           "command": "assert",
           "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],

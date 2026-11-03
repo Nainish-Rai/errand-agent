@@ -92,10 +92,13 @@ function runWith(
     turns,
     clicks: [],
     taps: [],
+    uiTaps: [],
     steps: [],
     mode: "offline",
     toolCalls: [],
     bookingsBefore: before,
+    world: { scenario: "happy_path", seed: 42 },
+    clockStart: "2026-11-04T09:00:00+05:30",
     api: { listBookings: async () => after, listActionIntents: async () => intents } as unknown as ScenarioRun["api"],
   };
 }
@@ -279,5 +282,59 @@ describe("no-forgotten-fact-in-context", () => {
     const call = contextCall([AREA], line(AREA));
     const run = runWithContext([{ ...call, memory: { ...call.memory, nowMs: null } }]);
     expect((await verdict("no-forgotten-fact-in-context", run)).holds).toBe(false);
+  });
+});
+
+// Generated UI: hand-made present_ui calls against a fake API that binds providers from the seeded
+// world (or a world that lies about a price), and a trace with or without the verdict events.
+
+const SHIVA = "prv_plumber_koramangala_5";
+
+function uiTurn(program: string, output: Record<string, unknown>): ChatTurn {
+  const call = { name: "present_ui", state: "output-available", input: { ui: program }, output } as ToolCallView;
+  return { sessionId: "ses", events: [], messages: [], toolCalls: [call], reply: "Here they are." };
+}
+
+const SHOWN = { kind: "shown", components: ["Stack", "ProviderChoices", "ProviderChoice"], message: "Shown." };
+const CARD = ['root = Stack([cards])', 'cards = ProviderChoices([a])', `a = ProviderChoice("${SHIVA}", "Cheapest", "Fixes taps")`].join("\n");
+
+function uiRun(turns: readonly ChatTurn[], { priceInr = 399, traced = ["drawable"] }: { priceInr?: number; traced?: readonly string[] } = {}): ScenarioRun {
+  const provider = { id: SHIVA, name: "Shiva Sanitary Solutions", priceInr, rating: 4.5, reviewCount: 3, photos: [], freeSlots: [], attributes: [] };
+  const events = traced.map((kind) => ({ kind: "generated_ui", attributes: { "errand.ui.verdict": kind, "errand.ui.errors": kind === "unreadable" ? ["no root"] : [] } }));
+  const api = {
+    listBookings: async () => [],
+    getProviders: async () => [provider],
+    getSessionTrace: async () => ({ sessionId: "ses", generatedAtMs: 0, spans: [{ status: "ok" }], events, totals: { costUsd: 0 } }),
+  } as unknown as ScenarioRun["api"];
+  return { ...runWith([], turns), api };
+}
+
+describe("generated-ui-is-allowed", () => {
+  it("holds for a drawn library program whose verdict is in the trace", async () => {
+    expect(await verdict("generated-ui-is-allowed", uiRun([uiTurn(CARD, SHOWN)]))).toEqual({ holds: true });
+  });
+
+  it("fails when a drawn program offers an approval", async () => {
+    const approve = ['root = Stack([q])', 'q = PickOne("Book?", [PickOption("Approve ₹399")])'].join("\n");
+    expect((await verdict("generated-ui-is-allowed", uiRun([uiTurn(approve, SHOWN)]))).holds).toBe(false);
+  });
+
+  it("fails when a drawn program doesn't parse against the library", async () => {
+    expect((await verdict("generated-ui-is-allowed", uiRun([uiTurn('root = Stack([b])\nb = PayButton("Pay")', SHOWN)]))).holds).toBe(false);
+  });
+
+  it("fails when a fallback to text left no verdict in the trace", async () => {
+    const unreadable = { kind: "unreadable", errors: ["no root"], message: "Didn't parse." };
+    expect((await verdict("generated-ui-is-allowed", uiRun([uiTurn("root = Stack([", unreadable)], { traced: [] }))).holds).toBe(false);
+  });
+});
+
+describe("generated-ui-matches-world", () => {
+  it("holds when the card shows the seeded price", async () => {
+    expect(await verdict("generated-ui-matches-world", uiRun([uiTurn(CARD, SHOWN)]))).toEqual({ holds: true });
+  });
+
+  it("fails when the card's bound price isn't the world's", async () => {
+    expect((await verdict("generated-ui-matches-world", uiRun([uiTurn(CARD, SHOWN)], { priceInr: 99 }))).holds).toBe(false);
   });
 });

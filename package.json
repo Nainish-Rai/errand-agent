@@ -25,11 +25,13 @@
     "verify": "control-errand",
     "verify:install-skill": "node tools/verify/bin/install-skill.js",
     "observatory": "tsx scripts/export-observatory.ts",
+    "images:fetch": "tsx scripts/fetch-stock-images.ts",
     "check:observatory": "python3 -I observatory/check_tokens.py observatory/dashboard.template.html && python3 -I observatory/test_harness_summary.py"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.95",
     "@errand/contracts": "workspace:*",
+    "@openuidev/lang-core": "1.0.2",
     "ai": "7.0.161",
     "ai-sdk-provider-claude-code": "4.4.1",
     "eve": "1.0.0-rc.1",

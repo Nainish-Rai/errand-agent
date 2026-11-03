@@ -3,7 +3,9 @@ import {
   ApiErrorSchema,
   ApproveProposalResponseSchema,
   DeclineProposalResponseSchema,
+  GetAvailabilityResponseSchema,
   GetProposalResponseSchema,
+  GetSpendResponseSchema,
   ListBookingsResponseSchema,
   ListProposalsResponseSchema,
   ForgetMemoryFactResponseSchema,
@@ -35,6 +37,8 @@ import {
   type ErrandView,
   type ForgetMemoryFactResponse,
   type GetSessionContextResponse,
+  type GetAvailabilityResponse,
+  type GetSpendResponse,
   type GetSessionTraceResponse,
   type GetWorldFaultResponse,
   type InjectWorldFaultRequest,
@@ -92,6 +96,23 @@ export class ApiClient {
       GetProviderResponseSchema,
     );
     return body.provider;
+  }
+
+  /** Free slots per day for today and the six days after, per provider: what the slots-per-day chart draws. */
+  async getAvailability(providerIds: readonly string[]): Promise<GetAvailabilityResponse> {
+    const query = new URLSearchParams({ providerIds: providerIds.join(",") });
+    return await this.#request(`/availability?${query}`, { method: "GET" }, GetAvailabilityResponseSchema);
+  }
+
+  /** Spend and bookings per month, this month and the `months - 1` before it: what the spend chart draws. */
+  async getSpend(months: number): Promise<GetSpendResponse> {
+    const query = new URLSearchParams({ months: String(months) });
+    return await this.#request(`/spend?${query}`, { method: "GET" }, GetSpendResponseSchema);
+  }
+
+  /** A provider photo's `src` (a path under the API) as a full URL on this backend. */
+  photoUrl(src: string): string {
+    return `${this.#baseUrl}${src}`;
   }
 
   /** The session's errand (details, workflow state, what is missing), or null before the first request. */

@@ -48,10 +48,12 @@ function attemptOf(result: EveEvalResult): AttemptResult {
   const actual = result.assertions.find((assertion) => assertion.key === ACTUAL_LABEL)?.metadata;
   const attack = attackOf(result);
   const costUsd = actual?.costUsd as AttemptResult["costUsd"] | undefined;
+  const generatedUi = actual?.generatedUi as AttemptResult["generatedUi"] | undefined;
   return {
     verdict: result.verdict,
     actual: typeof actual?.actual === "string" ? actual.actual : undefined,
     costUsd,
+    generatedUi,
     failures: result.assertions
       .filter((assertion) => assertion.severity === "gate" && (assertion.passed === false || assertion.errored))
       .map((assertion) => (assertion.message === undefined ? assertion.name : `${assertion.name}: ${assertion.message}`)),
