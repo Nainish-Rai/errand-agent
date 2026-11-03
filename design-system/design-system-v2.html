@@ -1,0 +1,2229 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Errand design system v2</title>
+<script>
+  // Theme before first paint: ?theme= or #theme= (for screenshots), then the saved choice, then the system setting.
+  (function () {
+    var q = (location.search + location.hash).match(/theme=(light|dark)/);
+    var saved = null;
+    try { saved = localStorage.getItem("errand-ds-theme"); } catch (e) {}
+    var sys = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    document.documentElement.dataset.theme = q ? q[1] : saved || sys;
+    // Motion: ?motion=reduced|full, then the saved choice, then the system setting. Every animation reads this.
+    var mq = (location.search + location.hash).match(/motion=(reduced|full)/);
+    var savedM = null;
+    try { savedM = localStorage.getItem("errand-ds-motion"); } catch (e) {}
+    var sysM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full";
+    document.documentElement.dataset.motion = mq ? mq[1] : savedM || sysM;
+  })();
+</script>
+<style>
+/* Errand design tokens: dark (default) + light. Geist + Geist Mono.
+ *
+ * GENERATED from the typed tokens in packages/design-tokens/src by `pnpm tokens:build`. Do not edit
+ * this file: change the source and rebuild. `pnpm check:tokens` fails when this file is stale.
+ *
+ * Layers, read top to bottom (structure from observatory-ui, MIT):
+ *   1. primitives: raw palette, spacing, radius. The only place a literal colour may appear.
+ *   2. semantic roles: what components read: surfaces, edges, text, interactive, status tones and tints,
+ *      brand, categorical chart palette, type scale. Each theme remaps the same role names.
+ *   3. library bridge: shadcn variable names, read by the eve chat template, assistant-ui and agents-ui.
+ *      OpenUI's theme and the mobile app read the same semantic roles (see DESIGN_SYSTEM.md).
+ *   4. motion presets by job, zeroed under reduced motion.
+ *
+ * Theme: data-theme="light" | "dark" on <html> or on any subtree. The roles and the bridge are declared
+ * on every theme selector, because a custom property resolves var() where it is declared: a nested
+ * light panel must re-declare --primary, not inherit the dark value computed at the root.
+ *
+ * To re-theme, change primitives. To change meaning, change the semantic layer.
+ * Components never introduce colours; add a semantic role first.
+ */
+:root,
+[data-theme="dark"] {
+  /* ---- primitives ---- */
+  --ink-0: #0f1114;
+  --ink-1: #17191d;
+  --ink-2: #1e2126;
+  --ink-3: #25292f;
+  --ink-4: #2a2e35;
+  --ink-5: #3a3f47;
+  --ink-6: #5d636d;
+  --ink-7: #8b919c;
+  --ink-8: #b8bdc6;
+  --ink-9: #e7e9ee;
+  --paper-0: #ffffff;
+  --paper-1: #f6f7f9;
+  --paper-2: #eef0f3;
+  --paper-3: #e3e6eb;
+  --paper-4: #cfd4db;
+  --paper-5: #8a919c;
+  --paper-6: #5f6773;
+  --paper-7: #3a404a;
+  --paper-8: #1b1f24;
+  --paper-well: #f1f3f6;
+  --blue-bright: #4c8dff;
+  --blue-deep: #1f5fd6;
+  --green-bright: #3fb950;
+  --green-deep: #18752f;
+  --amber-bright: #d29922;
+  --amber-deep: #915c00;
+  --red-bright: #ff5f57;
+  --red-deep: #cf222e;
+  --orange-bright: #ff7a1a;
+  --orange-deep: #d9600a;
+  --on-amber: #111111;
+  --on-red: #ffffff;
+  --black: #000000;
+  --white: #ffffff;
+  --cat-1: #7aabfc;
+  --cat-2: #b897f0;
+  --cat-3: #1dc5ae;
+  --cat-4: #e189c5;
+  --cat-5: #2ebbe8;
+  --cat-6: #da9e3f;
+  --night-sky-top: #16274d;
+  --night-sky-mid: #2c4a82;
+  --night-building: #0e1424;
+  --night-window: #ffd77a;
+  --night-cloud: #9fb3dd;
+  --night-road: #0b0f1a;
+  --day-sky-top: #7fb6f5;
+  --day-sky-mid: #cfe3fb;
+  --day-building: #8a9ab8;
+  --day-window: #e4ebf5;
+  --day-cloud: #ffffff;
+  --day-road: #9aa7bf;
+  --night-star: #cfd8ff;
+  --night-moon: #f4ecd0;
+  --night-beam: #ffe9a8;
+  --day-sun: #ffd36b;
+  --van-glass: #9fc3ff;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-1: 4px;
+  --radius-2: 6px;
+  --radius-3: 10px;
+  --radius-pill: 999px;
+
+  /* ---- semantic roles (dark) ---- */
+  color-scheme: dark;
+  --surface-well: var(--ink-0);
+  --surface-canvas: var(--ink-1);
+  --surface-card: var(--ink-2);
+  --surface-raised: var(--ink-3);
+  --surface-glass: color-mix(in oklab, var(--ink-0) 55%, transparent);
+  --edge: var(--ink-4);
+  --edge-strong: var(--ink-5);
+  --edge-glass: color-mix(in oklab, var(--white) 8%, transparent);
+  --fg-emph: var(--ink-9);
+  --fg-body: var(--ink-8);
+  --fg-meta: var(--ink-7);
+  --fg-faint: var(--ink-6);
+  --interactive: var(--blue-bright);
+  --interactive-tint: color-mix(in oklab, var(--blue-bright) 15%, transparent);
+  --ok: var(--green-bright);
+  --warn: var(--amber-bright);
+  --err: var(--red-bright);
+  --info: var(--blue-bright);
+  --ok-tint: color-mix(in oklab, var(--green-bright) 14%, transparent);
+  --warn-tint: color-mix(in oklab, var(--amber-bright) 14%, transparent);
+  --err-tint: color-mix(in oklab, var(--red-bright) 14%, transparent);
+  --warn-fill: var(--amber-bright);
+  --on-warn-fill: var(--on-amber);
+  --err-fill: var(--red-deep);
+  --on-err-fill: var(--on-red);
+  --brand: var(--orange-bright);
+  --scrim: color-mix(in oklab, var(--black) 45%, transparent);
+  --shadow-pop: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
+  --hero-sky-top: var(--night-sky-top);
+  --hero-sky-mid: var(--night-sky-mid);
+  --hero-building: var(--night-building);
+  --hero-window: var(--night-window);
+  --hero-cloud: var(--night-cloud);
+  --hero-road: var(--night-road);
+  --hero-title-shadow: 0 2px 12px color-mix(in oklab, var(--black) 60%, transparent);
+  --hero-star: var(--night-star);
+  --hero-moon: var(--night-moon);
+  --hero-sun: var(--day-sun);
+  --hero-beam: var(--night-beam);
+  --hero-van: var(--orange-bright);
+  --hero-van-glass: var(--van-glass);
+  --hero-tyre: var(--on-amber);
+  --hero-dither: color-mix(in oklab, var(--black) 18%, transparent);
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-meta: 10px;
+  --text-label: 11px;
+  --text-body: 12px;
+  --text-panel: 14px;
+  --text-title: 19px;
+  --text-kpi: 22px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-strong: 600;
+
+  /* ---- library bridge (shadcn names; assistant-ui, agents-ui and the eve template read these) ---- */
+  --background: var(--surface-canvas);
+  --foreground: var(--fg-emph);
+  --card: var(--surface-card);
+  --card-foreground: var(--fg-emph);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--fg-emph);
+  --primary: var(--fg-emph);
+  --primary-foreground: var(--surface-canvas);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--fg-emph);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--fg-meta);
+  --accent: var(--surface-raised);
+  --accent-foreground: var(--fg-emph);
+  --destructive: var(--err);
+  --border: var(--edge);
+  --input: var(--edge);
+  --ring: var(--interactive);
+  --radius: var(--radius-3);
+  --chart-1: var(--cat-1);
+  --chart-2: var(--cat-2);
+  --chart-3: var(--cat-3);
+  --chart-4: var(--cat-4);
+  --chart-5: var(--cat-5);
+
+  /* ---- motion presets (by job) ---- */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-sheet: cubic-bezier(.32, .72, 0, 1);
+  --dur-micro: 100ms;
+  --dur-collapse: 150ms;
+  --dur-exit: 160ms;
+  --dur-enter: 220ms;
+  --dur-theme: 200ms;
+  --dur-draw: 550ms;
+  --dur-spin: 900ms;
+}
+
+/* ---- semantic roles (light): same names, light primitives ---- */
+[data-theme="light"] {
+  color-scheme: light;
+  --surface-well: var(--paper-well);
+  --surface-canvas: var(--paper-0);
+  --surface-card: var(--paper-1);
+  --surface-raised: var(--paper-2);
+  --surface-glass: color-mix(in oklab, var(--paper-0) 72%, transparent);
+  --edge: var(--paper-3);
+  --edge-strong: var(--paper-4);
+  --edge-glass: color-mix(in oklab, var(--black) 8%, transparent);
+  --fg-emph: var(--paper-8);
+  --fg-body: var(--paper-7);
+  --fg-meta: var(--paper-6);
+  --fg-faint: var(--paper-5);
+  --interactive: var(--blue-deep);
+  --interactive-tint: color-mix(in oklab, var(--blue-deep) 12%, transparent);
+  --ok: var(--green-deep);
+  --warn: var(--amber-deep);
+  --err: var(--red-deep);
+  --info: var(--blue-deep);
+  --ok-tint: color-mix(in oklab, var(--green-deep) 12%, transparent);
+  --warn-tint: color-mix(in oklab, var(--amber-deep) 12%, transparent);
+  --err-tint: color-mix(in oklab, var(--red-deep) 10%, transparent);
+  --warn-fill: var(--amber-bright);
+  --on-warn-fill: var(--on-amber);
+  --err-fill: var(--red-deep);
+  --on-err-fill: var(--on-red);
+  --brand: var(--orange-deep);
+  --scrim: color-mix(in oklab, var(--black) 25%, transparent);
+  --shadow-pop: 0 8px 24px color-mix(in oklab, var(--black) 12%, transparent);
+  --hero-sky-top: var(--day-sky-top);
+  --hero-sky-mid: var(--day-sky-mid);
+  --hero-building: var(--day-building);
+  --hero-window: var(--day-window);
+  --hero-cloud: var(--day-cloud);
+  --hero-road: var(--day-road);
+  --hero-title-shadow: 0 1px 10px color-mix(in oklab, var(--white) 80%, transparent);
+  --hero-star: var(--night-star);
+  --hero-moon: var(--night-moon);
+  --hero-sun: var(--day-sun);
+  --hero-beam: var(--night-beam);
+  --hero-van: var(--orange-deep);
+  --hero-van-glass: var(--van-glass);
+  --hero-tyre: var(--on-amber);
+  --hero-dither: color-mix(in oklab, var(--black) 8%, transparent);
+
+  /* ---- library bridge, re-declared so it resolves against the light roles ---- */
+  --background: var(--surface-canvas);
+  --foreground: var(--fg-emph);
+  --card: var(--surface-card);
+  --card-foreground: var(--fg-emph);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--fg-emph);
+  --primary: var(--fg-emph);
+  --primary-foreground: var(--surface-canvas);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--fg-emph);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--fg-meta);
+  --accent: var(--surface-raised);
+  --accent-foreground: var(--fg-emph);
+  --destructive: var(--err);
+  --border: var(--edge);
+  --input: var(--edge);
+  --ring: var(--interactive);
+  --radius: var(--radius-3);
+  --chart-1: var(--cat-1);
+  --chart-2: var(--cat-2);
+  --chart-3: var(--cat-3);
+  --chart-4: var(--cat-4);
+  --chart-5: var(--cat-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-theme] {
+    --dur-micro: 0ms;
+    --dur-collapse: 0ms;
+    --dur-exit: 0ms;
+    --dur-enter: 0ms;
+    --dur-theme: 0ms;
+    --dur-draw: 0ms;
+    --dur-spin: 0ms;
+  }
+}
+</style>
+<style>
+/* ---- proposed tokens (v2). Not yet in packages/design-tokens/src; listed in the change log. ----
+ * Each role points at an existing primitive, so no new literal colour is introduced.
+ *   --ok-fill / --on-ok-fill  a solid "done" node (tracker steps, booked receipt mark).
+ *                             Measured: dark 7.43:1 (on-ok-fill on ok-fill), light 5.79:1. Fill vs card: 6.36 dark, 5.41 light.
+ *   --edge-inferred           the dashed warn edge v1 repeats inline for inferred facts and estimates.
+ */
+:root,
+[data-theme="dark"] {
+  --ok-fill: var(--green-bright);
+  --on-ok-fill: var(--on-amber);
+  --edge-inferred: color-mix(in oklab, var(--warn) 55%, transparent);
+}
+[data-theme="light"] {
+  --ok-fill: var(--green-deep);
+  --on-ok-fill: var(--white);
+  --edge-inferred: color-mix(in oklab, var(--warn) 55%, transparent);
+}
+</style>
+<style>
+/* Local fonts only: Geist if installed, then the token stacks' system fallbacks. No network fonts. */
+@font-face{font-family:"Geist";src:local("Geist"),local("Geist Regular"),local("Geist-Regular");font-weight:400}
+@font-face{font-family:"Geist";src:local("Geist Medium"),local("Geist-Medium");font-weight:500}
+@font-face{font-family:"Geist";src:local("Geist SemiBold"),local("Geist-SemiBold");font-weight:600}
+@font-face{font-family:"Geist Mono";src:local("Geist Mono"),local("GeistMono-Regular"),local("GeistMono NF");font-weight:400}
+@font-face{font-family:"Geist Mono";src:local("Geist Mono Medium"),local("GeistMono-Medium"),local("GeistMono NF Medium");font-weight:500}
+
+*{box-sizing:border-box}
+html{background:var(--surface-well)}
+body{margin:0;font-family:var(--font-sans);font-size:var(--text-body);line-height:1.45;background:var(--surface-well);color:var(--fg-body);transition:background var(--dur-theme) var(--ease-out),color var(--dur-theme) var(--ease-out)}
+a{color:var(--interactive);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:var(--space-6) var(--space-6) var(--space-8)}
+.mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.meta{font-family:var(--font-mono);font-size:var(--text-meta);color:var(--fg-meta)}
+.emph{color:var(--fg-emph)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+s{color:var(--fg-meta)}
+
+/* page chrome */
+.top{display:flex;gap:var(--space-4);align-items:flex-start;justify-content:space-between;padding-bottom:var(--space-4);border-bottom:1px solid var(--edge)}
+.top h1{margin:0;font-size:var(--text-title);font-weight:var(--weight-strong);color:var(--fg-emph);letter-spacing:-.01em}
+.top p{margin:var(--space-1) 0 0;color:var(--fg-meta);max-width:760px}
+.top-r{display:flex;gap:var(--space-2);align-items:center;flex:none}
+nav.toc{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--edge);font-size:var(--text-label)}
+nav.toc a{color:var(--fg-body);text-decoration:none}
+nav.toc a:hover{color:var(--fg-emph);text-decoration:underline}
+h2.sec{margin:var(--space-8) 0 var(--space-3);font-size:var(--text-panel);font-weight:var(--weight-strong);color:var(--fg-emph);display:flex;gap:var(--space-2);align-items:baseline}
+h2.sec .meta{font-weight:var(--weight-regular)}
+h3.lbl,.lbl{margin:0 0 var(--space-2);font-size:var(--text-meta);font-weight:var(--weight-medium);letter-spacing:.06em;text-transform:uppercase;color:var(--fg-meta)}
+.panel{background:var(--surface-canvas);border:1px solid var(--edge);border-radius:var(--radius-3);padding:var(--space-4)}
+
+/* change log */
+table.log{width:100%;border-collapse:collapse;font-size:var(--text-label)}
+.log th{text-align:left;font-weight:var(--weight-medium);color:var(--fg-meta);font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.06em;padding:6px var(--space-2);border-bottom:1px solid var(--edge)}
+.log td{padding:6px var(--space-2);border-bottom:1px solid var(--edge);vertical-align:top;color:var(--fg-body)}
+.log td:first-child{color:var(--fg-meta);font-family:var(--font-mono);white-space:nowrap}
+.log td b{color:var(--fg-emph);font-weight:var(--weight-medium)}
+.log tr:last-child td{border-bottom:0}
+
+/* foundations */
+.found{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:var(--space-3)}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:var(--space-1)}
+.sw div{border:1px solid var(--edge);border-radius:var(--radius-2);overflow:hidden;font-size:var(--text-meta);color:var(--fg-meta);background:var(--surface-card)}
+.sw i{display:block;height:24px;background:var(--c)}
+.sw span{display:block;padding:2px var(--space-1);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.type div{display:flex;align-items:baseline;gap:var(--space-3);color:var(--fg-emph);min-width:0;padding:2px 0}
+.type .meta{width:56px;flex:none}
+.scale{display:flex;align-items:flex-end;gap:var(--space-2)}
+.scale div{display:grid;gap:2px;justify-items:center}
+.scale i{display:block;background:var(--interactive-tint);border:1px solid var(--interactive)}
+.rad{display:flex;gap:var(--space-2)}
+.rad div{width:44px;height:32px;border:1px solid var(--edge-strong);background:var(--surface-card);display:grid;place-items:center}
+.mrow{display:grid;grid-template-columns:96px 1fr 52px;gap:var(--space-2);font-size:var(--text-label);align-items:center;padding:2px 0}
+
+/* foundations: controls (v1) */
+.btn{font:inherit;font-size:var(--text-label);font-weight:var(--weight-medium);border-radius:var(--radius-2);padding:5px var(--space-3);min-height:28px;border:1px solid var(--edge-strong);background:var(--surface-card);color:var(--fg-emph);cursor:pointer;display:inline-flex;gap:6px;align-items:center;justify-content:center;transition:background var(--dur-micro) var(--ease-out);text-decoration:none}
+.btn:hover{background:var(--surface-raised)}
+.btn.is-focus{outline:2px solid var(--ring);outline-offset:2px}
+.btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.btn.primary:hover{background:color-mix(in oklab,var(--primary) 88%,var(--surface-canvas))}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--fg-body)}
+.btn.ghost:hover{background:var(--surface-raised)}
+.btn.danger{background:var(--err-tint);color:var(--err);border-color:color-mix(in oklab,var(--err) 40%,transparent)}
+.btn.sm{min-height:24px;padding:2px var(--space-2);font-size:var(--text-meta)}
+.btn.wide{width:100%}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.btn.primary[aria-busy="true"]{opacity:1;cursor:progress}
+.btn.link{border:0;background:none;padding:0;min-height:0;color:var(--interactive);font-weight:var(--weight-regular);text-decoration:underline;text-underline-offset:2px}
+.btn.link:hover{background:none;color:var(--fg-emph)}
+.chip{font:inherit;display:inline-flex;gap:5px;align-items:center;border:1px solid var(--edge);border-radius:var(--radius-2);padding:3px 8px;min-height:26px;font-size:var(--text-label);background:var(--surface-canvas);color:var(--fg-body);cursor:pointer}
+.chip:hover{border-color:var(--edge-strong);color:var(--fg-emph)}
+.chip b{font-weight:var(--weight-regular);color:var(--fg-emph)}
+.chip.is-on,.chip[aria-pressed="true"],.chip[aria-checked="true"]{border-color:var(--interactive);background:var(--interactive-tint);color:var(--fg-emph)}
+.chip.suggest{border-style:dashed;border-radius:var(--radius-pill)}
+.chip.inferred{border-style:dashed;border-color:var(--edge-inferred);color:var(--warn)}
+.badge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:var(--radius-1);font-size:var(--text-meta);font-weight:var(--weight-strong);font-family:var(--font-mono)}
+.badge.count{background:var(--warn-fill);color:var(--on-warn-fill)}
+.badge.alert{background:var(--err-fill);color:var(--on-err-fill)}
+.tag{display:inline-flex;gap:4px;align-items:center;font-size:var(--text-meta);border:1px solid var(--edge);border-radius:var(--radius-1);padding:1px 5px;color:var(--fg-meta);white-space:nowrap;line-height:1.4}
+.tag.ok{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,transparent)}
+.tag.warn{color:var(--warn);border-color:color-mix(in oklab,var(--warn) 45%,transparent)}
+.tag.inferred{color:var(--warn);border-color:var(--edge-inferred);border-style:dashed}
+.tag.err{color:var(--err);border-color:color-mix(in oklab,var(--err) 45%,transparent)}
+.tag.info{color:var(--interactive);border-color:color-mix(in oklab,var(--interactive) 45%,transparent)}
+.tag.solid{background:var(--surface-card)}
+.status{display:inline-flex;gap:5px;align-items:center;font-size:var(--text-label);color:var(--fg-body);white-space:nowrap}
+.status i{font-style:normal;width:12px;text-align:center}
+.t-ok{color:var(--ok)}.t-warn{color:var(--warn)}.t-err{color:var(--err)}.t-info{color:var(--info)}.t-meta{color:var(--fg-meta)}
+.spin{width:10px;height:10px;border:2px solid var(--info);border-right-color:transparent;border-radius:50%;flex:none;display:inline-block;animation:spin var(--dur-spin) linear infinite}
+.btn.primary .spin{border-color:var(--primary-foreground);border-right-color:transparent}
+@keyframes spin{to{transform:rotate(1turn)}}
+.skel{height:10px;border-radius:var(--radius-1);background:var(--surface-raised)}
+.mono-av{width:24px;height:24px;border-radius:var(--radius-2);display:grid;place-items:center;font-size:var(--text-meta);font-weight:var(--weight-strong);color:var(--fg-emph);background:color-mix(in oklab,var(--av) 28%,var(--surface-card));border:1px solid color-mix(in oklab,var(--av) 45%,transparent);flex:none}
+.line{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
+.stack{display:grid;gap:var(--space-2);align-content:start}
+
+/* pattern layout */
+.pattern{display:grid;grid-template-columns:300px minmax(0,1fr);gap:var(--space-5);padding:var(--space-5) 0;border-top:1px solid var(--edge)}
+.pattern:first-of-type{border-top:0}
+.spec{display:grid;gap:var(--space-3);align-content:start;font-size:var(--text-label)}
+.spec h3{margin:0;font-size:var(--text-panel);font-weight:var(--weight-strong);color:var(--fg-emph);display:flex;gap:var(--space-2);align-items:center}
+.rule{color:var(--fg-emph);font-size:var(--text-body);margin:0}
+.note{border:1px solid var(--edge);border-radius:var(--radius-2);background:var(--surface-canvas);padding:var(--space-2) var(--space-3);margin:0}
+.note .lbl{margin-bottom:var(--space-1)}
+.note p{margin:0}
+.a11y{display:grid;grid-template-columns:62px 1fr;gap:4px var(--space-2);margin:0}
+.a11y dt{color:var(--fg-meta);font-family:var(--font-mono);font-size:var(--text-meta);padding-top:1px}
+.a11y dd{margin:0}
+.specimens{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--space-4) var(--space-3);align-content:start}
+.specimens.two{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
+.spx{display:grid;gap:var(--space-2);align-content:start;min-width:0}
+.spx>.lbl{margin:0;display:flex;gap:var(--space-2);align-items:center}
+.span-all{grid-column:1/-1}
+
+/* "Don't" specimens */
+.dont{position:relative;border:1px dashed color-mix(in oklab,var(--err) 50%,transparent);border-radius:var(--radius-3);padding:var(--space-4) var(--space-3) var(--space-3);background:var(--surface-canvas)}
+.dont-label{position:absolute;top:-8px;left:var(--space-2);background:var(--surface-well);padding:0 4px;font-size:var(--text-meta);font-family:var(--font-mono);color:var(--err)}
+.dont-why{margin:var(--space-2) 0 0;font-size:var(--text-label);color:var(--fg-meta)}
+
+/* chat bits */
+.msg-user{justify-self:end;max-width:85%;background:var(--surface-raised);border:1px solid var(--edge);border-radius:var(--radius-3);padding:6px var(--space-3);color:var(--fg-emph)}
+.msg-agent{color:var(--fg-body);max-width:100%}
+.msg-agent p{margin:0}
+.thread{display:grid;gap:var(--space-2)}
+
+/* context echo */
+.echo{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:var(--text-label);color:var(--fg-meta)}
+.echo .lead{margin-right:2px}
+.echo button{font:inherit;font-size:var(--text-label);background:none;border:0;border-bottom:1px solid var(--edge-strong);padding:0 1px;color:var(--fg-emph);cursor:pointer;line-height:1.5}
+.echo button:hover{border-bottom-color:var(--fg-emph)}
+.echo button.inferred{color:var(--warn);border-bottom:1px dashed var(--edge-inferred)}
+.echo .sep{color:var(--fg-meta)}
+.echo .count{margin-left:auto}
+
+/* provider choice cards */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-2)}
+.pcard{background:var(--surface-card);border:1px solid var(--edge);border-radius:var(--radius-3);overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.pcard.is-on{border-color:var(--interactive);box-shadow:0 0 0 1px var(--interactive)}
+.pcard.is-dim{opacity:.55}
+.photo{position:relative;aspect-ratio:3/2;background:linear-gradient(135deg,color-mix(in oklab,var(--p1) 70%,var(--surface-raised)),color-mix(in oklab,var(--p2) 55%,var(--surface-well)));display:grid;place-items:center;font-size:20px}
+.photo .tag{position:absolute;top:5px;left:5px;background:var(--surface-card);color:var(--fg-emph);border-color:var(--edge-strong)}
+.pbody{padding:6px 7px;display:grid;gap:3px;flex:1}
+.pbody .t{color:var(--fg-emph);font-weight:var(--weight-medium);font-size:var(--text-label);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pfacts{display:flex;justify-content:space-between;gap:4px;font-size:var(--text-meta);color:var(--fg-meta);font-family:var(--font-mono)}
+.pfacts b{color:var(--fg-emph);font-weight:var(--weight-medium);font-size:var(--text-label)}
+.why{font-size:var(--text-meta);color:var(--fg-body)}
+.pact{display:flex;gap:4px;padding:0 7px 7px}
+.pact .btn{flex:1;padding:2px 4px}
+.left-out{font-size:var(--text-label);color:var(--fg-meta);margin:0}
+
+/* slot picker */
+.gen{position:relative;border:1px solid var(--edge);border-radius:var(--radius-3);padding:var(--space-3);background:var(--surface-card);display:grid;gap:var(--space-2)}
+.gen-label{position:absolute;top:-8px;left:var(--space-2);background:var(--surface-well);padding:0 4px;font-size:var(--text-meta);color:var(--fg-meta);font-family:var(--font-mono)}
+.addr{display:flex;gap:var(--space-2);align-items:center;padding-bottom:var(--space-2);border-bottom:1px solid var(--edge);font-size:var(--text-label);color:var(--fg-body)}
+.addr b{color:var(--fg-emph);font-weight:var(--weight-medium)}
+.addr .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.date{font:inherit;display:grid;gap:0;justify-items:center;border:1px solid var(--edge);border-radius:var(--radius-2);padding:3px 0;background:var(--surface-canvas);color:var(--fg-body);cursor:pointer;font-size:var(--text-meta)}
+.date b{font-family:var(--font-mono);font-size:var(--text-body);color:var(--fg-emph);font-weight:var(--weight-medium)}
+.date .meta{font-size:var(--text-meta)}
+.date[aria-pressed="true"]{border-color:var(--interactive);background:var(--interactive-tint)}
+.date[disabled]{cursor:not-allowed;opacity:.5}
+.times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.time{font:inherit;position:relative;font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:var(--text-label);border:1px solid var(--edge);border-radius:var(--radius-2);padding:5px 0;min-height:30px;color:var(--fg-emph);background:var(--surface-canvas);cursor:pointer}
+.time:hover{border-color:var(--edge-strong)}
+.time[aria-pressed="true"]{border-color:var(--interactive);background:var(--interactive-tint)}
+.time[disabled]{color:var(--fg-meta);text-decoration:line-through;background:transparent;cursor:not-allowed}
+.time .mark{position:absolute;top:-7px;right:3px;font-family:var(--font-sans);font-size:9px;line-height:1;padding:1px 3px;border-radius:var(--radius-1);background:var(--surface-card);border:1px solid var(--edge)}
+.time .mark.earliest{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 45%,transparent)}
+.time .mark.plus{color:var(--fg-body)}
+.hold{display:flex;gap:var(--space-2);align-items:center;padding:6px var(--space-2);border-radius:var(--radius-2);background:var(--interactive-tint);font-size:var(--text-label);color:var(--fg-emph)}
+.hold.ending{background:var(--warn-tint)}
+.hold .mono{margin-left:auto}
+.dur{font-size:var(--text-label);color:var(--fg-meta);margin:0}
+
+/* trust surfaces (fixed, never generated) */
+.trust{background:var(--surface-card);border:1px solid var(--edge-strong);border-radius:var(--radius-3);overflow:hidden;font-size:var(--text-body)}
+.trust-h{display:flex;gap:var(--space-2);align-items:center;padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--edge);font-size:var(--text-label);color:var(--fg-meta)}
+.trust-h b{color:var(--fg-emph);font-weight:var(--weight-strong);font-size:var(--text-body)}
+.trust-h .r{margin-left:auto;display:flex;gap:var(--space-2);align-items:center}
+.kv{display:grid;grid-template-columns:62px 1fr;gap:6px var(--space-3);padding:var(--space-3);margin:0}
+.kv dt{color:var(--fg-meta)}
+.kv dd{margin:0;color:var(--fg-emph);display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;min-width:0}
+.kv dd.plain{color:var(--fg-body);display:block}
+.faded{opacity:.6}
+.bill{margin:0 var(--space-3);border-top:1px solid var(--edge);padding:var(--space-2) 0;display:grid;gap:4px}
+.bill div{display:flex;justify-content:space-between;gap:var(--space-2);align-items:center}
+.bill dt{color:var(--fg-body);display:flex;gap:6px;align-items:center}
+.bill dd{margin:0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--fg-emph)}
+.bill dd.est{border-bottom:1px dashed var(--edge-inferred)}
+.bill .total{border-top:1px solid var(--edge);padding-top:6px;margin-top:2px}
+.bill .total dt{color:var(--fg-emph);font-weight:var(--weight-strong)}
+.bill .total dd{font-size:var(--text-panel);font-weight:var(--weight-strong)}
+.trust-note{padding:0 var(--space-3) var(--space-2);font-size:var(--text-label);color:var(--fg-meta);margin:0}
+.trust-a{display:flex;flex-wrap:wrap;gap:var(--space-2);padding:var(--space-2) var(--space-3) var(--space-3)}
+.trust-a .btn.primary{flex:1 1 140px}
+.trust.voided{border-color:color-mix(in oklab,var(--err) 45%,transparent)}
+.trust.alert{border-left:3px solid var(--err)}
+.notice{display:flex;gap:var(--space-2);align-items:flex-start;padding:var(--space-2) var(--space-3);font-size:var(--text-label);color:var(--fg-emph)}
+.notice.err{background:var(--err-tint)}.notice.info{background:var(--interactive-tint)}.notice.ok{background:var(--ok-tint)}.notice.warn{background:var(--warn-tint)}
+.notice .spin{margin-top:2px}
+.notice p{margin:0}
+.diffs{display:flex;flex-wrap:wrap;gap:4px;padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--edge);background:var(--warn-tint);font-size:var(--text-label);color:var(--fg-emph);align-items:center}
+.was{font-family:var(--font-mono);font-size:var(--text-meta);color:var(--fg-meta)}
+
+/* after-approval tracker */
+.track{list-style:none;margin:0;padding:var(--space-3) var(--space-3) var(--space-2);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.track li{position:relative;display:grid;justify-items:center;gap:4px;text-align:center;font-size:var(--text-label);color:var(--fg-meta)}
+.track li::before{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:var(--edge-strong);z-index:0}
+.track li:first-child::before{display:none}
+.track li.done::before,.track li.now::before{background:var(--ok)}
+.track li.fail::before{background:var(--err)}
+.node{position:relative;z-index:1;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:var(--weight-strong);background:var(--surface-card);border:2px solid var(--edge-strong);color:var(--fg-meta)}
+.done .node{background:var(--ok-fill);border-color:var(--ok-fill);color:var(--on-ok-fill)}
+.now .node{border-color:var(--info)}
+.now .node .spin{width:8px;height:8px;border-width:2px}
+.fail .node{background:var(--err-fill);border-color:var(--err-fill);color:var(--on-err-fill)}
+.track li.done,.track li.now{color:var(--fg-emph)}
+.track li.fail{color:var(--err)}
+.track .meta{display:block}
+
+/* agent progress */
+.plan{margin:0;color:var(--fg-body)}
+.steps{border-left:2px solid var(--edge);margin:var(--space-1) 0 0;padding:0}
+.steps summary{list-style:none;cursor:pointer;display:inline-flex;gap:6px;align-items:center;padding:2px var(--space-2);font-size:var(--text-label);color:var(--fg-meta);border-radius:var(--radius-1)}
+.steps summary::-webkit-details-marker{display:none}
+.steps summary:hover{color:var(--fg-emph)}
+.steps summary .chev{display:inline-block;transition:transform var(--dur-collapse) var(--ease-out)}
+.steps[open] summary .chev{transform:rotate(90deg)}
+.steps ol{list-style:none;margin:2px 0 0;padding:0 0 0 var(--space-2);display:grid;gap:3px}
+.steps li{display:flex;gap:6px;align-items:center;font-size:var(--text-label);color:var(--fg-body)}
+.steps li i{font-style:normal;width:12px;text-align:center;flex:none}
+.steps li.todo{color:var(--fg-meta)}
+.steps li .meta{margin-left:auto}
+.steps.fail{border-left-color:color-mix(in oklab,var(--err) 55%,transparent)}
+
+/* clarify */
+.ask{border:1px solid var(--edge);border-radius:var(--radius-3);background:var(--surface-card);padding:var(--space-3);display:grid;gap:var(--space-2)}
+.ask .q{margin:0;font-size:var(--text-panel);font-weight:var(--weight-medium);color:var(--fg-emph)}
+.ask .why{color:var(--fg-meta);font-size:var(--text-label)}
+.ask input{font:inherit;font-size:var(--text-label);height:30px;flex:1;min-width:0;border-radius:var(--radius-2);border:1px solid var(--edge);background:var(--surface-canvas);color:var(--fg-emph);padding:0 var(--space-2)}
+.ask input::placeholder{color:var(--fg-meta)}
+.ask-foot{display:flex;gap:var(--space-2);align-items:center}
+.ask-foot .meta{margin-right:auto}
+
+/* memory */
+.memnote{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:var(--text-label);color:var(--fg-meta);padding:2px 0}
+.memnote b{color:var(--fg-emph);font-weight:var(--weight-regular)}
+.memnote .sep{color:var(--fg-meta)}
+.memnote .ico{color:var(--fg-meta)}
+.used{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:var(--text-meta);color:var(--fg-meta);border-top:1px solid var(--edge);padding-top:6px;margin-top:6px}
+.used b{font-weight:var(--weight-regular);color:var(--fg-body)}
+.used b.inf{color:var(--warn);border-bottom:1px dashed var(--edge-inferred)}
+.sources{border:1px solid var(--edge-strong);border-radius:var(--radius-2);background:var(--surface-raised);box-shadow:var(--shadow-pop);padding:var(--space-2);display:grid;gap:4px;margin-top:6px}
+.fact{display:flex;gap:var(--space-2);align-items:center;padding:6px var(--space-2);border:1px solid var(--edge);border-radius:var(--radius-2);background:var(--surface-card)}
+.fact .grow{flex:1;min-width:0}
+.fact .t{color:var(--fg-emph)}
+.fact.inferred{border-style:dashed;border-color:var(--edge-inferred)}
+.fact.inferred .t{color:var(--warn)}
+.fact.tomb{background:transparent;border-style:dotted}
+.fact.tomb .t{text-decoration:line-through;color:var(--fg-meta)}
+
+/* alerts, bell */
+.bar{display:flex;gap:var(--space-2);align-items:center;padding:6px var(--space-2);border:1px solid var(--edge);border-radius:var(--radius-2);background:var(--surface-canvas);font-size:var(--text-label)}
+.bar .grow{flex:1}
+.iconbtn{font:inherit;position:relative;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--edge);border-radius:var(--radius-2);background:var(--surface-card);color:var(--fg-emph);cursor:pointer;font-size:var(--text-body)}
+.iconbtn .badge{position:absolute;top:-6px;right:-6px}
+.w{background:var(--surface-card);border:1px solid var(--edge);border-radius:var(--radius-3);padding:10px 11px}
+.wh{display:flex;gap:6px;align-items:center;font-size:var(--text-label);color:var(--fg-meta);margin-bottom:var(--space-2)}
+.row{display:flex;gap:var(--space-2);align-items:center;padding:4px 0}
+.row .grow{flex:1;min-width:0}
+.row .t{color:var(--fg-emph);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--err)}
+
+/* visit day */
+.otp{display:flex;gap:4px}
+.otp span{width:28px;height:34px;display:grid;place-items:center;border:1px solid var(--edge-strong);border-radius:var(--radius-2);background:var(--surface-raised);font-family:var(--font-mono);font-size:var(--text-kpi);font-weight:var(--weight-medium);color:var(--fg-emph)}
+.otp-row{display:flex;gap:var(--space-3);align-items:center;justify-content:space-between;padding:var(--space-3)}
+.otp-row p{margin:0}
+
+/* after service */
+.stars{display:flex;gap:2px}
+.star{font:inherit;background:none;border:0;padding:0 2px;font-size:20px;line-height:1;color:var(--fg-meta);cursor:pointer;min-width:28px;min-height:32px}
+.star[aria-checked="true"],.star.on{color:var(--fg-emph)}
+.rate{display:grid;gap:var(--space-2);padding:var(--space-3)}
+.rate p{margin:0}
+
+/* journey */
+.journey{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--space-3)}
+.phone{border:1px solid var(--edge-strong);border-radius:var(--radius-3);background:var(--surface-canvas);overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.phone-h{display:flex;justify-content:space-between;align-items:center;padding:6px var(--space-3);border-bottom:1px solid var(--edge);font-size:var(--text-meta);color:var(--fg-meta);font-family:var(--font-mono)}
+.phone-h b{font-family:var(--font-sans);color:var(--fg-emph);font-weight:var(--weight-medium);font-size:var(--text-label)}
+.phone-b{padding:var(--space-3);display:grid;gap:var(--space-2);align-content:start;flex:1}
+.phone .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.phone .pbody{padding:4px 5px}
+.phone .pact{padding:0 5px 5px;flex-direction:column}
+.phone .why{display:none}
+.composer{border:1px solid var(--edge);border-radius:var(--radius-3);background:var(--surface-card);padding:var(--space-2);display:grid;gap:6px}
+.composer .in{border:1px solid var(--edge);border-radius:var(--radius-2);background:var(--surface-canvas);padding:6px var(--space-2);color:var(--fg-emph);min-height:40px}
+
+/* a11y table */
+table.ax{width:100%;border-collapse:collapse;font-size:var(--text-label)}
+.ax th,.ax td{text-align:left;vertical-align:top;padding:6px var(--space-2);border-bottom:1px solid var(--edge)}
+.ax th{font-size:var(--text-meta);text-transform:uppercase;letter-spacing:.06em;color:var(--fg-meta);font-weight:var(--weight-medium)}
+.mtab td:nth-child(2){white-space:nowrap}
+.mtab td{padding:5px var(--space-2)}
+.ax td:first-child{color:var(--fg-emph);font-weight:var(--weight-medium);white-space:nowrap}
+
+@media (max-width:900px){.pattern{grid-template-columns:1fr}.wrap{padding:var(--space-4)}}
+@media (max-width:420px){.cards{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion: reduce){
+  .spin{animation:none;border-right-color:var(--info)}
+  body{transition:none}
+}
+</style>
+<style>
+/* ---- proposed motion tokens (v2). Values read from agents-ui source (see the Motion section). ----
+ * Theme-independent, so declared once on :root. Existing v1 presets keep their values.
+ */
+:root {
+  --ease-snap: cubic-bezier(.23, 1, .32, 1);
+  --ease-settle: cubic-bezier(.22, 1, .36, 1);
+  --ease-pop: cubic-bezier(.34, 1.96, .94, 1);
+  --ease-exit: cubic-bezier(.4, 0, .6, 1);
+  --dur-word: 180ms;
+  --dur-close: 180ms;
+  --dur-layout: 260ms;
+  --dur-open: 260ms;
+  --dur-tick: 260ms;
+  --dur-cross: 280ms;
+  --dur-strike: 280ms;
+  --dur-shake: 280ms;
+  --dur-expand: 300ms;
+  --dur-step: 320ms;
+  --dur-chip: 350ms;
+  --dur-row: 400ms;
+  --dur-swap: 400ms;
+  --dur-shimmer: 700ms;
+  --dur-pulse: 1600ms;
+  --dur-skeleton: 1600ms;
+  --dur-fade: 150ms;
+  --stagger-tight: 45ms;
+  --stagger: 60ms;
+  --stagger-loose: 80ms;
+  --delay-check: 110ms;
+}
+/* The page toggle overrides the OS media query both ways, so a reviewer can see either mode. */
+html[data-motion="full"] {
+  --dur-micro: 100ms; --dur-collapse: 150ms; --dur-exit: 160ms; --dur-enter: 220ms; --dur-theme: 200ms; --dur-draw: 550ms; --dur-spin: 900ms;
+}
+html[data-motion="reduced"] {
+  --dur-micro: 0ms; --dur-collapse: 0ms; --dur-exit: 0ms; --dur-enter: 0ms; --dur-theme: 0ms; --dur-draw: 0ms; --dur-spin: 0ms;
+  --dur-word: 0ms; --dur-close: 0ms; --dur-layout: 0ms; --dur-open: 0ms; --dur-tick: 0ms; --dur-cross: 0ms; --dur-strike: 0ms; --dur-shake: 0ms;
+  --dur-expand: 0ms; --dur-step: 0ms; --dur-chip: 0ms; --dur-row: 0ms; --dur-swap: 0ms; --dur-shimmer: 0ms; --dur-pulse: 0ms; --dur-skeleton: 0ms;
+  --stagger-tight: 0ms; --stagger: 0ms; --stagger-loose: 0ms; --delay-check: 0ms;
+  /* --dur-fade stays at 150ms: under reduced motion, anything that would travel cross-fades instead. */
+}
+[hidden] { display: none !important }
+
+/* theme cross-fade (View Transitions; zero under reduced motion) */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--dur-theme); animation-timing-function: var(--ease-snap) }
+
+/* interruptible state changes: CSS transitions retarget from the current value */
+.btn { transition: background-color var(--dur-micro) var(--ease-out), opacity var(--dur-collapse) var(--ease-snap), transform var(--dur-micro) var(--ease-out), border-color var(--dur-collapse) var(--ease-snap) }
+.btn:active:not([disabled]) { transform: scale(.985) }
+.chip { transition: background-color var(--dur-collapse) var(--ease-snap), border-color var(--dur-collapse) var(--ease-snap), color var(--dur-collapse) var(--ease-snap) }
+.trust { transition: border-color var(--dur-swap) var(--ease-snap) }
+.trust-h { transition: background-color var(--dur-swap) var(--ease-snap) }
+.trust-h.tint-ok { background: var(--ok-tint) }
+.notice { transition: background-color var(--dur-swap) var(--ease-snap) }
+.fadeable { transition: opacity var(--dur-swap) var(--ease-snap) }
+.pcard { transition: opacity var(--dur-swap) var(--ease-snap), border-color var(--dur-collapse) var(--ease-snap), box-shadow var(--dur-collapse) var(--ease-snap) }
+
+/* check morph (task-list): disc pops on the overshoot, then the stroke draws */
+.ck { width: 14px; height: 14px; display: block; overflow: visible }
+.ck circle { fill: var(--ok-fill); transform-box: fill-box; transform-origin: center; transform: scale(.6); opacity: 0; transition: opacity var(--dur-exit) var(--ease-snap), transform var(--dur-enter) var(--ease-pop) }
+.ck path { fill: none; stroke: var(--on-ok-fill); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9.9; stroke-dashoffset: 9.9; transition: stroke-dashoffset var(--dur-enter) var(--ease-snap); transition-delay: var(--delay-check) }
+.ck-on .ck circle, .ck.ck-on circle { opacity: 1; transform: scale(1) }
+.ck-on .ck path, .ck.ck-on path { stroke-dashoffset: 0 }
+
+/* strike-through that draws (task-list strike) */
+.strike { position: relative; color: var(--fg-meta); text-decoration: none }
+.strike::after { content: ""; position: absolute; left: -1px; right: -1px; top: 52%; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform var(--dur-strike) var(--ease-snap) }
+.strike.on::after { transform: scaleX(1) }
+
+/* text shimmer (text-shimmer): a highlight band clipped to the glyphs */
+.shimmer { background-image: linear-gradient(90deg, transparent calc(50% - 40px), currentColor, transparent calc(50% + 40px)), linear-gradient(color-mix(in oklab, currentColor 45%, transparent), color-mix(in oklab, currentColor 45%, transparent)); background-size: 250% 100%, auto; background-repeat: no-repeat; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer var(--dur-shimmer) linear infinite }
+@keyframes shimmer { from { background-position: 100% 50%, 0 0 } to { background-position: 0% 50%, 0 0 } }
+
+/* active step pulse (orb wave timing) */
+.ring { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--info); animation: pulse var(--dur-pulse) var(--ease-exit) infinite }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--info) 45%, transparent); transform: scale(1) } 50% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--info) 0%, transparent); transform: scale(1.12) } }
+
+/* skeleton sweep (skeleton) */
+.skel { position: relative; overflow: hidden }
+.skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--fg-emph) 7%, transparent), transparent); transform: translateX(-100%); animation: sweep var(--dur-skeleton) linear infinite }
+@keyframes sweep { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+
+/* shared-layout highlight (task-list marker slide) */
+.has-hl { position: relative }
+.has-hl > button { position: relative; z-index: 1; background: transparent }
+.has-hl > button[aria-pressed="true"] { border-color: transparent; background: transparent }
+.hl { position: absolute; left: 0; top: 0; z-index: 0; border: 1px solid var(--interactive); background: var(--interactive-tint); border-radius: var(--radius-2); pointer-events: none; opacity: 0; transition: transform var(--dur-layout) var(--ease-snap), width var(--dur-layout) var(--ease-snap), height var(--dur-layout) var(--ease-snap), opacity var(--dur-collapse) var(--ease-snap) }
+.hl.jump { transition: opacity var(--dur-collapse) var(--ease-snap) }
+.seg.has-hl .hl { border-color: var(--edge-strong); background: var(--surface-raised); border-radius: var(--radius-1) }
+.seg.has-hl > button { font: inherit; font-size: var(--text-label); border: 0; padding: 3px var(--space-2); border-radius: var(--radius-1); color: var(--fg-meta); cursor: pointer; transition: color var(--dur-collapse) var(--ease-snap) }
+.seg.has-hl > button[aria-pressed="true"] { color: var(--fg-emph) }
+
+/* step list v2 (reasoning-steps + task-list) */
+.prog { display: grid; gap: var(--space-1) }
+.sum { font: inherit; display: inline-flex; gap: 6px; align-items: center; background: none; border: 0; padding: 2px 4px; margin-left: -4px; border-radius: var(--radius-1); font-size: var(--text-label); color: var(--fg-meta); cursor: pointer; justify-self: start }
+.sum:hover { color: var(--fg-emph) }
+.sum .chev { display: inline-block; transition: transform var(--dur-exit) var(--ease-snap) }
+.sum[aria-expanded="true"] .chev { transform: rotate(90deg) }
+.sum-ico { display: grid; width: 14px; height: 14px }
+.sum-ico > * { grid-area: 1 / 1; transition: opacity var(--dur-exit) var(--ease-snap), transform var(--dur-exit) var(--ease-snap) }
+.pring { width: 14px; height: 14px; display: block }
+.pring circle { fill: none; stroke-width: 1.8 }
+.pring .trk { stroke: color-mix(in oklab, var(--fg-emph) 25%, transparent) }
+.pring .arc { stroke: var(--fg-emph); stroke-dasharray: 100; transition: stroke-dashoffset var(--dur-step) var(--ease-snap) }
+.sum-ico.is-done .pring, .sum-ico.is-fail .pring { opacity: 0; transform: scale(.6) }
+.sum-ico .x { opacity: 0; color: var(--err); font-size: 11px; text-align: center; line-height: 14px }
+.sum-ico.is-fail .x { opacity: 1 }
+.sum-lab { display: inline-block }
+.steps-body { border-left: 2px solid var(--edge); margin-left: 6px; transition: border-color var(--dur-swap) var(--ease-snap) }
+.steps-body.fail { border-left-color: color-mix(in oklab, var(--err) 55%, transparent) }
+.steps-body ol { list-style: none; margin: 2px 0 0; padding: 0 0 0 var(--space-2); display: grid; gap: 3px }
+.st { display: flex; gap: 6px; align-items: center; font-size: var(--text-label) }
+.st .meta { margin-left: auto }
+.sico { display: grid; width: 14px; height: 14px; flex: none; place-items: center }
+.sico > * { grid-area: 1 / 1; transition: opacity var(--dur-exit) var(--ease-snap) }
+.sico .pend { width: 12px; height: 12px; border-radius: 50%; border: 1.2px dashed var(--fg-meta) }
+.sico .x { color: var(--err); font-size: 11px; line-height: 1 }
+.st:not([data-s="pending"]) .pend, .st:not([data-s="active"]) .ring, .st:not([data-s="done"]) .ck, .st:not([data-s="fail"]) .x { opacity: 0 }
+.st:not([data-s="active"]) .ring { animation: none }
+.slab { transition: color var(--dur-exit) var(--ease-snap) }
+.st[data-s="pending"] .slab { color: var(--fg-meta) }
+.st[data-s="active"] .slab { color: var(--fg-emph) }
+.st[data-s="done"] .slab { color: var(--fg-body) }
+.st[data-s="fail"] .slab { color: var(--err) }
+
+/* tracker fill (task-list ring + line draw) */
+.track li::after { content: ""; position: absolute; top: 8px; left: -50%; width: 100%; height: 2px; background: var(--ok); z-index: 0; transform: scaleX(0); transform-origin: left; transition: transform var(--dur-draw) var(--ease-out) }
+.track li:first-child::after { display: none }
+.track li.done::after, .track li.now::after { transform: scaleX(1) }
+.track li.fail::after { transform: scaleX(1); background: var(--err) }
+.track li::before { background: var(--edge-strong) !important }
+.node { transition: background-color var(--dur-exit) var(--ease-snap), border-color var(--dur-exit) var(--ease-snap) }
+.node > * { grid-area: 1 / 1; opacity: 0; transition: opacity var(--dur-exit) var(--ease-snap) }
+.node .ck { width: 14px; height: 14px }
+.now .node .spin, .fail .node .x, .done .node .ck { opacity: 1 }
+.done .node { background: var(--surface-card) !important; border-color: var(--ok-fill) !important }
+.track li { transition: color var(--dur-exit) var(--ease-snap) }
+
+/* copy-check morph for Share code */
+.cc { width: 14px; height: 14px; overflow: visible }
+.cc rect { fill: none; stroke: currentColor; stroke-width: 1.6; transition: x var(--dur-expand) var(--ease-snap), y var(--dur-expand) var(--ease-snap), width var(--dur-expand) var(--ease-snap), height var(--dur-expand) var(--ease-snap), rx var(--dur-expand) var(--ease-snap), opacity var(--dur-micro) var(--ease-snap) }
+.cc .front { fill: var(--surface-card) }
+.cc path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 12; stroke-dashoffset: 12; transition: stroke-dashoffset var(--dur-enter) var(--ease-snap) }
+.copied .cc .back { opacity: 0; x: 4px; y: 4px; width: 16px; height: 16px; rx: 8px }
+.copied .cc .front { x: 4px; y: 4px; width: 16px; height: 16px; rx: 8px }
+.copied .cc path { stroke-dashoffset: 0; transition-delay: var(--delay-check) }
+
+/* layout demo */
+.app { border: 1px solid var(--edge-strong); border-radius: var(--radius-3); background: var(--surface-canvas); overflow: hidden }
+.app-h { display: flex; gap: var(--space-2); align-items: center; padding: 6px var(--space-3); border-bottom: 1px solid var(--edge); font-size: var(--text-label) }
+.app-h .grow { flex: 1 }
+.app-b { display: flex; min-height: 300px }
+.chat { flex: 1; min-width: 0; padding: var(--space-3); display: grid; gap: var(--space-2); align-content: start }
+.chat .cards { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) }
+.rail { width: 280px; flex: none; border-left: 1px solid var(--edge); background: var(--surface-card); padding: var(--space-3); display: grid; gap: var(--space-2); align-content: start }
+.wf2 { display: grid; gap: 4px }
+.wf2 .r { display: grid; grid-template-columns: 96px minmax(0, 1fr) 34px; gap: var(--space-2); align-items: center; font-size: var(--text-meta); font-family: var(--font-mono); color: var(--fg-body) }
+.wf2 .tr { position: relative; height: 8px; background: var(--surface-raised); border-radius: 2px; overflow: hidden }
+.wf2 .bar { position: absolute; top: 0; bottom: 0; left: var(--bs); width: var(--bw); border-radius: 2px; background: var(--bc, var(--chart-1)); transform-origin: left; overflow: hidden }
+.wf2 .bar.run::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--fg-emph) 35%, transparent), transparent); animation: sweep var(--dur-skeleton) linear infinite }
+.wf2 .t { text-align: right; color: var(--fg-meta) }
+
+/* curve demo */
+.curve { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2); align-items: center; font-size: var(--text-label) }
+.curve .lane { position: relative; height: 12px; border-bottom: 1px dashed var(--edge-strong) }
+.curve .dot2 { position: absolute; left: 0; top: 1px; width: 10px; height: 10px; border-radius: 50%; background: var(--fg-emph) }
+
+.replay { margin-left: auto }
+.mnote { font-size: var(--text-label); color: var(--fg-meta); margin: 0 }
+.mnote b { color: var(--fg-emph); font-weight: var(--weight-medium) }
+.prule { margin: 0; padding-left: var(--space-4); display: grid; gap: var(--space-1); font-size: var(--text-label) }
+.prule b { color: var(--fg-emph); font-weight: var(--weight-medium) }
+
+.stack, .gen, .thread { grid-template-columns: minmax(0, 1fr) }
+.track li.done .ck circle { opacity: 1; transform: scale(1) }
+.track li.done .ck path { stroke-dashoffset: 0 }
+.chat .photo { aspect-ratio: auto; height: 72px }
+.dont .meta { overflow-wrap: anywhere }
+.hold .mono, .trust-h .r { white-space: nowrap }
+/* reduced motion: loops stop, words stay readable */
+html[data-motion="reduced"] .shimmer { animation: none; background: none; -webkit-text-fill-color: currentColor }
+html[data-motion="reduced"] .spin { animation: none; border-right-color: var(--info) }
+html[data-motion="reduced"] .btn.primary .spin { border-right-color: var(--primary-foreground) }
+html[data-motion="reduced"] .ring { animation: none }
+html[data-motion="reduced"] .skel::after, html[data-motion="reduced"] .wf2 .bar.run::after { display: none }
+</style></head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>Errand design system v2</h1>
+    <p>v1 stays binding: same tokens, surfaces, type and trust rules. v2 adds the patterns from the competitor screenshot study (<span class="mono">agent-ui-gallery</span>, 139 screens across discover, commit, after-booking and agent chat) and folds them into Errand's own components. Every colour below is a semantic role from <span class="mono">tokens.css</span>, inlined in this file.</p>
+    <p class="meta">Branch design/system-v2-research · 3 Nov 2026 · times are IST · Bengaluru examples</p>
+  </div>
+  <div class="top-r">
+    <button class="btn" id="motion-toggle" type="button" aria-pressed="false"><span aria-hidden="true">≈</span> <span id="motion-label">Reduced motion: off</span></button>
+    <button class="btn" id="theme-toggle" type="button" aria-label="Switch to light theme"><span aria-hidden="true">◐</span> <span id="theme-label">Light</span></button>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#changes">Change log</a><a href="#foundations">Foundations</a><a href="#proposed">Proposed tokens</a>
+  <a href="#p-echo">Context echo</a><a href="#p-cards">Provider cards</a><a href="#p-slot">Slot picker</a><a href="#p-approval">Approval card v2</a>
+  <a href="#p-tracker">Tracker</a><a href="#p-progress">Agent progress</a><a href="#p-clarify">Clarifying question</a><a href="#p-memory">Memory, inline</a>
+  <a href="#p-rebook">Provider cancelled</a><a href="#p-visit">Visit day</a><a href="#p-after">After service</a><a href="#journey">Journey</a><a href="#a11y">Accessibility</a>
+</nav>
+
+<!-- ============================== CHANGE LOG ============================== -->
+<h2 class="sec" id="changes">Change log · v1 → v2</h2>
+<div class="panel">
+<table class="log">
+  <thead><tr><th>Area</th><th>What changed</th><th>Why</th><th>Research source</th></tr></thead>
+  <tbody>
+    <tr><td>new</td><td><b>Context echo</b> line above provider cards: "Plumber · Koramangala · this week · under ₹1,500". Each part opens the matching filter; a part taken from memory is dashed.</td><td>People check the agent understood before they compare. v1 cards had only "Options for plumber in Koramangala".</td><td><a href="https://openai.com/index/introducing-apps-in-chatgpt/">ChatGPT × Booking.com</a></td></tr>
+    <tr><td>updated</td><td><b>Provider choice cards</b> use the real tags (Best match, Cheapest, Earliest) instead of v1's "Top rated" and "Mornings". Price and earliest slot are on one fact line. A chosen card keeps its ring, and the others dim.</td><td>Matches <span class="mono">provider-results.tsx</span> TAG_LABELS. Fewer, factual tags.</td><td><a href="https://openai.com/index/introducing-apps-in-chatgpt/">ChatGPT × Booking.com</a>, <a href="https://apps.apple.com/in/app/urban-company-home-services/id1032480595">Urban Company</a></td></tr>
+    <tr><td>updated</td><td><b>Slot picker</b>: the saved address on top, then the job length, a 5-day date strip with slot counts and a 3-column time grid. "Earliest" is marked and any slot surcharge sits on the slot. After a pick, the hold countdown shows.</td><td>v1 was a bare 3-day grid. Putting address, length and surcharges on the slot means the approval price never surprises.</td><td><a href="https://apps.apple.com/in/app/urban-company-home-services/id1032480595">Urban Company</a>, <a href="https://apps.apple.com/in/app/snabbit-house-help-in-10-min/id6575381655">Snabbit</a>, <a href="https://apps.apple.com/us/app/handy-com/id604419063">Handy</a> (what to avoid)</td></tr>
+    <tr><td>updated</td><td><b>Approval card v2</b> is one review summary: provider, job, when (IST), address, a price breakdown (visit, parts estimate, total) and the cancellation rule in plain words, then one named button with the total ("Approve ₹399"). Cancel shows the fee on the button. Reschedule strikes the old time beside the new one.</td><td>v1 had one Price row and terms as a key–value cell. One screen with the breakdown before the only commit button is the clearest pattern in the study.</td><td><a href="https://apps.apple.com/us/app/taskrabbit-handyman-more/id374165361">TaskRabbit</a>, <a href="https://www.youtube.com/watch?v=g0FWqdo-YXQ">Pronto</a>, <a href="https://news.delta.com/more-control-fewer-taps-delta-concierge-expands-all-skymiles-members">Delta Concierge</a>, <a href="https://www.perplexity.ai/hub/blog/shop-like-a-pro">Perplexity</a> (what to avoid)</td></tr>
+    <tr><td>new</td><td><b>After-approval tracker</b>: Holding → Checking with provider → Booked, with failed and taking-longer states. It replaces the lone "Checking with the provider…" banner.</td><td>The agent acts in the background, so the person needs to see when the provider has actually said yes.</td><td><a href="https://blog.google/products/shopping/google-shopping-ai-mode-virtual-try-on-update/">Google AI Mode</a></td></tr>
+    <tr><td>updated</td><td><b>Agent progress</b>: a plan line, then a collapsible "Worked for 12s · 3 steps" list in plain words, in running, done and failed states. Raw tool names never show.</td><td>v1 showed one spinner line per tool (<span class="mono">tool-status.tsx</span>). A step list with elapsed time shows the work without the noise.</td><td><a href="https://openai.com/index/introducing-operator/">ChatGPT Operator</a></td></tr>
+    <tr><td>new</td><td><b>Clarifying question</b>: one question at a time, at most 4 chips, a free-text field and Skip.</td><td>The agent should never block. Five stacked chips crowd the decision.</td><td><a href="https://apps.apple.com/us/app/perplexity-ai-agent-search/id1668000334">Perplexity</a>, <a href="https://www.aboutamazon.com/news/retail/how-to-use-amazon-rufus">Amazon Rufus</a> (what to avoid)</td></tr>
+    <tr><td>new</td><td><b>Inline memory</b>: a one-line "Remembered: … · View · Undo" note in the chat, and a "Used: … · Why?" footnote under answers that used memory. Memory rows keep inspect, correct and forget, and inferred facts stay dashed.</td><td>A memory write and a memory read are both visible where they happen, and each can be undone in one tap.</td><td><a href="https://about.fb.com/news/2025/01/building-toward-a-smarter-more-personalized-assistant/">Meta AI</a>, <a href="https://help.openai.com/en/articles/8590148-memory-faq">ChatGPT memory sources</a></td></tr>
+    <tr><td>updated</td><td><b>Provider cancelled and rebook</b>: a "Provider update" notice in the chat, then a replacement proposal that flags what differs ("Different provider", "+₹100", "30 min later") before its own Approve. The home alert row and bell come with it.</td><td>v1 had only the alert row. A replacement is a new commitment, so it needs a fresh approval that shows what changed.</td><td><a href="https://news.delta.com/more-control-fewer-taps-delta-concierge-expands-all-skymiles-members">Delta Concierge</a></td></tr>
+    <tr><td>new</td><td><b>Visit day</b>: an "On the way" status with the arrival time, plus a check-in code to share.</td><td>A code the worker has to ask for at the door is a strong safety pattern for home visits.</td><td><a href="https://apps.apple.com/in/app/snabbit-house-help-in-10-min/id6575381655">Snabbit</a></td></tr>
+    <tr><td>new</td><td><b>After service</b>: a rating, "Keep Suresh as your usual electrician?" and Book again.</td><td>Asking "same person next time?" right after the rating is the cleanest feed for "same as last time".</td><td><a href="https://apps.apple.com/us/app/handy-com/id604419063">Handy</a></td></tr>
+    <tr><td>new</td><td><b>Motion everywhere</b>: every state change, layout change and the agent's progress trace animates, with a Replay button on each demo and a reduced-motion toggle. There is a new <a href="#motion">Motion</a> foundation with a token table and rules. Under reduced motion, travel becomes a 150ms cross-fade, never no feedback at all.</td><td>The project owner asked for it. Changes should look like changes, so a voided price strikes through and a booked step checks itself.</td><td><a href="https://github.com/Nainish-Rai/agents-ui">agents-ui</a> (our own): reasoning-steps, task-list, plan-card, question-card, streaming-text, collapsible, skeleton, spinner, button, copy-check, popover, trace-waterfall</td></tr>
+    <tr><td>proposed</td><td><b>Colour tokens</b>: <span class="mono">--ok-fill</span>, <span class="mono">--on-ok-fill</span>, <span class="mono">--edge-inferred</span>. <a href="#proposed">Details</a>.</td><td>A solid "done" node for the tracker, and one name for the dashed inferred edge v1 repeats inline.</td><td>none</td></tr>
+    <tr><td>proposed</td><td><b>Motion tokens</b>: 4 easings (<span class="mono">--ease-snap</span>, <span class="mono">--ease-settle</span>, <span class="mono">--ease-pop</span>, <span class="mono">--ease-exit</span>), 17 durations (<span class="mono">--dur-word</span> … <span class="mono">--dur-fade</span>), 3 staggers and a check delay. <a href="#motion">Details</a>.</td><td>v1 has 2 easings and 7 durations. agents-ui's measured curves and timings need names before components can share them.</td><td><a href="https://github.com/Nainish-Rai/agents-ui">agents-ui</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================== FOUNDATIONS ============================== -->
+<h2 class="sec" id="foundations">Foundations <span class="meta">unchanged from v1 · restated</span></h2>
+<div class="found">
+  <div class="panel stack">
+    <h3 class="lbl">Colour roles</h3>
+    <div class="sw">
+      <div><i style="--c:var(--surface-well)"></i><span>well</span></div>
+      <div><i style="--c:var(--surface-canvas)"></i><span>canvas</span></div>
+      <div><i style="--c:var(--surface-card)"></i><span>card</span></div>
+      <div><i style="--c:var(--surface-raised)"></i><span>raised</span></div>
+      <div><i style="--c:var(--edge)"></i><span>edge</span></div>
+      <div><i style="--c:var(--edge-strong)"></i><span>edge-strong</span></div>
+      <div><i style="--c:var(--fg-emph)"></i><span>fg-emph</span></div>
+      <div><i style="--c:var(--fg-body)"></i><span>fg-body</span></div>
+      <div><i style="--c:var(--fg-meta)"></i><span>fg-meta</span></div>
+      <div><i style="--c:var(--fg-faint)"></i><span>fg-faint</span></div>
+      <div><i style="--c:var(--interactive)"></i><span>interactive</span></div>
+      <div><i style="--c:var(--brand)"></i><span>brand</span></div>
+    </div>
+    <p class="meta" style="margin:0">Hierarchy comes from four surfaces and 1px hairlines. Shadows only on things that float. <span class="mono">fg-faint</span> is for icons and dividers, never text. <span class="mono">brand</span> is the logo and hero only.</p>
+  </div>
+  <div class="panel stack">
+    <h3 class="lbl">Status tones · colour carries meaning, never alone</h3>
+    <div class="sw">
+      <div><i style="--c:var(--ok)"></i><span>ok</span></div>
+      <div><i style="--c:var(--warn)"></i><span>warn</span></div>
+      <div><i style="--c:var(--err)"></i><span>err</span></div>
+      <div><i style="--c:var(--info)"></i><span>info</span></div>
+      <div><i style="--c:var(--ok-tint)"></i><span>ok-tint</span></div>
+      <div><i style="--c:var(--warn-tint)"></i><span>warn-tint</span></div>
+      <div><i style="--c:var(--err-tint)"></i><span>err-tint</span></div>
+      <div><i style="--c:var(--interactive-tint)"></i><span>int-tint</span></div>
+    </div>
+    <div class="line"><span class="status"><i class="t-ok">✓</i>Booked</span><span class="status"><span class="spin" aria-hidden="true"></span>Checking</span><span class="status"><i class="t-meta">↻</i>Replacing</span><span class="status"><i class="t-err">✕</i>Cancelled</span><span class="status"><i class="t-warn">●</i>Needs you</span></div>
+    <div class="line"><span class="badge count">2</span><span class="badge alert">1</span><span class="tag">explicit</span><span class="tag inferred">inferred</span><span class="tag ok">verified</span><span class="chip inferred">Prefers mornings?</span></div>
+    <p class="meta" style="margin:0">ok = confirmed or verified · warn = needs you, or inferred (dashed) · err = cancelled or failed · info = in progress or focus.</p>
+  </div>
+  <div class="panel stack type">
+    <h3 class="lbl">Type · Geist for words, Geist Mono for numbers</h3>
+    <div><span class="meta">kpi 22</span><span class="mono" style="font-size:var(--text-kpi);font-weight:var(--weight-strong)">₹7,450</span></div>
+    <div><span class="meta">title 19</span><span style="font-size:var(--text-title);font-weight:var(--weight-strong)">What errand should I handle?</span></div>
+    <div><span class="meta">panel 14</span><span style="font-size:var(--text-panel)">Approve booking</span></div>
+    <div><span class="meta">body 12</span><span>Plumber for a kitchen tap leak, this week</span></div>
+    <div><span class="meta">label 11</span><span style="font-size:var(--text-label)">Free to cancel until Thu 08:00 IST</span></div>
+    <div><span class="meta">mono 10</span><span class="meta">Thu 5 Nov · 10:00 IST · ₹399 · BK-7Q2M</span></div>
+  </div>
+  <div class="panel stack">
+    <h3 class="lbl">Spacing · 4px grid</h3>
+    <div class="scale">
+      <div><i style="width:4px;height:4px"></i><span class="meta">1</span></div><div><i style="width:8px;height:8px"></i><span class="meta">2</span></div><div><i style="width:12px;height:12px"></i><span class="meta">3</span></div><div><i style="width:16px;height:16px"></i><span class="meta">4</span></div><div><i style="width:20px;height:20px"></i><span class="meta">5</span></div><div><i style="width:24px;height:24px"></i><span class="meta">6</span></div><div><i style="width:32px;height:32px"></i><span class="meta">8</span></div>
+    </div>
+    <h3 class="lbl" style="margin-top:var(--space-2)">Radius · dense, not rounded</h3>
+    <div class="rad"><div style="border-radius:var(--radius-1)" class="meta">4</div><div style="border-radius:var(--radius-2)" class="meta">6</div><div style="border-radius:var(--radius-3)" class="meta">10</div><div style="border-radius:var(--radius-pill)" class="meta">pill</div></div>
+    <p class="meta" style="margin:0">Controls 6 · cards and trust surfaces 10 · pill only for suggestion chips.</p>
+  </div>
+  <div class="panel stack">
+    <h3 class="lbl">Motion · v1 presets, extended in v2</h3>
+    <div class="mrow"><span class="mono">--ease-out</span><span>enters, height</span><span class="meta">expo-out</span></div>
+    <div class="mrow"><span class="mono">--ease-sheet</span><span>sheets</span><span class="meta">ios sheet</span></div>
+    <div class="mrow"><span class="mono">--dur-*</span><span>7 durations by job</span><span class="meta">100–900ms</span></div>
+    <p class="meta" style="margin:0">Every duration is a token and is zeroed under reduced motion. The full table, the proposed additions and the rules are in <a href="#motion">Motion</a>.</p>
+  </div>
+  <div class="panel stack">
+    <h3 class="lbl">Buttons · Approve only on the approval card</h3>
+    <div class="line"><button class="btn primary" type="button">Approve ₹399</button><button class="btn" type="button">Other options</button><button class="btn ghost" type="button">Decline</button><button class="btn danger" type="button">Cancel booking</button></div>
+    <div class="line"><button class="btn is-focus" type="button">Focus ring</button><button class="btn" type="button" disabled>Disabled</button><button class="btn primary" type="button" aria-busy="true"><span class="spin" aria-hidden="true"></span>Approving…</button><button class="btn sm" type="button">Review</button></div>
+    <p class="meta" style="margin:0">Primary fill is <span class="mono">--primary</span> (fg-emph). Touch targets are at least 32px on web and 44px on mobile.</p>
+  </div>
+</div>
+
+<!-- ============================== MOTION ============================== -->
+<h2 class="sec" id="motion">Motion <span class="meta">foundation · values read from agents-ui source, mapped onto packages/design-tokens/src/type-and-motion.ts</span></h2>
+<div class="found" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)">
+  <div class="panel">
+    <table class="log mtab">
+      <thead><tr><th>Token</th><th>Value</th><th>Job</th><th>agents-ui source</th><th>type-and-motion.ts</th></tr></thead>
+      <tbody>
+        <tr><td>--ease-out</td><td class="mono">.16, 1, .3, 1</td><td>Enters, height, dropdowns</td><td>reasoning-steps EASE, plan-card expand, dropdown-menu open</td><td>easings · existing</td></tr>
+        <tr><td>--ease-sheet</td><td class="mono">.32, .72, 0, 1</td><td>Sheets, submenus</td><td>dropdown-menu submenu (200ms)</td><td>easings · existing</td></tr>
+        <tr><td>--ease-snap</td><td class="mono">.23, 1, .32, 1</td><td>State changes, layout moves, chevrons, button width</td><td>task-list E1, button, popover, chat-input, message, inline-citations</td><td>easings · <b>proposed</b></td></tr>
+        <tr><td>--ease-settle</td><td class="mono">.22, 1, .36, 1</td><td>Rows arriving, cross-fades, check draw</td><td>task-list E3, trace-waterfall rows, question-card advance, streaming-text status</td><td>easings · <b>proposed</b></td></tr>
+        <tr><td>--ease-pop</td><td class="mono">.34, 1.96, .94, 1</td><td>Done disc, badge pop (overshoot)</td><td>task-list header disc, spinner status badge</td><td>easings · <b>proposed</b></td></tr>
+        <tr><td>--ease-exit</td><td class="mono">.4, 0, .6, 1</td><td>Exits, pulses</td><td>streaming-text, chat-input, lightbox exits</td><td>easings · <b>proposed</b></td></tr>
+        <tr><td>--dur-micro</td><td class="mono">100ms</td><td>Hover, press</td><td>button press (110ms)</td><td>durations · existing</td></tr>
+        <tr><td>--dur-collapse</td><td class="mono">150ms</td><td>Label swap, chip select</td><td>reasoning-steps stage labels</td><td>durations · existing</td></tr>
+        <tr><td>--dur-exit</td><td class="mono">160ms</td><td>Icon and colour fades</td><td>task-list layers</td><td>durations · existing</td></tr>
+        <tr><td>--dur-enter</td><td class="mono">220ms</td><td>Check draw, pop</td><td>task-list check and disc</td><td>durations · existing</td></tr>
+        <tr><td>--dur-theme</td><td class="mono">200ms</td><td>Theme cross-fade</td><td>chat-input send swap</td><td>durations · existing</td></tr>
+        <tr><td>--dur-draw</td><td class="mono">550ms</td><td>Tracker line fill</td><td>none (ours)</td><td>durations · existing</td></tr>
+        <tr><td>--dur-spin</td><td class="mono">900ms</td><td>Spinner turn</td><td>spinner (1000ms)</td><td>durations · existing</td></tr>
+        <tr><td>--dur-word</td><td class="mono">180ms</td><td>Streamed word fade</td><td>streaming-text</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-close<br>--dur-open</td><td class="mono">180 / 260ms</td><td>Collapsible close and open</td><td>collapsible</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-layout</td><td class="mono">260ms</td><td>Shared highlight, FLIP moves, card stagger</td><td>task-list marker (0.26s), plan-card rows</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-tick</td><td class="mono">260ms</td><td>Digit tick</td><td>plan-card countdown digits</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-cross</td><td class="mono">280ms</td><td>Panel cross-fade</td><td>question-card advance</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-strike<br>--dur-shake</td><td class="mono">280ms</td><td>Strike-through draw, failure shake</td><td>task-list strike, trace-waterfall failure</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-expand</td><td class="mono">300ms</td><td>Card height, trace collapse</td><td>reasoning-steps window, plan-card expand</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-step</td><td class="mono">320ms</td><td>Progress ring per step</td><td>task-list ring, question-card ring</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-chip</td><td class="mono">350ms</td><td>Chips and notes sliding in</td><td>reasoning-steps source chips</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-row<br>--dur-swap</td><td class="mono">400ms</td><td>Rows arriving; skeleton to content</td><td>trace-waterfall rows; skeleton demo</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-shimmer</td><td class="mono">700ms</td><td>Running label sweep</td><td>text-shimmer</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-pulse<br>--dur-skeleton</td><td class="mono">1600ms</td><td>Active pulse; skeleton and bar sweep</td><td>orb wave; skeleton, trace-waterfall bars</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--dur-fade</td><td class="mono">150ms</td><td>Reduced-motion cross-fade. Stays non-zero</td><td>collapsible reduced-motion fade</td><td>durations · <b>proposed</b></td></tr>
+        <tr><td>--stagger-tight<br>--stagger<br>--stagger-loose</td><td class="mono">45 / 60 / 80ms</td><td>Items in a list, chips, cards and digits</td><td>collapsible, reasoning-steps chips, plan-card</td><td>new <span class="mono">staggers</span> · <b>proposed</b></td></tr>
+        <tr><td>--delay-check</td><td class="mono">110ms</td><td>The check draws after its disc</td><td>task-list check</td><td>durations · <b>proposed</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack">
+    <div class="panel stack">
+      <h3 class="lbl">Rules</h3>
+      <ul class="prule">
+        <li><b>What animates:</b> state changes (a cross-fade, a colour change, a strike-through), arrivals (rows, cards, notes), layout moves (FLIP), progress (shimmer, pulse, ring, line fill) and counts (a digit tick).</li>
+        <li><b>What doesn't:</b> the focus ring, typed text and the scroll jump to the newest message. An amount never morphs from one number to another: the old one strikes through and the new one arrives, so both stay readable. Nothing loops except an indicator of work in progress, and it stops when the work stops.</li>
+        <li><b>Enter vs exit:</b> enters take 220–400ms on ease-out or settle, with at most 10px of travel and 4px of blur. Exits take about 60% as long (130–250ms) on ease-exit, fade with at most 6px of travel, and stagger only in reverse at 40ms.</li>
+        <li><b>Stagger limits:</b> 45–80ms apart, at most 6 items (the 7th onwards arrive with the 6th), and 400ms in total. Streamed words keep their own pace (30ms per word), which isn't a stagger.</li>
+        <li><b>Interruptible:</b> state changes are CSS transitions, so they retarget from wherever they are. A scripted sequence is cancelled when it is replayed or its state changes. A click never waits for an animation, and nothing queues.</li>
+        <li><b>Reduced motion</b> (the OS setting or the toggle above): travel, scale, blur and height snap. Anything that would move cross-fades over <span class="mono">--dur-fade</span> instead. Loops stop: the spinner becomes a still ring beside its word, and shimmer becomes plain text. Sequences keep their order and timing, so progress is still visible. There is never zero feedback.</li>
+      </ul>
+    </div>
+    <div class="panel stack">
+      <p class="lbl" style="display:flex;align-items:center">Curves · same distance, same duration <button class="btn sm ghost replay" type="button" data-replay="curves">↻ Replay</button></p>
+      <div class="stack" data-scene="curves">
+        <div class="curve"><span class="mono">--ease-out</span><div class="lane"><i class="dot2" data-ease="--ease-out"></i></div></div>
+        <div class="curve"><span class="mono">--ease-snap</span><div class="lane"><i class="dot2" data-ease="--ease-snap"></i></div></div>
+        <div class="curve"><span class="mono">--ease-settle</span><div class="lane"><i class="dot2" data-ease="--ease-settle"></i></div></div>
+        <div class="curve"><span class="mono">--ease-pop</span><div class="lane"><i class="dot2" data-ease="--ease-pop"></i></div></div>
+        <div class="curve"><span class="mono">--ease-exit</span><div class="lane"><i class="dot2" data-ease="--ease-exit"></i></div></div>
+        <div class="curve"><span class="mono">--ease-sheet</span><div class="lane"><i class="dot2" data-ease="--ease-sheet"></i></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== PROPOSED TOKENS ============================== -->
+<h2 class="sec" id="proposed">Proposed tokens <span class="meta">declared in this file's "proposed tokens" style block · not yet in packages/design-tokens/src</span></h2>
+<div class="panel">
+<table class="log">
+  <thead><tr><th>Role</th><th>Dark</th><th>Light</th><th>Used by</th><th>Measured</th><th>Sample</th></tr></thead>
+  <tbody>
+    <tr><td>--ok-fill</td><td class="mono">var(--green-bright)</td><td class="mono">var(--green-deep)</td><td>Done tracker node, booked mark</td><td>fill on card 6.36 dark · 5.41 light (non-text, needs 3:1)</td><td><span class="node" style="display:inline-grid;background:var(--ok-fill);border-color:var(--ok-fill);color:var(--on-ok-fill)">✓</span></td></tr>
+    <tr><td>--on-ok-fill</td><td class="mono">var(--on-amber)</td><td class="mono">var(--white)</td><td>Glyph or text on <span class="mono">--ok-fill</span></td><td>7.43 dark · 5.79 light (text, needs 4.5:1)</td><td><span class="badge" style="background:var(--ok-fill);color:var(--on-ok-fill)">Booked</span></td></tr>
+    <tr><td>--edge-inferred</td><td class="mono" colspan="2">color-mix(in oklab, var(--warn) 55%, transparent), in both themes</td><td>Dashed edge on inferred facts, estimates and memory-sourced echo parts</td><td>Same value v1 writes inline. Always paired with a dashed style and a text label</td><td><span class="chip inferred">estimate</span></td></tr>
+  </tbody>
+</table>
+<p class="meta" style="margin:var(--space-2) 0 0">To adopt: add the three roles to <span class="mono">packages/design-tokens/src/roles.ts</span>, run <span class="mono">pnpm tokens:build</span>, and add (--on-ok-fill, --ok-fill) to <span class="mono">FILLS</span> in check_contrast.py. The dark pair reuses <span class="mono">--on-amber</span>, whose near-black is a neutral despite its name. A neutral <span class="mono">--on-bright-fill</span> primitive alias would read better.</p>
+</div>
+
+<!-- ============================== PATTERNS ============================== -->
+<h2 class="sec">Updated and new patterns <span class="meta">fixed trust components are marked "fixed" · generated (OpenUI) components carry a mono label · every "live" demo has Replay</span></h2>
+
+<!-- Context echo -->
+<section class="pattern" id="p-echo" aria-labelledby="h-echo">
+  <div class="spec">
+    <h3 id="h-echo">Context echo <span class="tag info">new</span></h3>
+    <p class="rule">Above provider choice cards, repeat what the agent understood, one part per fact, before any choice.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://openai.com/index/introducing-apps-in-chatgpt/">ChatGPT × Booking.com</a> echoes dates and travellers above its hotel carousel. <b class="emph">We changed:</b> every part is a button that opens its own filter chip, and a part filled from memory is dashed, so a guess never looks like something you said.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">reasoning-steps</span> source chips: each part slides in from 10px left with a 4px blur, over <span class="mono">--dur-chip</span> on <span class="mono">--ease-out</span>, 60ms apart.</p>
+    <dl class="a11y"><dt>focus</dt><dd>Each part is a button in reading order, before the first card.</dd><dt>label</dt><dd>"Change area, Koramangala". The line is the cards' region description (<span class="mono">aria-describedby</span>).</dd><dt>contrast</dt><dd>fg-emph and warn on canvas, 4.6:1 or more in both themes.</dd><dt>motion</dt><dd>Under reduced motion, the parts cross-fade in together.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Default · live</p>
+      <div class="echo" data-scene="echo"><span class="lead">For</span><button type="button" aria-label="Change service, plumber">Plumber</button><span class="sep" aria-hidden="true">·</span><button type="button" aria-label="Change area, Koramangala">Koramangala</button><span class="sep" aria-hidden="true">·</span><button type="button" aria-label="Change time, this week">this week</button><span class="sep" aria-hidden="true">·</span><button type="button" aria-label="Change budget, under ₹1,500">under ₹1,500</button><span class="meta count">3 of 11 fit</span></div>
+    </div>
+    <div class="spx"><p class="lbl">A part from memory · dashed</p>
+      <div class="echo"><span class="lead">For</span><button type="button">Plumber</button><span class="sep" aria-hidden="true">·</span><button type="button" class="inferred" aria-label="Change area, Koramangala, from memory">Koramangala</button><span class="sep" aria-hidden="true">·</span><button type="button">this week</button><span class="sep" aria-hidden="true">·</span><button type="button" class="inferred" aria-label="Change budget, under ₹1,500, from memory">under ₹1,500</button><span class="meta count">from memory: 2</span></div>
+    </div>
+    <div class="dont span-all" style="max-width:520px"><span class="dont-label">Don't</span>
+      <p class="meta" style="margin:0 0 4px">Options</p>
+      <div class="cards" aria-hidden="true">
+        <div class="pcard"><div class="photo" style="--p1:var(--cat-3);--p2:var(--cat-1)">🔧</div><div class="pbody"><span class="t">Shiva Sanitary</span></div></div>
+        <div class="pcard"><div class="photo" style="--p1:var(--cat-1);--p2:var(--cat-5)">🚰</div><div class="pbody"><span class="t">Ravi Plumbing</span></div></div>
+        <div class="pcard"><div class="photo" style="--p1:var(--cat-6);--p2:var(--cat-4)">🛠️</div><div class="pbody"><span class="t">AquaFix</span></div></div>
+      </div>
+      <p class="dont-why">Cards with no echo: the person can't tell whether the agent heard "under ₹1,500" or searched Indiranagar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Provider choice cards -->
+<section class="pattern" id="p-cards" aria-labelledby="h-cards">
+  <div class="spec">
+    <h3 id="h-cards">Provider choice cards <span class="tag">updated</span></h3>
+    <p class="rule">Up to three cards, each with a tag, photo, name, rating, price, earliest slot and one reason, and only Choose and Details. A card never books.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://openai.com/index/introducing-apps-in-chatgpt/">ChatGPT × Booking.com</a> rich cards and <a href="https://apps.apple.com/in/app/urban-company-home-services/id1032480595">Urban Company</a> results. <b class="emph">We kept</b> v1's Best match, Cheapest and Earliest tags, the service photo (never a person's photo), Choose and Details. <b class="emph">We changed:</b> we dropped invented tags such as "Mornings", and show "Left out: 2 over budget" under the row.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">streaming-text</span>: words fade in over <span class="mono">--dur-word</span>, 30ms apart. We replaced its raw blue-pink hue sweep with fg-meta to fg-body, because colour carries meaning. Cards then stagger in the way <span class="mono">plan-card</span> rows do (8px rise, 2px blur, <span class="mono">--dur-layout</span>, 80ms apart). <span class="mono">skeleton</span> sweeps every 1600ms, then cross-fades to content over <span class="mono">--dur-swap</span>. Choosing dims the others over the same duration.</p>
+    <dl class="a11y"><dt>focus</dt><dd>Card by card: Choose, then Details. Details sets <span class="mono">aria-expanded</span>.</dd><dt>label</dt><dd>Each card is an <span class="mono">article</span> named by the provider. The rating reads "Rated 4.8 from 212 reviews". The streaming answer sits in a polite live region and is announced once, when complete.</dd><dt>contrast</dt><dd>The tag sits on a solid card chip, never straight on the photo.</dd><dt>motion</dt><dd>Under reduced motion, words and cards cross-fade in together and the skeleton is flat.</dd></dl>
+  </div>
+  <div class="specimens two">
+    <div class="spx"><p class="lbl">Streaming answer, then cards · live</p><div class="gen"><span class="gen-label">ProviderChoice ×3</span><div data-scene="cards"></div></div></div>
+    <div class="spx"><p class="lbl">Chosen · live, tap Choose</p><div class="gen"><span class="gen-label">ProviderChoice ×3</span><div data-scene="choose"></div></div></div>
+    <div class="spx"><p class="lbl">Skeleton, then content · live</p><div data-scene="skeleton" style="display:grid"></div></div>
+    <div class="spx"><p class="lbl">Nothing fits</p>
+      <div class="w"><p style="margin:0" class="emph">None of the 11 plumbers in Koramangala fit.</p><p class="left-out">Left out: 7 over budget, 4 with no slot this week.</p><div class="line" style="margin-top:6px"><button class="chip suggest" type="button">Raise budget to ₹2,000</button><button class="chip suggest" type="button">Try next week</button></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Slot picker -->
+<section class="pattern" id="p-slot" aria-labelledby="h-slot">
+  <div class="spec">
+    <h3 id="h-slot">Slot picker <span class="tag">updated</span></h3>
+    <p class="rule">Show only real open slots, under the saved address, with the job length, "Earliest" marked and any surcharge on the slot itself. A pick starts a visible hold.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://apps.apple.com/in/app/urban-company-home-services/id1032480595">Urban Company</a>'s address, "takes approx. 4 hrs", date strip, 3-column grid and ±₹20 badges. <b class="emph">We changed:</b> slot counts on each day, "Earliest" as a word (not only colour), and a hold countdown after the pick, because Errand holds the slot for you. Not <a href="https://apps.apple.com/us/app/handy-com/id604419063">Handy</a>'s wheel picker, which hides what is free.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">task-list</span>: one highlight slides between choices (a shared layout, like task-list's marker, <span class="mono">--dur-layout</span> on <span class="mono">--ease-snap</span>). The hold row opens like <span class="mono">collapsible</span>. Countdown digits tick like <span class="mono">plan-card</span>'s (4px rise, 1.5px blur, <span class="mono">--dur-tick</span>).</p>
+    <dl class="a11y"><dt>focus</dt><dd>Change address, then the dates, then the times, left to right. Each button sets <span class="mono">aria-pressed</span>.</dd><dt>label</dt><dd>"Thu 5 Nov, 10:00, earliest". A full day is disabled and read as "no slots".</dd><dt>contrast</dt><dd>A taken slot is struck through and also disabled, never colour alone.</dd><dt>motion</dt><dd>Under reduced motion, the highlight jumps and the hold row fades in. Screen readers hear the countdown only at 1 minute left.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Pick, then hold · live, tap a time</p><div data-scene="slot"></div></div>
+    <div class="spx"><p class="lbl">Held · countdown</p><div id="slot-held"></div></div>
+    <div class="spx"><p class="lbl">Hold ending · under 1 minute</p><div id="slot-ending"></div></div>
+  </div>
+</section>
+
+<!-- Approval card v2 -->
+<section class="pattern" id="p-approval" aria-labelledby="h-approval">
+  <div class="spec">
+    <h3 id="h-approval">Approval card v2 <span class="tag">updated</span> <span class="tag">fixed</span></h3>
+    <p class="rule">One review summary, then one named commit button showing the money it moves. Approve is the only commit control anywhere in Errand.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://apps.apple.com/us/app/taskrabbit-handyman-more/id374165361">TaskRabbit</a>'s "Review and confirm": task, time, person, price breakdown and the 24-hour fee rule on one screen. <b class="emph">We changed:</b> the total is on the button, the parts line is a dashed estimate with a ceiling, and the cancellation rule names the IST cut-off. Cancel puts the fee on the button, like <a href="https://www.youtube.com/watch?v=g0FWqdo-YXQ">Pronto</a>. A move strikes the old time beside the new one, like <a href="https://news.delta.com/more-control-fewer-taps-delta-concierge-expands-all-skymiles-members">Delta</a>.</p></div>
+    <p class="mnote"><b>Motion</b>: when approving, the spinner enters the button the way agents-ui <span class="mono">button</span>'s does (width over 250ms on <span class="mono">--ease-snap</span>, opacity over 200ms after 40ms). The button keeps its width, so nothing shifts. Approved is a <span class="mono">task-list</span> check morph (disc pop on <span class="mono">--ease-pop</span>, stroke draw after <span class="mono">--delay-check</span>) plus an ok-tint fade on the header. Voided draws a <span class="mono">task-list</span> strike through the old price, then the new one slides in. Expired ticks to 0:00. Declined folds the actions away. The card's height follows each change over <span class="mono">--dur-expand</span>.</p>
+    <dl class="a11y"><dt>focus</dt><dd>The card is a labelled <span class="mono">section</span>. Tab reaches Approve first, then Other options, then Decline. After approving, focus moves to the tracker heading.</dd><dt>label</dt><dd>The button text names the amount. A struck value reads "was ₹479, now ₹575" (<span class="mono">s</span> plus sr text). The state change is announced through the header status (<span class="mono">role="status"</span>).</dd><dt>contrast</dt><dd>Primary 13.3:1 dark, 15.5:1 light. A faded table stays at 60% opacity on fg-emph, which is 4.6:1 or more.</dd><dt>motion</dt><dd>Under reduced motion, every change is a 150ms cross-fade, the spinner is still, and "Approving…" stays as text.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx span-all" style="max-width:680px"><p class="lbl">Every state · live, pick one or Replay the approve sequence</p><div data-scene="approval"></div></div>
+    <div class="spx"><p class="lbl">Book · pending</p><div data-approval="pending"></div></div>
+    <div class="spx"><p class="lbl">Book · approving</p><div data-approval="approving"></div></div>
+    <div class="spx"><p class="lbl">Book · approved</p><div data-approval="approved"></div></div>
+    <div class="spx"><p class="lbl">Book · voided</p><div data-approval="voided"></div></div>
+    <div class="spx"><p class="lbl">Book · expired</p><div data-approval="expired"></div></div>
+    <div class="spx"><p class="lbl">Book · declined</p><div data-approval="declined"></div></div>
+    <div class="spx"><p class="lbl">Cancel · with fee</p><div data-approval="cancel-fee"></div></div>
+    <div class="spx"><p class="lbl">Cancel · free window</p><div data-approval="cancel-free"></div></div>
+    <div class="spx"><p class="lbl">Reschedule</p><div data-approval="reschedule"></div></div>
+    <div class="dont"><span class="dont-label">Don't · Perplexity "Review &amp; Pay"</span>
+      <div class="trust" aria-hidden="true" style="border-style:dashed">
+        <div class="trust-h"><b>Review &amp; pay</b></div>
+        <dl class="kv"><dt>Ship to</dt><dd class="plain">Flat 3B, 4th Cross, Koramangala</dd><dt>Arrives</dt><dd class="plain">Usually within 5–7 days</dd><dt>Pay with</dt><dd class="plain">UPI · nainish@okaxis</dd></dl>
+        <div class="trust-a"><span class="btn primary" style="flex:1">Buy now</span></div>
+      </div>
+      <p class="dont-why">No total and no cancellation terms at the moment of commit, and the button doesn't say what it spends. (<a href="https://www.perplexity.ai/hub/blog/shop-like-a-pro">source</a>)</p>
+    </div>
+    <div class="dont"><span class="dont-label">Don't · commit outside the card</span>
+      <div class="pcard" aria-hidden="true" style="max-width:180px"><div class="photo" style="--p1:var(--cat-3);--p2:var(--cat-1)">🔧</div><div class="pbody"><span class="t">Shiva Sanitary</span><span class="pfacts"><b>₹399</b><span>Thu 10:00</span></span></div><div class="pact"><span class="btn sm primary">Book now</span></div></div>
+      <p class="dont-why">Perplexity's "Buy with Pro" puts the commit on the result card. In Errand a card only sends "I'll take Shiva Sanitary". The agent holds the slot, and the approval card commits.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tracker -->
+<section class="pattern" id="p-tracker" aria-labelledby="h-tracker">
+  <div class="spec">
+    <h3 id="h-tracker">After-approval tracker <span class="tag info">new</span> <span class="tag">fixed</span></h3>
+    <p class="rule">After Approve, show three steps (Holding, Checking with provider, Booked) until the action ledger settles. Never show a lone spinner.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://blog.google/products/shopping/google-shopping-ai-mode-virtual-try-on-update/">Google AI Mode</a>'s "Buy for me in progress" uses three steps, says who emails the confirmation, and shows order details. <b class="emph">We changed:</b> the steps come only from the ledger (<span class="mono">booking-progress.tsx</span>), the promise ("I won't book twice") stays, and there is a failed state that says nothing was charged.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">task-list</span>: each segment of the line fills (<span class="mono">--dur-draw</span>), the node's check morphs, and the step times tick. Booking details open like <span class="mono">collapsible</span>. A failure shakes once (from <span class="mono">trace-waterfall</span>: 4px, −4px, 2px over <span class="mono">--dur-shake</span>).</p>
+    <dl class="a11y"><dt>focus</dt><dd>Not focusable. Focus lands on its heading after Approve.</dd><dt>label</dt><dd>An <span class="mono">ol</span> with each step's state in text ("done", "in progress"). The region is <span class="mono">aria-live="polite"</span> and announces each step once.</dd><dt>contrast</dt><dd>Done node uses the proposed <span class="mono">--ok-fill</span>: 7.43:1 and 5.79:1 for the glyph.</dd><dt>motion</dt><dd>Under reduced motion, steps cross-fade into their state, with no line draw and no shake.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Holding → checking → booked · live</p><div data-scene="tracker"></div></div>
+    <div class="spx"><p class="lbl">Checking → failed · live</p><div data-scene="tracker-fail"></div></div>
+    <div class="spx"><p class="lbl">Taking longer · promise</p><div data-tracker="slow"></div></div>
+    <div class="dont"><span class="dont-label">Don't · v1 lone banner</span>
+      <div class="trust" aria-hidden="true"><div class="notice info"><span class="spin"></span><span>Checking with the provider…</span></div></div>
+      <p class="dont-why">There's no sense of where the booking stands or what comes next. The tracker replaces it. The promise line survives inside the tracker.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Agent progress -->
+<section class="pattern" id="p-progress" aria-labelledby="h-progress">
+  <div class="spec">
+    <h3 id="h-progress">Agent progress <span class="tag">updated</span></h3>
+    <p class="rule">State the plan in one line, then a collapsible step list in plain words with elapsed time. Never show raw tool names.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://openai.com/index/introducing-operator/">ChatGPT Operator</a> states its plan, then "Worked for 2 minutes" with step labels. <b class="emph">We changed:</b> steps are past-tense outcomes with real names and times ("Held Shiva Sanitary, Thu 10:00"), not navigation chatter ("Closing pop-up…"). The list collapses once done, and a failed step says what to do next.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">reasoning-steps</span> and <span class="mono">task-list</span>. The plan streams in. Steps arrive one by one (4px drop, 180ms). The running label shimmers (<span class="mono">text-shimmer</span>, a 700ms sweep), the active node pulses (<span class="mono">orb</span> timing), and a done step's icon morphs into a check. The header ring fills one step at a time (<span class="mono">--dur-step</span>). When it finishes, the list collapses (<span class="mono">--dur-expand</span>, <span class="mono">--ease-out</span>) and the header swaps to "Worked for 12s", with a 6px rise and 2px blur over 150ms. Re-opening staggers the rows 45ms apart.</p>
+    <dl class="a11y"><dt>focus</dt><dd>The summary is a button with <span class="mono">aria-expanded</span>, reachable by Tab.</dd><dt>label</dt><dd>The list is <span class="mono">role="status"</span> and announces each new step, not every second. Shimmer is decoration, and the label is plain text underneath.</dd><dt>contrast</dt><dd>Steps in fg-body, pending steps in fg-meta. Both pass 4.5:1. Shimmer never drops below 45% of the text colour.</dd><dt>motion</dt><dd>Under reduced motion, steps keep their order and timing but cross-fade in. There's no shimmer and no pulse, and the collapse fades.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Running → done → collapsed · live</p><div data-scene="progress"></div></div>
+    <div class="spx"><p class="lbl">Running → failed · live</p><div data-scene="progress-fail"></div></div>
+    <div class="spx"><p class="lbl">Done · tap to expand or collapse</p><div data-progress-static></div></div>
+    <div class="dont"><span class="dont-label">Don't · raw tool names</span>
+      <div class="steps" aria-hidden="true" style="padding:2px 0 2px var(--space-2)">
+        <div class="meta" style="font-size:var(--text-label)">search_providers({"service":"plumber","area":"koramangala"})</div>
+        <div class="meta" style="font-size:var(--text-label)">get_provider ×3</div>
+        <div class="meta" style="font-size:var(--text-label)">hold_slot → 200</div>
+      </div>
+      <p class="dont-why">Tool calls belong in the operator trace, not the chat. People read outcomes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Clarifying question -->
+<section class="pattern" id="p-clarify" aria-labelledby="h-clarify">
+  <div class="spec">
+    <h3 id="h-clarify">Clarifying question <span class="tag info">new</span></h3>
+    <p class="rule">Ask one question at a time, with at most four chips, a free-text field and Skip. The agent never blocks on it.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://apps.apple.com/us/app/perplexity-ai-agent-search/id1668000334">Perplexity</a> Pro Search asks one question with four chips, an "other" field, and Skip or Continue. <b class="emph">We changed:</b> a chip sends right away (one tap), Skip says what the agent will assume, and the question names why it's asking. Not <a href="https://www.aboutamazon.com/news/retail/how-to-use-amazon-rufus">Rufus</a>'s five stacked chips.</p></div>
+    <p class="mnote"><b>Motion</b> from agents-ui <span class="mono">question-card</span>. A chip's fill changes over 150ms. Moving to the next question cross-fades the panel (an 8px slide and 2px blur, <span class="mono">--dur-cross</span> on <span class="mono">--ease-settle</span>) while the card eases to its new height. Once answered, the card folds into a one-line summary.</p>
+    <dl class="a11y"><dt>focus</dt><dd>The question is the group label, then the chips, then the text field, Send and Skip. Focus moves to the new question's first chip.</dd><dt>label</dt><dd>The chips are a <span class="mono">radiogroup</span> named by the question. The field is labelled "Or type a time".</dd><dt>contrast</dt><dd>The placeholder is fg-meta, 5.1:1 or more. A selected chip has a 1px ring plus tint.</dd><dt>motion</dt><dd>Under reduced motion, panels cross-fade with no slide or height ease.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Ask → next → answered · live</p><div data-scene="clarify"></div></div>
+    <div class="dont"><span class="dont-label">Don't · Rufus, five stacked chips</span>
+      <div class="stack" aria-hidden="true">
+        <span class="chip suggest">Which plumber is cheapest?</span><span class="chip suggest">Do they bring parts?</span><span class="chip suggest">Can they come today?</span><span class="chip suggest">What do reviews say about leaks?</span><span class="chip suggest">Is there a visit fee?</span>
+      </div>
+      <p class="dont-why">Five follow-ups crowd one decision, and none of them is the one question the agent needs answered. (<a href="https://www.aboutamazon.com/news/retail/how-to-use-amazon-rufus">source</a>)</p>
+    </div>
+  </div>
+</section>
+
+<!-- Memory -->
+<section class="pattern" id="p-memory" aria-labelledby="h-memory">
+  <div class="spec">
+    <h3 id="h-memory">Memory, inline <span class="tag info">new</span></h3>
+    <p class="rule">Announce every memory write in one quiet line with Undo. Footnote every answer that used memory with what was used and Why?</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://about.fb.com/news/2025/01/building-toward-a-smarter-more-personalized-assistant/">Meta AI</a>'s "Memory updated. View" line and <a href="https://help.openai.com/en/articles/8590148-memory-faq">ChatGPT</a>'s Sources sheet, with "Why this memory?" and "Make a correction". <b class="emph">We changed:</b> the note names the fact itself and offers Undo in the line. The footnote lists facts by name, and an inferred one stays dashed. The panel row keeps Correct and Forget.</p></div>
+    <p class="mnote"><b>Motion</b>: the note slides in like agents-ui <span class="mono">reasoning-steps</span> chips (10px from the left, 4px blur, <span class="mono">--dur-chip</span>). Undo fades it out the way chips leave (blur, 250ms, <span class="mono">--ease-exit</span>), and the "Not remembered" line arrives in its place. Why? opens like <span class="mono">popover</span> (a slight flip and scale from 0.94, 300ms, with opacity over 160ms) while its rows stagger.</p>
+    <dl class="a11y"><dt>focus</dt><dd>View, Undo and Why? are inline buttons after the message. Why? opens a disclosure (<span class="mono">aria-expanded</span>). After Undo, focus moves to "Remember again".</dd><dt>label</dt><dd>The note is <span class="mono">role="status"</span>: "Remembered budget under ₹1,500".</dd><dt>contrast</dt><dd>fg-meta on canvas is 5.1:1 dark, 5.3:1 light. Dashed warn edge plus "inferred" text, not colour alone.</dd><dt>motion</dt><dd>Under reduced motion, the note and sources cross-fade in place.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Write → Undo · live</p><div data-scene="memory"></div></div>
+    <div class="spx"><p class="lbl">Read · "Used" footnote and Why? · live</p><div data-scene="why"></div></div>
+    <div class="spx"><p class="lbl">Memory panel rows · v1, kept</p>
+      <div class="stack">
+        <div class="fact"><div class="grow"><div class="t">Budget · under ₹1,500</div><div class="meta">you said · 3 Nov · used 2 times</div></div><span class="tag">explicit</span><button class="btn sm ghost" type="button">Correct</button><button class="btn sm ghost" type="button">Forget</button></div>
+        <div class="fact inferred"><div class="grow"><div class="t">Prefers mornings?</div><div class="meta">inferred from 3 bookings</div></div><button class="btn sm" type="button">Confirm</button><button class="btn sm ghost" type="button">No</button></div>
+        <div class="fact tomb"><div class="grow"><div class="t">Plumbing budget ≤ ₹1,000</div><div class="meta">forgotten 1 Nov · never used again</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Provider cancelled and rebook -->
+<section class="pattern" id="p-rebook" aria-labelledby="h-rebook">
+  <div class="spec">
+    <h3 id="h-rebook">Provider cancelled and rebook <span class="tag">updated</span> <span class="tag">fixed</span></h3>
+    <p class="rule">Lead with the broken booking, then propose a replacement that flags every difference before its own Approve. Never rebook silently.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://news.delta.com/more-control-fewer-taps-delta-concierge-expands-all-skymiles-members">Delta Concierge</a> shows the cancelled flight as a card, lists alternatives, flags "Different product than originally booked", then asks for a fresh confirmation. <b class="emph">We changed:</b> the differences are named chips ("Different provider", "+₹100", "30 min later"), each value shows what it was, and the commit is the normal approval card with the new total.</p></div>
+    <p class="mnote"><b>Motion</b>: the notice enters like a <span class="mono">trace-waterfall</span> row (8px drop, 2px blur, <span class="mono">--dur-row</span>). The replacement card rises in. Each difference then highlights in turn: the chip pops on <span class="mono">--ease-pop</span>, and the matching "was" value in the table flashes warn-tint, 80ms apart. On home, the bell badge pops (<span class="mono">task-list</span> disc pop and its 0.5px blur pulse), and counts tick.</p>
+    <dl class="a11y"><dt>focus</dt><dd>The notice is not focusable. The replacement card's Approve is the first stop. The bell opens a menu, and its rows are links.</dd><dt>label</dt><dd>The notice is <span class="mono">role="alert"</span> once, and the bell reads "Alerts, 1 needs you". The diff chips are a list named "Differs from your booking".</dd><dt>contrast</dt><dd>The err badge is 5.4:1, and the diff text is fg-emph on warn-tint.</dd><dt>motion</dt><dd>Under reduced motion, everything cross-fades in. Highlights become a single tint fade with no pop.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Notice, then replacement · live</p><div data-scene="rebook" class="stack"></div></div>
+    <div class="spx"><p class="lbl">Home · bell and alert row · live</p><div data-scene="home"></div></div>
+    <div class="dont"><span class="dont-label">Don't · silent rebook</span>
+      <div class="notice ok" aria-hidden="true" style="border-radius:var(--radius-2)"><span class="t-ok">✓</span><span>Your provider cancelled, so I booked Ravi Plumbing instead.</span></div>
+      <p class="dont-why">A different provider, price and time is a new commitment. It needs its own Approve with the differences shown.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Visit day -->
+<section class="pattern" id="p-visit" aria-labelledby="h-visit">
+  <div class="spec">
+    <h3 id="h-visit">Visit day <span class="tag info">new</span> <span class="tag">fixed</span></h3>
+    <p class="rule">On the day, lead with a named status and arrival time, then the check-in code the worker must ask for, with Share.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://apps.apple.com/in/app/snabbit-house-help-in-10-min/id6575381655">Snabbit</a>'s "Expert on the way · Lata will arrive on time", a 3-digit check-in OTP and Share OTP. <b class="emph">We changed:</b> no live map (not every provider shares location), a 4-digit code in mono, a plain line on when to give it, and the native share sheet instead of one messenger. Late arrival is a warn state with the new time.</p></div>
+    <p class="mnote"><b>Motion</b>: the code's digits pop in 80ms apart, the way <span class="mono">plan-card</span>'s countdown digits do. Going late swaps the status label (the <span class="mono">reasoning-steps</span> label swap), fades the tint from info to warn, and ticks the time. Share code morphs its icon like agents-ui <span class="mono">copy-check</span> (squares into a circle, then the check draws), held for 1500ms.</p>
+    <dl class="a11y"><dt>focus</dt><dd>Share code, then Call. The code is text, not an image, so it can be copied.</dd><dt>label</dt><dd>The code reads as single digits: "Check-in code 4 8 2 1". The status is <span class="mono">role="status"</span>, and "Shared" is announced.</dd><dt>contrast</dt><dd>The digits are 22px fg-emph on raised: 12.0:1 dark, 14.5:1 light.</dd><dt>motion</dt><dd>Under reduced motion, the digits and labels cross-fade and the icon swaps.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">On the way → running late · live</p><div data-scene="visit"></div></div>
+    <div class="spx"><p class="lbl">Arrived · started</p><div data-visit="started"></div></div>
+  </div>
+</section>
+
+<!-- After service -->
+<section class="pattern" id="p-after" aria-labelledby="h-after">
+  <div class="spec">
+    <h3 id="h-after">After service <span class="tag info">new</span></h3>
+    <p class="rule">After a visit, ask for a rating, then "same person next time?", then offer Book again. Book again starts an errand, and the approval card still commits.</p>
+    <div class="note"><p class="lbl">From research</p><p><a href="https://apps.apple.com/us/app/handy-com/id604419063">Handy</a>'s "How was your booking with Marietta?" five stars and "Would you work with Marietta again? Yes, keep as my Favorite Pro". <b class="emph">We changed:</b> no tip chips, and stars in fg-emph (not amber, because colour carries meaning). "Keep as usual" writes an explicit memory fact with the inline Remembered note.</p></div>
+    <p class="mnote"><b>Motion</b>: stars fill one by one, popping on <span class="mono">--ease-pop</span> 80ms apart. The "keep as usual" question opens like <span class="mono">collapsible</span>. Keeping slides in the Remembered note (the memory pattern) and the Book again row.</p>
+    <dl class="a11y"><dt>focus</dt><dd>Stars are a <span class="mono">radiogroup</span>, and the arrow keys move between them. Then Keep as usual, Not now, then Book again.</dd><dt>label</dt><dd>Each star reads "4 of 5 stars". The question is the group label.</dd><dt>contrast</dt><dd>Unselected stars are fg-meta (4.6:1 or more), selected ones fg-emph. The count is also in text.</dd><dt>motion</dt><dd>Under reduced motion, stars fill at once with a fade.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx"><p class="lbl">Rate → keep → book again · live</p><div data-scene="rate"></div></div>
+  </div>
+</section>
+
+<!-- Layout -->
+<section class="pattern" id="p-layout" aria-labelledby="h-layout">
+  <div class="spec">
+    <h3 id="h-layout">Layout motion <span class="tag info">new</span></h3>
+    <p class="rule">When a rail opens, the chat moves to its new width with a layout animation, and the cards reflow. Nothing jumps. The person's chat has only the Memory rail; the trace rail exists only in the operator console (ticket 19), never in the person's chat.</p>
+    <p class="mnote"><b>Motion</b>: FLIP. Each card and message records its box, the layout changes once, and each is animated back from its old box over <span class="mono">--dur-layout</span> on <span class="mono">--ease-snap</span>. The rail slides in 16px. Trace rows enter like agents-ui <span class="mono">trace-waterfall</span> (<span class="mono">--dur-row</span>, 45ms apart), their bars grow from the start time, and the running bar sweeps every 1600ms. Memory rows stagger in like <span class="mono">collapsible</span> items.</p>
+    <dl class="a11y"><dt>focus</dt><dd>Memory (chat) and Trace (operator console) are toggle buttons (<span class="mono">aria-pressed</span>). Opening a rail doesn't move focus.</dd><dt>label</dt><dd>The rails are <span class="mono">complementary</span> regions named "Memory" and "Trace".</dd><dt>contrast</dt><dd>The rail is surface-card against the canvas chat, with an edge hairline.</dd><dt>motion</dt><dd>Under reduced motion, the layout snaps and the rail cross-fades.</dd></dl>
+  </div>
+  <div class="specimens">
+    <div class="spx span-all" style="max-width:780px"><p class="lbl">Person's chat with the memory rail · live, toggle Memory</p><div data-scene="layout"></div></div>
+    <div class="spx span-all" style="max-width:780px"><p class="lbl">Operator console · transcript with the trace rail · live, toggle Trace</p><div data-scene="layout-ops"></div></div>
+  </div>
+</section>
+
+<!-- ============================== JOURNEY ============================== -->
+<h2 class="sec" id="journey">Worked journey · one plumber booking <span class="meta">6 phone-width frames from the components above</span> <button class="btn sm ghost replay" type="button" data-replay="journey">↻ Replay</button></h2>
+<div class="journey" id="journey-strip" data-scene="journey"></div>
+
+<!-- ============================== A11Y ============================== -->
+<h2 class="sec" id="a11y">Accessibility notes</h2>
+<div class="panel">
+<table class="ax">
+  <thead><tr><th>Component</th><th>Focus order</th><th>Labels and announcements</th><th>Contrast</th><th>Reduced motion</th></tr></thead>
+  <tbody>
+    <tr><td>Context echo</td><td>Parts in reading order, before the cards</td><td>"Change area, Koramangala"; "from memory" is added for dashed parts</td><td>fg-emph and warn on canvas ≥ 4.6</td><td>Parts cross-fade in together</td></tr>
+    <tr><td>Provider cards</td><td>Choose, then Details, card by card</td><td><span class="mono">article</span> named by provider; Details has <span class="mono">aria-expanded</span>; the streamed answer is announced once</td><td>Tag on a solid chip; meta 5.1 dark, 5.3 light</td><td>Words and cards fade in at once; flat skeleton</td></tr>
+    <tr><td>Slot picker</td><td>Address, then dates, then times</td><td><span class="mono">aria-pressed</span>; "earliest" and "+₹50" in the name; full day disabled</td><td>Taken slot struck and disabled, not colour only</td><td>Highlight jumps; countdown digits fade; announced at 1:00 only</td></tr>
+    <tr><td>Approval card v2</td><td>Approve, then Other options, then Decline; focus moves to the tracker after</td><td>Labelled <span class="mono">section</span>; amount in the button name; struck values read "was … now …"</td><td>Primary 13.3 / 15.5; faded rows ≥ 4.6</td><td>Each state cross-fades in 150ms; still spinner with "Approving…"</td></tr>
+    <tr><td>Tracker</td><td>Heading takes focus after Approve</td><td><span class="mono">ol</span> with each step's state as text; <span class="mono">aria-live="polite"</span></td><td>Proposed ok-fill glyph 7.43 / 5.79</td><td>Steps cross-fade; no line draw, no shake</td></tr>
+    <tr><td>Agent progress</td><td>Summary button with <span class="mono">aria-expanded</span></td><td>Running list is <span class="mono">role="status"</span>, one announcement per step</td><td>fg-body and fg-meta ≥ 4.6</td><td>Same order and timing, fades only; no shimmer or pulse</td></tr>
+    <tr><td>Clarifying question</td><td>Chips, field, Send, Skip; first chip focused</td><td><span class="mono">radiogroup</span> named by the question</td><td>Placeholder fg-meta ≥ 5.0</td><td>Panels cross-fade</td></tr>
+    <tr><td>Memory, inline</td><td>View, Undo, Why? after the message</td><td>Note is <span class="mono">role="status"</span>; Why? is a disclosure</td><td>Dashed plus the "inferred" word</td><td>Note and sources cross-fade</td></tr>
+    <tr><td>Provider cancelled</td><td>Replacement's Approve first; bell menu rows</td><td>Notice <span class="mono">role="alert"</span> once; bell "Alerts, 1 needs you"</td><td>Err badge 5.4; diff text on warn-tint</td><td>Cross-fades; a single tint fade for highlights</td></tr>
+    <tr><td>Visit day</td><td>Share code, Call</td><td>Code read as digits; status <span class="mono">role="status"</span></td><td>Digits 12.0 / 14.5 on raised</td><td>Digits and labels cross-fade; icon swaps</td></tr>
+    <tr><td>After service</td><td>Stars (arrow keys), Keep as usual, Not now, Book again</td><td>"4 of 5 stars"; selection also in text</td><td>Stars fg-meta / fg-emph</td><td>Stars fill at once</td></tr>
+    <tr><td>Layout rails</td><td>Toggles; focus stays put</td><td>Rails are named <span class="mono">complementary</span> regions</td><td>Card surface plus a hairline</td><td>Layout snaps; rail cross-fades</td></tr>
+  </tbody>
+</table>
+<p class="meta" style="margin:var(--space-2) 0 0">Every text role is checked by <span class="mono">check_contrast.py</span> (48 pairs, both themes). The proposed <span class="mono">--ok-fill</span> pair was measured with the same formula: 7.43:1 dark, 5.79:1 light. Touch targets: 30px or more here, and 44px on mobile, where the chips and slots grow.</p>
+</div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var ROOT = document.documentElement;
+  window.__errors = [];
+  window.addEventListener("error", function (e) { window.__errors.push(String(e.message)); ROOT.dataset.jsError = String(e.message); });
+
+  // =====================================================================================
+  // Motion primitives. Durations and curves are read from the tokens, so the reduced-motion
+  // toggle (which zeroes --dur-*) and the OS setting both apply. Under reduced motion every
+  // travel, scale, blur or height keyframe is dropped and what remains (opacity, colour)
+  // runs over --dur-fade: a cross-fade, never zero feedback.
+  // =====================================================================================
+  function reduced() { return ROOT.dataset.motion === "reduced"; }
+  function cssv(name) { return getComputedStyle(ROOT).getPropertyValue(name).trim(); }
+  function ms(name) { return parseFloat(cssv(name)) || 0; }
+  function ease(name) { return name && name.indexOf("--") === 0 ? cssv(name) || "ease" : name || "ease"; }
+  var KEEP = { opacity: 1, color: 1, backgroundColor: 1, offset: 1, easing: 1 };
+  function A(el, frames, o) {
+    o = o || {};
+    if (!el || !el.animate) return Promise.resolve();
+    var r = reduced();
+    if (r) {
+      frames = frames.map(function (f) { var g = {}; for (var k in f) if (KEEP[k]) g[k] = f[k]; return g; });
+      if (!frames.some(function (f) { return Object.keys(f).some(function (k) { return k !== "offset" && k !== "easing"; }); })) return Promise.resolve();
+    }
+    var delay = r ? 0 : typeof o.delay === "string" ? ms(o.delay) : o.delay || 0;
+    var anim = el.animate(frames, { duration: r ? ms("--dur-fade") : ms(o.dur || "--dur-enter"), delay: delay, easing: ease(r ? "--ease-exit" : o.ease || "--ease-snap"), fill: o.fill || "backwards", iterations: o.iterations || 1 });
+    return anim.finished.then(function () { return anim; }, function () { return anim; });
+  }
+  function stg(i, name) { return Math.min(i, 5) * ms(name || "--stagger"); } // at most 6 items staggered
+  // presets, each named after the agents-ui component it comes from
+  var M = {
+    row: function (el, d) { return A(el, [{ opacity: 0, transform: "translateY(-8px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-row", ease: "--ease-settle", delay: d }); }, // trace-waterfall
+    rise: function (el, d) { return A(el, [{ opacity: 0, transform: "translateY(8px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-layout", ease: "--ease-snap", delay: d }); }, // plan-card
+    chip: function (el, d) { return A(el, [{ opacity: 0, transform: "translateX(-10px)", filter: "blur(4px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-chip", ease: "--ease-out", delay: d }); }, // reasoning-steps chips
+    chipOut: function (el) { return A(el, [{ opacity: 1, filter: "blur(0)" }, { opacity: 0, filter: "blur(4px)" }], { dur: "--dur-close", ease: "--ease-exit", fill: "forwards" }); },
+    item: function (el, d) { return A(el, [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { dur: "--dur-close", ease: "--ease-out", delay: d }); }, // collapsible items
+    pop: function (el, d) { return A(el, [{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }], { dur: "--dur-enter", ease: "--ease-pop", delay: d }); }, // task-list disc
+    blurPulse: function (el) { return A(el, [{ filter: "blur(0)" }, { filter: "blur(.5px)", offset: .33 }, { filter: "blur(0)" }], { dur: "--dur-expand", ease: "linear" }); }, // task-list-blur
+    fadeIn: function (el, d) { return A(el, [{ opacity: 0 }, { opacity: 1 }], { dur: "--dur-enter", ease: "--ease-settle", delay: d }); },
+    shake: function (el) { return A(el, [{ transform: "translateX(0)" }, { transform: "translateX(4px)", offset: .2857 }, { transform: "translateX(-4px)", offset: .5714 }, { transform: "translateX(2px)", offset: .7857 }, { transform: "translateX(0)" }], { dur: "--dur-shake", ease: "--ease-settle" }); }, // trace-waterfall
+    flash: function (el, d) { var bg = getComputedStyle(el).backgroundColor; return A(el, [{ backgroundColor: bg }, { backgroundColor: resolve("--warn-tint"), offset: .25 }, { backgroundColor: bg }], { dur: "--dur-pulse", ease: "--ease-exit", delay: d }); }
+  };
+  // a colour role resolved to a computed colour (WAAPI needs concrete values)
+  var probe = document.createElement("i");
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  function resolve(role) { probe.style.color = "var(" + role + ")"; return getComputedStyle(probe).color; }
+
+  // label swap (reasoning-steps): out 6px up with 2px blur, in from 6px below, 150ms each
+  function swap(el, html) {
+    return A(el, [{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "translateY(-6px)", filter: "blur(2px)" }], { dur: "--dur-collapse", ease: "--ease-out", fill: "forwards" }).then(function (a) {
+      el.innerHTML = html;
+      if (a && a.cancel) a.cancel();
+      return A(el, [{ opacity: 0, transform: "translateY(6px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-collapse", ease: "--ease-out" });
+    });
+  }
+  // digit tick (plan-card): changed characters pop in from 4px below, 80ms apart
+  function tick(el, text) {
+    var old = el.textContent;
+    if (old === text) return;
+    el.textContent = "";
+    var n = 0;
+    for (var i = 0; i < text.length; i++) {
+      var s = document.createElement("span");
+      s.style.display = "inline-block";
+      s.style.whiteSpace = "pre";
+      s.textContent = text[i];
+      el.appendChild(s);
+      if (old[i] !== text[i] || old.length !== text.length) A(s, [{ opacity: 0, transform: "translateY(4px)", filter: "blur(1.5px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-tick", ease: "--ease-snap", delay: Math.min(n++, 3) * ms("--stagger-loose") });
+    }
+  }
+  // height that follows a change (collapsible / plan-card expand)
+  function follow(el, change, dur) {
+    var h0 = el.offsetHeight;
+    change();
+    var h1 = el.offsetHeight;
+    if (reduced() || Math.abs(h0 - h1) < 1) return Promise.resolve();
+    var ov = el.style.overflow;
+    el.style.overflow = "hidden";
+    return A(el, [{ height: h0 + "px" }, { height: h1 + "px" }], { dur: dur || "--dur-expand", ease: "--ease-out" }).then(function () { el.style.overflow = ov; });
+  }
+  function open(el, stagger) {
+    el.hidden = false;
+    if (stagger) [].forEach.call(el.querySelectorAll(stagger), function (c, i) { M.item(c, stg(i, "--stagger-tight")); });
+    if (reduced()) return A(el, [{ opacity: 0 }, { opacity: 1 }]);
+    var h = el.offsetHeight;
+    el.style.overflow = "hidden";
+    return A(el, [{ height: "0px", opacity: .4 }, { height: h + "px", opacity: 1 }], { dur: "--dur-open", ease: "--ease-out" }).then(function () { el.style.overflow = ""; });
+  }
+  function close(el, dur) {
+    var done = function (a) { el.hidden = true; el.style.overflow = ""; if (a && a.cancel) a.cancel(); };
+    if (reduced()) return A(el, [{ opacity: 1 }, { opacity: 0 }], { fill: "forwards" }).then(done);
+    var h = el.offsetHeight;
+    el.style.overflow = "hidden";
+    return A(el, [{ height: h + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { dur: dur || "--dur-close", ease: "--ease-out", fill: "forwards" }).then(done);
+  }
+  // FLIP: record boxes, change the layout once, animate each element back from its old box
+  function flip(els, change) {
+    var first = els.map(function (e) { return e.getBoundingClientRect(); });
+    change();
+    els.forEach(function (e, i) {
+      var f = first[i], l = e.getBoundingClientRect();
+      if (!l.width || !l.height) return;
+      var dx = f.left - l.left, dy = f.top - l.top, sx = f.width / l.width, sy = f.height / l.height;
+      if (Math.abs(dx) < .5 && Math.abs(dy) < .5 && Math.abs(sx - 1) < .01 && Math.abs(sy - 1) < .01) return;
+      A(e, [{ transformOrigin: "0 0", transform: "translate(" + dx + "px," + dy + "px) scale(" + sx + "," + sy + ")" }, { transformOrigin: "0 0", transform: "none" }], { dur: "--dur-layout", ease: "--ease-snap" });
+    });
+  }
+  // shared-layout highlight (task-list marker): one element slides between the pressed buttons
+  function highlight(group) {
+    group.classList.add("has-hl");
+    var hl = document.createElement("span");
+    hl.className = "hl jump";
+    group.insertBefore(hl, group.firstChild);
+    function to(btn, jump) {
+      [].forEach.call(group.querySelectorAll("button"), function (b) { if (b.hasAttribute("aria-pressed")) b.setAttribute("aria-pressed", String(b === btn)); });
+      if (!btn) { hl.style.opacity = "0"; return; }
+      if (jump || hl.style.opacity !== "1") hl.classList.add("jump"); else hl.classList.remove("jump");
+      hl.style.width = btn.offsetWidth + "px";
+      hl.style.height = btn.offsetHeight + "px";
+      hl.style.transform = "translate(" + btn.offsetLeft + "px," + btn.offsetTop + "px)";
+      hl.style.opacity = "1";
+      void hl.offsetWidth;
+      hl.classList.remove("jump");
+    }
+    var cur = group.querySelector('[aria-pressed="true"]');
+    requestAnimationFrame(function () { if (cur) to(cur, true); });
+    return to;
+  }
+  // stream words (streaming-text): each word fades in from fg-meta; under reduced motion all at once
+  function stream(el, text, pace) {
+    var words = text.split(" ");
+    el.innerHTML = words.map(function (w) { return '<span style="display:inline">' + w + " </span>"; }).join("");
+    var to = getComputedStyle(el).color, from = resolve("--fg-meta");
+    [].forEach.call(el.children, function (s, i) { A(s, [{ opacity: 0, color: from }, { opacity: 1, color: to }], { dur: "--dur-word", ease: "ease", delay: i * (pace || 30) }); });
+    return reduced() ? 0 : words.length * (pace || 30) + ms("--dur-word");
+  }
+  var CHECK = '<svg class="ck" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="7"/><path d="M4.3 7.2 6.1 8.9 9.7 5.3" pathLength="9.9"/></svg>';
+  function checkOn(el) { void el.getBoundingClientRect(); requestAnimationFrame(function () { el.classList.add("ck-on"); }); }
+
+  // =====================================================================================
+  // Scenes: every live demo is a scene with Replay. A replay cancels the running sequence
+  // (its waits reject) and every animation in it, then starts again: interruptible, never queued.
+  // =====================================================================================
+  var SCENES = {};
+  function play(host) {
+    var id = (host._run = (host._run || 0) + 1);
+    if (host._cleanup) { host._cleanup(); host._cleanup = null; }
+    if (host.getAnimations) host.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); });
+    var ctx = {
+      wait: function (t) { return new Promise(function (res, rej) { setTimeout(function () { host._run === id ? res() : rej("replayed"); }, t); }); },
+      live: function () { return host._run === id; },
+      cleanup: function (fn) { host._cleanup = fn; }
+    };
+    var fn = SCENES[host.dataset.scene];
+    if (fn) Promise.resolve().then(function () { return fn(host, ctx); }).catch(function (e) { if (e !== "replayed") { window.__errors.push(String(e && e.stack || e)); ROOT.dataset.jsError = String(e); } });
+  }
+  function addReplay(host) {
+    var spx = host.closest(".spx");
+    var lbl = spx && spx.querySelector(":scope > .lbl");
+    if (!lbl || lbl.querySelector(".replay")) return;
+    lbl.insertAdjacentHTML("beforeend", '<button class="btn sm ghost replay" type="button" aria-label="Replay ' + lbl.textContent.replace(/"/g, "") + '">↻ Replay</button>');
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".replay");
+    if (!b) return;
+    var host = b.dataset.replay ? document.querySelector('[data-scene="' + b.dataset.replay + '"]') : b.closest(".spx").querySelector("[data-scene]");
+    if (host) play(host);
+  });
+
+  // ---------- theme and motion toggles ----------
+  var tbtn = document.getElementById("theme-toggle"), tlab = document.getElementById("theme-label");
+  var mbtn = document.getElementById("motion-toggle"), mlab = document.getElementById("motion-label");
+  function syncToggles() {
+    var light = ROOT.dataset.theme === "light", red = reduced();
+    tlab.textContent = light ? "Dark" : "Light";
+    tbtn.setAttribute("aria-label", light ? "Switch to dark theme" : "Switch to light theme");
+    mlab.textContent = red ? "Reduced motion: on" : "Reduced motion: off";
+    mbtn.setAttribute("aria-pressed", String(red));
+  }
+  tbtn.addEventListener("click", function () {
+    var next = ROOT.dataset.theme === "light" ? "dark" : "light";
+    var apply = function () { ROOT.dataset.theme = next; syncToggles(); };
+    try { localStorage.setItem("errand-ds-theme", next); } catch (e) {}
+    if (document.startViewTransition && !reduced()) document.startViewTransition(apply); else apply();
+  });
+  mbtn.addEventListener("click", function () {
+    ROOT.dataset.motion = reduced() ? "full" : "reduced";
+    try { localStorage.setItem("errand-ds-motion", ROOT.dataset.motion); } catch (e) {}
+    syncToggles();
+    document.querySelectorAll("[data-scene]").forEach(play);
+  });
+  syncToggles();
+
+  // =====================================================================================
+  // Data and renderers
+  // =====================================================================================
+  var SHIVA = { name: "Shiva Sanitary", init: "SS", av: "--cat-3", rating: "4.8", reviews: "212" };
+  var RAVI = { name: "Ravi Plumbing", init: "RP", av: "--cat-1", rating: "4.6", reviews: "158" };
+  var ADDRESS = "Flat 3B, 4th Cross, 5th Block, Koramangala";
+  var CHOICES = [
+    { p: SHIVA, tag: "Best match", price: "₹399", slot: "Thu 10:00", why: "Closest to 10:00, 4.8 from 212", p1: "--cat-3", p2: "--cat-1", icon: "🔧" },
+    { p: RAVI, tag: "Cheapest", price: "₹349", slot: "Fri 16:00", why: "Lowest price, a day later", p1: "--cat-1", p2: "--cat-5", icon: "🚰" },
+    { p: { name: "AquaFix Koramangala", rating: "4.4", reviews: "96" }, tag: "Earliest", price: "₹499", slot: "Wed 18:00", why: "Tomorrow evening, +₹100", p1: "--cat-6", p2: "--cat-4", icon: "🛠️" }
+  ];
+  function av(p) { return '<span class="mono-av" style="--av:var(' + p.av + ')">' + p.init + "</span>"; }
+
+  function cards(chosen) {
+    var h = '<ul class="cards" style="list-style:none;margin:0;padding:0">';
+    CHOICES.forEach(function (c, i) {
+      var on = chosen === i, dim = chosen !== undefined && chosen !== i;
+      h += '<li style="min-width:0;display:flex"><article class="pcard' + (on ? " is-on" : "") + (dim ? " is-dim" : "") + '" aria-label="' + c.p.name + '" style="flex:1">' +
+        '<div class="photo" style="--p1:var(' + c.p1 + ");--p2:var(" + c.p2 + ')"><span class="tag">' + c.tag + '</span><span aria-hidden="true">' + c.icon + "</span></div>" +
+        '<div class="pbody"><span class="t">' + c.p.name + "</span>" +
+        '<span class="pfacts"><span aria-label="Rated ' + c.p.rating + " from " + c.p.reviews + ' reviews">★ ' + c.p.rating + " (" + c.p.reviews + ")</span><b>" + c.price + "</b></span>" +
+        '<span class="pfacts"><span>Earliest</span><span class="emph">' + c.slot + "</span></span>" +
+        '<span class="why">' + c.why + "</span></div>" +
+        '<div class="pact"><button class="btn sm primary" type="button" data-choose="' + i + '"' + (chosen !== undefined ? " disabled" : "") + ">" + (on ? "Chosen" : "Choose") + '</button><button class="btn sm" type="button" aria-expanded="false">Details</button></div>' +
+        "</article></li>";
+    });
+    return h + "</ul>";
+  }
+  function echo() {
+    return '<div class="echo"><span class="lead">For</span><button type="button">Plumber</button><span class="sep" aria-hidden="true">·</span><button type="button">Koramangala</button><span class="sep" aria-hidden="true">·</span><button type="button">this week</button><span class="sep" aria-hidden="true">·</span><button type="button" class="inferred" aria-label="Change budget, under ₹1,500, from memory">under ₹1,500</button></div>';
+  }
+
+  // ---------- slot picker ----------
+  var DAYS = [["Wed", "4", 2], ["Thu", "5", 5], ["Fri", "6", 4], ["Sat", "7", 3], ["Sun", "8", 0]];
+  var TIMES = [["10:00", "earliest"], ["11:00"], ["12:30", "taken"], ["14:00"], ["16:00"], ["18:30", "+₹50"]];
+  function holdRow(state, pick) {
+    if (state === "held") return '<div class="hold" data-hold><span class="spin" aria-hidden="true"></span><span>Holding Thu ' + pick + ' for you while you review</span><span class="mono" data-left aria-live="off">9:42 left</span></div>';
+    if (state === "ending") return '<div class="hold ending" role="status"><span class="t-warn" aria-hidden="true">●</span><span>Hold on Thu ' + pick + ' ends soon</span><span class="mono">0:48 left</span></div>';
+    return "";
+  }
+  function slot(state, pick) {
+    var h = '<section class="gen" aria-label="Free slots with Shiva Sanitary"><span class="gen-label">SlotPicker · Shiva Sanitary</span>' +
+      '<div class="addr"><span aria-hidden="true">⌂</span><span class="grow"><b>Home</b> · ' + ADDRESS + '</span><button class="btn link" type="button" style="font-size:var(--text-label)">Change</button></div>' +
+      '<p class="dur">Takes about 1 hour · ₹399 at most times</p><div class="dates">';
+    DAYS.forEach(function (d) {
+      var full = d[2] === 0, on = d[1] === "5";
+      h += '<button class="date" type="button" aria-pressed="' + on + '"' + (full ? " disabled" : "") + ' aria-label="' + d[0] + " " + d[1] + " Nov, " + (full ? "no slots" : d[2] + " slots") + '"><span>' + d[0] + "</span><b>" + d[1] + '</b><span class="meta">' + (full ? "full" : d[2] + " free") + "</span></button>";
+    });
+    h += '</div><div class="times">';
+    TIMES.forEach(function (t) {
+      var taken = t[1] === "taken", on = pick === t[0];
+      var mark = t[1] === "earliest" ? '<span class="mark earliest">Earliest</span>' : t[1] && !taken ? '<span class="mark plus">' + t[1] + "</span>" : "";
+      var name = "Thu 5 Nov, " + t[0] + (t[1] === "earliest" ? ", earliest" : t[1] && !taken ? ", " + t[1] : "") + (taken ? ", taken" : "");
+      h += '<button class="time" type="button" data-t="' + t[0] + '" aria-pressed="' + on + '"' + (taken ? " disabled" : "") + ' aria-label="' + name + '">' + t[0] + mark + "</button>";
+    });
+    h += '</div><div data-holdslot>' + holdRow(state, pick) + "</div>";
+    return h + "</section>";
+  }
+
+  // ---------- approval card, built from named parts so a state change can morph part by part ----------
+  var BOOK = { job: "Kitchen tap leak · fix or replace", when: "Thu 5 Nov · 10:00 IST", bill: [["Visit", "₹199"], ["Parts", "₹200", true]], total: "₹399", rule: "Free to cancel until Thu 08:00 IST. After that, ₹150." };
+  var VOID = { job: "Bathroom pipe leak", when: "Thu 5 Nov · 10:00 IST", bill: [["Visit", "₹199"], ["Parts", "₹280", true]], total: "₹479", rule: BOOK.rule };
+  function status(kind, text) {
+    var m = { needs: '<i class="t-warn">●</i>', busy: '<span class="spin" aria-hidden="true"></span>', ok: CHECK, exp: '<i class="t-meta">◷</i>', no: '<i class="t-meta">✕</i>' };
+    return '<span class="status' + (kind === "ok" ? " ck-on" : "") + '" role="status">' + m[kind] + text + "</span>";
+  }
+  function billHtml(o, extra) {
+    var h = '<dl class="bill" aria-label="Price breakdown">';
+    o.bill.forEach(function (l) { h += "<div><dt>" + l[0] + (l[2] ? ' <span class="tag inferred">estimate</span>' : "") + "</dt><dd" + (l[2] ? ' class="est"' : "") + ">" + (l[2] ? "up to " : "") + l[1] + "</dd></div>"; });
+    return h + '<div class="total"><dt>Total</dt><dd>' + o.total + (extra || "") + "</dd></div></dl>";
+  }
+  function approval(key, o) {
+    o = o || {};
+    var d = BOOK, title = "Approve booking", st, rows, notice = "", actions = "", note = "", faded = false, bill = "", diffs = "", cls = "trust", tint = "";
+    var prov = av(SHIVA) + 'Shiva Sanitary <span class="meta">★ 4.8</span>';
+    rows = [["Provider", prov], ["Job", d.job], ["When", '<span class="mono">' + d.when + "</span>"], ["Where", '<span style="color:var(--fg-body)">' + ADDRESS + "</span>"]];
+    var ruleRow = ["Cancel", '<span style="color:var(--fg-body)">' + d.rule + "</span>"];
+    var hold = '<span class="meta" data-holdleft>hold ' + (o.hold || "8:42") + "</span>";
+    var approveBtn = '<button class="btn primary" type="button" data-approve><span class="bl">Approve ₹399</span></button>';
+    switch (key) {
+      case "pending":
+        st = status("needs", "Needs you") + hold; bill = billHtml(d); rows.push(ruleRow);
+        note = "Approving books exactly this. Parts above ₹200 need your OK first. If the provider, time or price changes, I'll ask again.";
+        actions = approveBtn + '<button class="btn" type="button">Other options</button><button class="btn ghost" type="button" data-go="declined">Decline</button>';
+        break;
+      case "approving":
+        st = status("busy", "Approving"); bill = billHtml(d); rows.push(ruleRow);
+        note = "Approving books exactly this. Parts above ₹200 need your OK first. If the provider, time or price changes, I'll ask again.";
+        actions = '<button class="btn primary" type="button" data-approve aria-busy="true"><span class="spin" aria-hidden="true" data-bspin></span><span class="bl">Approving…</span></button><button class="btn" type="button" disabled>Other options</button><button class="btn ghost" type="button" disabled>Decline</button>';
+        break;
+      case "approved":
+        st = status("ok", "Approved"); bill = billHtml(d); rows.push(ruleRow); tint = " tint-ok";
+        note = "You approved ₹399. I'm checking with Shiva Sanitary now, and the tracker below shows each step.";
+        break;
+      case "voided":
+        d = VOID; cls += " voided"; faded = true; st = '<span class="tag" role="status">voided</span>';
+        rows[1] = ["Job", d.job];
+        notice = '<div class="notice err"><span class="t-err" aria-hidden="true">✕</span><p>Price changed <span class="strike mono' + (o.live ? "" : " on") + '">₹479</span><span class="sr"> to</span> <span class="newp" aria-hidden="true">→</span> <span class="mono newp">₹575</span>. Shiva Sanitary raised the parts estimate. Nothing was booked.</p></div>';
+        bill = billHtml(d); actions = '<button class="btn primary" type="button" data-go="pending">Review new price</button><button class="btn" type="button">Other options</button>';
+        break;
+      case "expired":
+        faded = true; st = status("exp", "Expired"); bill = billHtml(d);
+        notice = '<div class="notice info"><span class="t-meta" aria-hidden="true">◷</span><p>The hold expired at <span class="mono">09:12 IST</span>. Nothing was booked.</p></div>';
+        actions = '<button class="btn" type="button" data-go="pending">Check again</button><button class="btn ghost" type="button">Other options</button>';
+        break;
+      case "declined":
+        faded = true; st = status("no", "Declined"); bill = billHtml(d);
+        notice = '<div class="notice info"><span class="t-meta" aria-hidden="true">✕</span><p>You declined. I released the hold on Thu 10:00. Nothing was booked.</p></div>';
+        break;
+      case "cancel-fee":
+      case "cancel-free":
+        var free = key === "cancel-free";
+        title = "Approve cancellation"; st = status("needs", "Needs you");
+        rows = [["Provider", prov], ["Booking", '<span class="mono">BK-7Q2M</span>'], ["When", '<span class="mono">Thu 5 Nov · 10:00 IST</span>'],
+          ["Fee", free ? '<span class="mono">No fee</span> <span class="meta">free until 08:00 IST</span>' : '<span class="mono">₹150</span> <span class="meta">inside 2 hours of the visit</span>'],
+          ["Back", '<span class="mono">' + (free ? "₹0 paid · nothing to refund" : "₹0 paid · ₹150 charged to UPI") + "</span>"]];
+        note = "Approving cancels exactly this booking. If the fee changes, I'll ask again.";
+        actions = '<button class="btn primary" type="button">' + (free ? "Approve free cancellation" : "Approve ₹150") + '</button><button class="btn" type="button">Move it instead</button><button class="btn ghost" type="button">Keep booking</button>';
+        break;
+      case "reschedule":
+        title = "Approve reschedule"; st = status("needs", "Needs you");
+        rows = [["Provider", prov], ["Booking", '<span class="mono">BK-7Q2M</span>'],
+          ["When", '<span class="mono"><s>Thu 5 Nov · 10:00</s></span><span aria-hidden="true">→</span><span class="sr">moves to</span><span class="mono">Sat 7 Nov · 11:00 IST</span>'],
+          ["Price", '<span class="mono">₹399</span> <span class="meta">no change</span>'], ["Fee", '<span class="mono">No fee</span> <span class="meta">to move</span>']];
+        note = "Approving moves exactly this booking. If the new time or price changes, I'll ask again.";
+        actions = '<button class="btn primary" type="button">Approve move</button><button class="btn" type="button">Other times</button><button class="btn ghost" type="button">Keep current time</button>';
+        break;
+      case "rebook":
+        title = "Approve replacement"; st = status("needs", "Needs you") + '<span class="meta">hold 9:30</span>';
+        diffs = '<ul class="diffs" aria-label="Differs from your booking" style="list-style:none;margin:0"><li style="margin-right:2px">Differs from your booking:</li><li><span class="tag warn solid" data-diff>Different provider</span></li><li><span class="tag warn solid" data-diff>+₹100</span></li><li><span class="tag warn solid" data-diff>30 min later</span></li></ul>';
+        rows = [["Provider", av(RAVI) + 'Ravi Plumbing <span class="meta">★ 4.6</span> <span class="was" data-was>was Shiva Sanitary</span>'], ["Job", BOOK.job],
+          ["When", '<span class="mono">Thu 5 Nov · 10:30 IST</span> <span class="was" data-was>was 10:00</span>'], ["Where", '<span style="color:var(--fg-body)">' + ADDRESS + "</span>"],
+          ["Cancel", '<span style="color:var(--fg-body)">Free to cancel until Thu 08:30 IST. After that, ₹150.</span>']];
+        bill = billHtml({ bill: [["Visit", "₹249"], ["Parts", "₹250", true]], total: "₹499" }, ' <span class="was" data-was>was ₹399</span>');
+        note = "Approving books Ravi Plumbing instead. Your Shiva Sanitary booking is already cancelled at no charge.";
+        actions = '<button class="btn primary" type="button">Approve ₹499</button><button class="btn" type="button">Other options</button><button class="btn ghost" type="button">Decline</button>';
+        break;
+    }
+    var h = '<section class="' + cls + '" aria-label="' + title + '"><div class="trust-h' + tint + '" data-part="head"><b>' + title + '</b><span class="r">' + st + "</span></div>";
+    if (diffs) h += '<div data-part="diffs">' + diffs + "</div>";
+    if (notice) h += '<div data-part="notice">' + notice + "</div>";
+    h += '<div class="fadeable' + (faded ? " faded" : "") + '" data-part="body"><dl class="kv">';
+    rows.forEach(function (r) { h += "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; });
+    h += "</dl>" + bill + "</div>";
+    if (note) h += '<p class="trust-note" style="padding-top:var(--space-2)" data-part="note">' + note + "</p>";
+    if (actions) h += '<div class="trust-a" data-part="actions">' + actions + "</div>";
+    return h + "</section>";
+  }
+  // morph a card into new HTML part by part: unchanged parts stay (so class changes transition),
+  // changed parts cross-fade, new parts arrive as rows, and the card's height follows.
+  function morph(card, html, quiet) {
+    quiet = quiet || [];
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    var next = tmp.firstElementChild, changed = [], added = [];
+    follow(card, function () {
+      var old = {};
+      [].slice.call(card.children).forEach(function (c) { old[c.dataset.part || Math.random()] = c; });
+      [].slice.call(next.children).forEach(function (n) {
+        var key = n.dataset.part, o = old[key];
+        if (o) {
+          if (o.innerHTML !== n.innerHTML) { o.innerHTML = n.innerHTML; if (quiet.indexOf(key) < 0) changed.push(o); }
+          o.className = n.className;
+          card.appendChild(o);
+          delete old[key];
+        } else { card.appendChild(n); added.push(n); }
+      });
+      for (var k in old) old[k].remove();
+      card.className = next.className;
+      card.setAttribute("aria-label", next.getAttribute("aria-label"));
+    });
+    changed.forEach(function (o) { A(o, [{ opacity: 0, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { dur: "--dur-enter", ease: "--ease-settle" }); });
+    added.forEach(function (n, i) { M.row(n, stg(i, "--stagger-tight")); });
+    return { changed: changed, added: added };
+  }
+
+  // ---------- tracker: persistent steps, so class changes transition ----------
+  function trackerHtml(state) {
+    var steps = ["Holding", "Checking with provider", "Booked"];
+    var cls = { holding: ["now", "", ""], confirming: ["done", "now", ""], slow: ["done", "now", ""], booked: ["done", "done", "done"], failed: ["done", "fail", ""] }[state];
+    var meta = { holding: ["now", "next", "next"], confirming: ["10:01", "asking", "next"], slow: ["10:01", "2 min so far", "next"], booked: ["10:01", "10:02", "10:02"], failed: ["10:01", "no answer", ""] }[state];
+    var head = { holding: "Booking in progress", confirming: "Booking in progress", slow: "Booking in progress", booked: "Booked", failed: "Not booked" }[state];
+    var lead = state === "booked" ? '<span class="ck-on" style="display:inline-grid">' + CHECK + "</span>" : state === "failed" ? '<span class="t-err" aria-hidden="true">✕</span>' : '<span class="spin" aria-hidden="true"></span>';
+    var right = state === "booked" ? '<span class="tag ok">verified</span>' : state === "failed" ? '<span class="tag err">failed</span>' : '<span class="meta">Thu 10:00</span>';
+    var h = '<section class="trust' + (state === "failed" ? " voided" : "") + '" aria-label="' + head + '"><div class="trust-h" data-part="head"><span class="tl">' + lead + '</span><b tabindex="-1" class="th">' + head + '</b><span class="r">' + right + '</span></div><ol class="track" aria-live="polite" data-part="track">';
+    steps.forEach(function (s, i) {
+      var c = cls[i], word = c === "done" ? "done" : c === "now" ? "in progress" : c === "fail" ? "failed" : "not yet";
+      h += '<li class="' + c + '"><span class="node" aria-hidden="true">' + CHECK + '<span class="spin"></span><span class="x">✕</span></span><span>' + s + '<span class="sr">, ' + word + '</span></span><span class="meta">' + meta[i] + "</span></li>";
+    });
+    h += "</ol>";
+    if (state === "holding" || state === "confirming") h += '<p class="trust-note" data-part="note">I\'ll tell you here when Shiva Sanitary says yes, usually within a minute.</p>';
+    if (state === "slow") h += '<div class="notice info" data-part="note"><span class="t-info" aria-hidden="true">◌</span><p>Shiva Sanitary hasn\'t answered yet. The booking may already have gone through. I\'ll update you by <span class="mono">10:05 IST</span>, and I won\'t book twice.</p></div>';
+    if (state === "booked") h += '<div data-part="note"><dl class="kv" style="padding-top:var(--space-2)"><dt>Booking</dt><dd class="mono">BK-7Q2M</dd><dt>When</dt><dd class="mono">Thu 5 Nov · 10:00 IST</dd><dt>Total</dt><dd class="mono">₹399 <span class="meta">pay after the visit</span></dd></dl><p class="trust-note">Shiva Sanitary will message you on the day. Free to cancel until Thu 08:00 IST.</p></div>';
+    if (state === "failed") h += '<div data-part="note"><div class="notice err"><span class="t-err" aria-hidden="true">✕</span><p>Shiva Sanitary didn\'t accept in time. Nothing was booked or charged.</p></div><div class="trust-a"><button class="btn" type="button">Try Ravi Plumbing, Fri 16:00</button><button class="btn ghost" type="button">Other options</button></div></div>';
+    return h + "</section>";
+  }
+  function trackerSet(card, state) {
+    var tmp = document.createElement("div");
+    tmp.innerHTML = trackerHtml(state);
+    var next = tmp.firstElementChild;
+    var lis = card.querySelectorAll(".track li"), nlis = next.querySelectorAll(".track li");
+    [].forEach.call(lis, function (li, i) {
+      var was = li.className, now = nlis[i].className;
+      li.className = now;
+      li.querySelector(".sr").textContent = nlis[i].querySelector(".sr").textContent;
+      tick(li.querySelector(".meta"), nlis[i].querySelector(".meta").textContent);
+      if (was !== now && now === "done") M.pop(li.querySelector(".node"), ms("--dur-micro"));
+      if (was !== now && now === "fail") { M.pop(li.querySelector(".node")); M.shake(li); }
+    });
+    var th = card.querySelector(".th"), nth = next.querySelector(".th");
+    if (th.textContent !== nth.textContent) swap(th, nth.innerHTML);
+    var tl = card.querySelector(".tl"), ntl = next.querySelector(".tl");
+    if (tl.innerHTML !== ntl.innerHTML) { tl.innerHTML = ntl.innerHTML.replace("ck-on", ""); var c = tl.firstElementChild; if (c && c.querySelector(".ck")) checkOn(c); else M.fadeIn(tl); }
+    var r = card.querySelector(".trust-h .r"), nr = next.querySelector(".trust-h .r");
+    if (r.innerHTML !== nr.innerHTML) { r.innerHTML = nr.innerHTML; M.pop(r.firstElementChild); }
+    card.className = next.className;
+    card.setAttribute("aria-label", next.getAttribute("aria-label"));
+    var note = card.querySelector('[data-part="note"]'), nnote = next.querySelector('[data-part="note"]');
+    follow(card, function () {
+      if (note && nnote) { if (note.innerHTML !== nnote.innerHTML) { note.replaceWith(nnote); M.row(nnote); } }
+      else if (nnote) { card.appendChild(nnote); M.row(nnote); }
+      else if (note) note.remove();
+    });
+  }
+
+  // ---------- step list (reasoning-steps + task-list) ----------
+  var PLAN = "I'll find plumbers in Koramangala free this week under ₹1,500, then hold the best slot.";
+  var STEPS = [["Searched plumbers in Koramangala", "2s"], ["Compared 3 that fit ₹1,500 and this week", "7s"], ["Held Shiva Sanitary, Thu 10:00", "3s"]];
+  function progressHtml() {
+    return '<div class="prog"><p class="plan" data-plan></p>' +
+      '<button class="sum" type="button" aria-expanded="true"><span class="sum-ico"><svg class="pring" viewBox="0 0 14 14" aria-hidden="true"><circle class="trk" cx="7" cy="7" r="6.1"/><circle class="arc" cx="7" cy="7" r="6.1" pathLength="100" stroke-dashoffset="100" transform="rotate(-90 7 7)"/></svg>' + CHECK + '<span class="x" aria-hidden="true">✕</span></span><span class="sum-lab"></span><span class="chev" aria-hidden="true">›</span></button>' +
+      '<div class="steps-body"><ol role="status"></ol></div><div data-after></div></div>';
+  }
+  function stepLi(label, s, t) {
+    return '<li class="st" data-s="' + s + '"><span class="sico" aria-hidden="true"><span class="pend"></span><span class="ring"></span>' + CHECK + '<span class="x">✕</span></span><span class="slab' + (s === "active" ? " shimmer" : "") + '">' + label + '</span><span class="meta">' + (t || "") + "</span></li>";
+  }
+  function Progress(host) {
+    host.innerHTML = progressHtml();
+    var sum = host.querySelector(".sum"), lab = host.querySelector(".sum-lab"), body = host.querySelector(".steps-body"), ol = body.querySelector("ol");
+    var ico = host.querySelector(".sum-ico"), arc = host.querySelector(".arc");
+    sum.addEventListener("click", function () {
+      var opening = body.hidden;
+      sum.setAttribute("aria-expanded", String(opening));
+      if (opening) open(body, "li"); else close(body);
+    });
+    return {
+      plan: function () { return stream(host.querySelector("[data-plan]"), PLAN, 24); },
+      label: function (html, animate) { if (animate) return swap(lab, html); lab.innerHTML = html; },
+      add: function (label) {
+        var tmp = document.createElement("ol");
+        tmp.innerHTML = stepLi(label, "active");
+        var li = tmp.firstElementChild;
+        follow(body, function () { ol.appendChild(li); }, "--dur-open");
+        M.item(li);
+        return li;
+      },
+      done: function (li, t) { li.dataset.s = "done"; li.classList.add("ck-on"); li.querySelector(".slab").classList.remove("shimmer"); tick(li.querySelector(".meta"), t); M.pop(li.querySelector(".ck")); },
+      fail: function (li, text) { li.dataset.s = "fail"; var s = li.querySelector(".slab"); s.classList.remove("shimmer"); swap(s, text); M.pop(li.querySelector(".x")); M.shake(li); body.classList.add("fail"); },
+      ring: function (n) { arc.setAttribute("stroke-dashoffset", String(100 - n * 100 / STEPS.length)); },
+      finish: function (ok) { ico.classList.add(ok ? "is-done" : "is-fail"); if (ok) checkOn(ico); },
+      collapse: function () { sum.setAttribute("aria-expanded", "false"); return close(body, "--dur-expand"); },
+      after: host.querySelector("[data-after]"),
+      body: body, ol: ol, sum: sum, ico: ico
+    };
+  }
+
+  // ---------- visit day ----------
+  function visitHtml(state) {
+    var head = { onway: [status("busy", "On the way"), "Mahesh is on the way"], late: ['<span class="status" role="status"><i class="t-warn">●</i>Running late</span>', "Mahesh is running 15 min late"], started: [status("ok", "Started"), "Mahesh has started"] }[state];
+    var line = { onway: '<span data-line>Left at <span class="mono">09:48</span> · arrives about</span> <span class="mono emph" data-eta>10:05</span> <span class="mono emph">IST</span> <span data-was></span>', late: '<span data-line>Now about</span> <span class="mono emph" data-eta>10:20</span> <span class="mono emph">IST</span> <span class="was" data-was>was 10:05</span>', started: 'Checked in at <span class="mono">10:06</span> · about 1 hour' }[state];
+    var h = '<section class="trust" aria-label="Visit day"><div class="trust-h" data-part="head">' + av(SHIVA) + '<b class="vh">' + head[1] + '</b><span class="r vs">' + head[0] + "</span></div>";
+    h += '<div class="notice ' + (state === "late" ? "warn" : state === "started" ? "ok" : "info") + '" data-part="notice"><span aria-hidden="true">◷</span><p>' + line + "</p></div>";
+    if (state !== "started") {
+      h += '<div class="otp-row" data-part="otp"><div><p class="emph">Check-in code</p><p class="meta">Give it only when he is at your door</p></div><div class="otp" aria-label="Check-in code 4 8 2 1"><span>4</span><span>8</span><span>2</span><span>1</span></div></div>';
+      h += '<div class="trust-a" style="padding-top:0" data-part="actions"><button class="btn" type="button" data-share><svg class="cc" viewBox="0 0 24 24" aria-hidden="true"><rect class="back" x="2.25" y="2.25" width="13" height="13" rx="3.5"/><rect class="front" x="8.75" y="8.75" width="13" height="13" rx="3.5"/><path d="M8.5 12.2 11 14.6 15.7 9.6" pathLength="12"/></svg><span class="bl" aria-live="polite">Share code</span></button><button class="btn ghost" type="button">Call Mahesh</button>' + (state === "late" ? '<button class="btn ghost" type="button">Move the visit</button>' : "") + "</div>";
+    } else {
+      h += '<dl class="kv" data-part="kv"><dt>Booking</dt><dd class="mono">BK-7Q2M</dd><dt>Job</dt><dd>Kitchen tap leak</dd><dt>Parts</dt><dd><span class="mono">up to ₹200</span> <span class="tag inferred">estimate</span></dd></dl><p class="trust-note" data-part="note">If he needs more than ₹200 in parts, I\'ll ask you before he uses them.</p>';
+    }
+    return h + "</section>";
+  }
+  function share(btn) {
+    if (btn.classList.contains("copied")) return;
+    btn.classList.add("copied");
+    swap(btn.querySelector(".bl"), "Shared");
+    setTimeout(function () { btn.classList.remove("copied"); swap(btn.querySelector(".bl"), "Share code"); }, 1500);
+  }
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-share]"); if (b) share(b); });
+
+  // =====================================================================================
+  // Static specimens (their states, no sequence)
+  // =====================================================================================
+  document.getElementById("slot-held").innerHTML = slot("held", "10:00");
+  document.getElementById("slot-ending").innerHTML = slot("ending", "10:00");
+  [document.getElementById("slot-held"), document.getElementById("slot-ending")].forEach(function (el) { highlight(el.querySelector(".dates")); highlight(el.querySelector(".times")); });
+  document.querySelectorAll("[data-approval]").forEach(function (el) { el.innerHTML = approval(el.dataset.approval); });
+  document.querySelectorAll("[data-tracker]").forEach(function (el) { el.innerHTML = trackerHtml(el.dataset.tracker); });
+  document.querySelectorAll("[data-visit]").forEach(function (el) { el.innerHTML = visitHtml(el.dataset.visit); });
+  (function () {
+    var host = document.querySelector("[data-progress-static]");
+    var p = Progress(host);
+    host.querySelector("[data-plan]").textContent = PLAN;
+    p.ol.innerHTML = STEPS.map(function (s) { return stepLi(s[0], "done", s[1]).replace('class="st"', 'class="st ck-on"'); }).join("");
+    p.ring(3); p.ico.classList.add("is-done", "ck-on");
+    p.label('Worked for <span class="mono">12s</span> · 3 steps');
+    p.body.hidden = true; p.sum.setAttribute("aria-expanded", "false");
+  })();
+
+  // =====================================================================================
+  // Scenes
+  // =====================================================================================
+  SCENES.curves = function (host) {
+    host.querySelectorAll(".dot2").forEach(function (d) {
+      var dx = d.parentElement.offsetWidth - 10;
+      if (reduced()) { d.style.transform = "translateX(" + dx + "px)"; return A(d, [{ opacity: 0 }, { opacity: 1 }]); }
+      d.style.transform = "";
+      A(d, [{ transform: "translateX(0)" }, { transform: "translateX(" + dx + "px)" }], { dur: "--dur-draw", ease: d.dataset.ease, fill: "forwards" });
+    });
+  };
+
+  SCENES.echo = function (host) {
+    var parts = host.querySelectorAll("button"), rest = host.querySelectorAll(".lead,.sep,.count");
+    [].forEach.call(parts, function (b, i) { M.chip(b, stg(i)); });
+    [].forEach.call(rest, function (s) { M.fadeIn(s, stg(2)); });
+  };
+
+  SCENES.cards = async function (host, ctx) {
+    host.innerHTML = '<p class="stream" style="margin:0 0 6px;color:var(--fg-body)" aria-live="polite"></p><div class="e"></div><div style="height:6px"></div><div class="c"></div><p class="left-out" style="margin-top:6px">Left out: 2 over budget, 1 with no slot this week. <button class="btn link" type="button" style="font-size:var(--text-label)">See all 11</button></p>';
+    var e = host.querySelector(".e"), c = host.querySelector(".c"), lo = host.querySelector(".left-out");
+    e.style.opacity = c.style.opacity = lo.style.opacity = "0";
+    var t = stream(host.querySelector(".stream"), "Three plumbers can come this week. Shiva Sanitary fits best: the closest slot to 10:00 and well reviewed.");
+    await ctx.wait(t * .5);
+    e.innerHTML = echo(); e.style.opacity = ""; SCENES.echo(e.firstElementChild);
+    await ctx.wait(Math.max(200, t * .5));
+    c.innerHTML = cards(); c.style.opacity = "";
+    c.querySelectorAll("li").forEach(function (li, i) { M.rise(li, stg(i, "--stagger-loose")); });
+    await ctx.wait(ms("--dur-layout") + 3 * ms("--stagger-loose"));
+    lo.style.opacity = ""; M.fadeIn(lo);
+  };
+
+  SCENES.choose = async function (host, ctx) {
+    host.innerHTML = echo() + '<div style="height:6px"></div><div class="c">' + cards() + '</div><div class="reply"></div>';
+    var c = host.querySelector(".c"), reply = host.querySelector(".reply");
+    function choose(i) {
+      var arts = c.querySelectorAll(".pcard");
+      arts.forEach(function (a, j) { a.classList.toggle("is-on", j === i); a.classList.toggle("is-dim", j !== i); var b = a.querySelector("[data-choose]"); b.disabled = true; if (j === i) swap(b, "Chosen"); });
+      follow(host, function () { reply.innerHTML = '<div class="msg-user" style="margin-top:6px;width:max-content;margin-left:auto">I\'ll take ' + CHOICES[i].p.name + ", " + CHOICES[i].slot + "</div>"; });
+      M.rise(reply.firstElementChild);
+    }
+    c.addEventListener("click", function (ev) { var b = ev.target.closest("[data-choose]"); if (b && !b.disabled) choose(+b.dataset.choose); });
+    await ctx.wait(1400);
+    if (!c.querySelector(".is-on")) choose(0);
+  };
+
+  SCENES.skeleton = async function (host, ctx) {
+    host.innerHTML = '<div class="sk" style="grid-area:1/1"><div class="cards" aria-busy="true" aria-label="Loading options">' +
+      [70, 60, 75].map(function (w) { return '<div class="pcard" style="padding:6px;gap:6px"><div class="skel" style="height:56px"></div><div class="skel" style="width:' + w + '%"></div><div class="skel" style="width:45%"></div><div class="skel" style="height:20px;margin-top:6px"></div></div>'; }).join("") +
+      '</div></div><div class="ct" style="grid-area:1/1" hidden>' + cards() + "</div>";
+    await ctx.wait(1500);
+    var sk = host.querySelector(".sk"), ct = host.querySelector(".ct");
+    ct.hidden = false;
+    // skeleton demo: 400ms ease-in-out cross-fade with a 2px blur
+    A(sk, [{ opacity: 1, filter: "blur(0)" }, { opacity: 0, filter: "blur(2px)" }], { dur: "--dur-swap", ease: "ease-in-out", fill: "forwards" }).then(function () { if (ctx.live()) sk.hidden = true; });
+    A(ct, [{ opacity: 0, filter: "blur(2px)" }, { opacity: 1, filter: "blur(0)" }], { dur: "--dur-swap", ease: "ease-in-out" });
+  };
+
+  SCENES.slot = async function (host, ctx) {
+    host.innerHTML = slot("picking");
+    var dates = highlight(host.querySelector(".dates")), times = highlight(host.querySelector(".times"));
+    var holdslot = host.querySelector("[data-holdslot]"), timer = null, left = 0;
+    ctx.cleanup(function () { clearInterval(timer); });
+    function pick(t) {
+      var btn = host.querySelector('[data-t="' + t + '"]');
+      times(btn);
+      var had = !!holdslot.firstElementChild;
+      if (had) { swap(holdslot.querySelector("[data-hold] span:nth-child(2)"), "Holding Thu " + t + " for you while you review"); }
+      else { holdslot.innerHTML = holdRow("held", t); open(holdslot); }
+      left = 582;
+      clearInterval(timer);
+      timer = setInterval(function () {
+        left -= 1;
+        var el = holdslot.querySelector("[data-left]");
+        if (!el || left < 0) return clearInterval(timer);
+        tick(el, Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + " left");
+        if (left === 60) { el.setAttribute("aria-live", "polite"); el.closest(".hold").classList.add("ending"); }
+      }, 1000);
+    }
+    host.querySelector(".times").addEventListener("click", function (e) { var b = e.target.closest(".time"); if (b && !b.disabled) pick(b.dataset.t); });
+    host.querySelector(".dates").addEventListener("click", function (e) { var b = e.target.closest(".date"); if (b && !b.disabled) dates(b); });
+    await ctx.wait(900);
+    pick("10:00");
+    await ctx.wait(1800);
+    dates(host.querySelectorAll(".date")[2]);
+    await ctx.wait(500);
+    dates(host.querySelectorAll(".date")[1]);
+    await ctx.wait(400);
+    pick("14:00");
+  };
+
+  SCENES.approval = async function (host, ctx) {
+    var order = ["pending", "approving", "approved", "voided", "expired", "declined"];
+    host.innerHTML = '<div class="seg" role="group" aria-label="Show state" style="margin-bottom:var(--space-2);display:inline-flex">' + order.map(function (s) { return '<button type="button" aria-pressed="' + (s === "pending") + '" data-s="' + s + '">' + s[0].toUpperCase() + s.slice(1) + "</button>"; }).join("") + '</div><div class="slot1">' + approval("pending") + '</div><div class="after1" style="margin-top:var(--space-2)"></div>';
+    var seg = highlight(host.querySelector(".seg")), slotEl = host.querySelector(".slot1"), after = host.querySelector(".after1"), cur = "pending", holdTimer = null, cdTimer = null;
+    ctx.cleanup(function () { clearInterval(holdTimer); clearInterval(cdTimer); });
+    function card() { return slotEl.firstElementChild; }
+    function startHold() {
+      var t = 522;
+      clearInterval(holdTimer);
+      holdTimer = setInterval(function () { var el = card().querySelector("[data-holdleft]"); if (!el) return clearInterval(holdTimer); t--; tick(el, "hold " + Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0")); }, 1000);
+    }
+    async function go(next) {
+      if (next === cur) return;
+      clearInterval(holdTimer); clearInterval(cdTimer);
+      seg(host.querySelector('.seg [data-s="' + next + '"]'));
+      var c = card(), prev = cur;
+      cur = next;
+      if (after.firstElementChild && next !== "approved") close(after).then(function () { after.innerHTML = ""; after.hidden = false; });
+      if (next === "approving") {
+        var btn = c.querySelector("[data-approve]");
+        var w = btn ? btn.offsetWidth : 0;
+        morph(c, approval("approving"), ["actions"]);
+        var nb = c.querySelector("[data-approve]");
+        if (nb && w) { nb.style.width = w + "px"; }
+        var sp = c.querySelector("[data-bspin]");
+        if (sp) A(sp, [{ width: "0px", opacity: 0, marginRight: "-6px" }, { width: "10px", opacity: 1, marginRight: "0px" }], { dur: "--dur-layout", ease: "--ease-snap" });
+        var bl = c.querySelector("[data-approve] .bl");
+        if (bl) A(bl, [{ opacity: 0 }, { opacity: 1 }], { dur: "--dur-collapse", ease: "--ease-settle" });
+        [].forEach.call(c.querySelectorAll('[data-part="actions"] .btn:not([data-approve])'), function (b) { A(b, [{ opacity: 1 }, { opacity: .45 }], { dur: "--dur-collapse" }); });
+        return;
+      }
+      if (next === "expired" && prev === "pending") {
+        var el = c.querySelector("[data-holdleft]"), n = 3;
+        if (el) {
+          tick(el, "hold 0:03");
+          await new Promise(function (res) { cdTimer = setInterval(function () { n--; tick(el, "hold 0:0" + Math.max(n, 0)); if (n <= 0) { clearInterval(cdTimer); setTimeout(res, 350); } }, 650); });
+          if (cur !== "expired") return;
+        }
+      }
+      morph(c, approval(next, { live: true }), next === "voided" ? ["notice"] : []);
+      if (next === "approved") {
+        var stEl = c.querySelector('[data-part="head"] .status');
+        if (stEl) { stEl.classList.remove("ck-on"); checkOn(stEl); }
+        after.hidden = false;
+        after.innerHTML = trackerHtml("holding");
+        M.row(after.firstElementChild);
+        var tc = after.firstElementChild;
+        setTimeout(function () { if (cur === "approved") trackerSet(tc, "confirming"); }, 1100);
+        setTimeout(function () { if (cur === "approved") trackerSet(tc, "booked"); }, 2600);
+      }
+      if (next === "voided") {
+        var note = c.querySelector('[data-part="notice"]');
+        M.row(note);
+        var strike = note.querySelector(".strike");
+        void strike.offsetWidth;
+        setTimeout(function () { strike.classList.add("on"); }, ms("--dur-row") * .6);
+        note.querySelectorAll(".newp").forEach(function (n) { A(n, [{ opacity: 0, transform: "translateX(-4px)" }, { opacity: 1, transform: "none" }], { dur: "--dur-enter", ease: "--ease-settle", delay: ms("--dur-row") * .6 + ms("--dur-strike") }); });
+      }
+      if (next === "pending") startHold();
+    }
+    host.querySelector(".seg").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) go(b.dataset.s); });
+    slotEl.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b || b.disabled) return;
+      if (b.hasAttribute("data-approve") && cur === "pending") { go("approving"); setTimeout(function () { if (cur === "approving") go("approved"); }, 1300); }
+      else if (b.dataset.go) go(b.dataset.go);
+    });
+    startHold();
+    await ctx.wait(1500);
+    go("approving");
+    await ctx.wait(1400);
+    go("approved");
+  };
+
+  SCENES.tracker = async function (host, ctx) {
+    host.innerHTML = trackerHtml("holding");
+    var c = host.firstElementChild;
+    M.row(c);
+    await ctx.wait(1200); trackerSet(c, "confirming");
+    await ctx.wait(1600); trackerSet(c, "booked");
+  };
+  SCENES["tracker-fail"] = async function (host, ctx) {
+    host.innerHTML = trackerHtml("holding");
+    var c = host.firstElementChild;
+    M.row(c);
+    await ctx.wait(1200); trackerSet(c, "confirming");
+    await ctx.wait(2000); trackerSet(c, "failed");
+  };
+
+  async function runProgress(host, ctx, fail) {
+    var p = Progress(host);
+    p.label('<span class="shimmer">Working</span> · <span class="mono" data-el>0s</span>');
+    var t0 = Date.now(), elT = setInterval(function () { var el = host.querySelector("[data-el]"); if (el) tick(el, Math.round((Date.now() - t0) / 1000) + "s"); }, 1000);
+    ctx.cleanup(function () { clearInterval(elT); });
+    await ctx.wait(p.plan() * .6);
+    var lis = [];
+    for (var i = 0; i < STEPS.length; i++) {
+      lis[i] = p.add(STEPS[i][0].replace("Searched", "Searching").replace("Compared", "Comparing").replace("Held", "Holding"));
+      await ctx.wait(1100);
+      if (fail && i === 2) {
+        p.fail(lis[i], "Couldn't hold Shiva Sanitary, Thu 10:00. Someone else took it.");
+        p.finish(false);
+        clearInterval(elT);
+        await p.label("Stopped after <span class=\"mono\">9s</span> · step 3 didn't work", true);
+        p.after.innerHTML = '<div class="line" style="margin-top:6px"><button class="btn sm" type="button">Hold Thu 11:00 instead</button><button class="btn sm ghost" type="button">Show other plumbers</button></div>';
+        M.row(p.after.firstElementChild);
+        return;
+      }
+      swap(lis[i].querySelector(".slab"), STEPS[i][0]);
+      p.done(lis[i], STEPS[i][1]);
+      p.ring(i + 1);
+    }
+    p.finish(true);
+    clearInterval(elT);
+    await ctx.wait(900);
+    p.collapse();
+    await ctx.wait(ms("--dur-collapse") + 50);
+    p.label('Worked for <span class="mono">12s</span> · 3 steps', true);
+  }
+  SCENES.progress = function (host, ctx) { return runProgress(host, ctx, false); };
+  SCENES["progress-fail"] = function (host, ctx) { return runProgress(host, ctx, true); };
+
+  SCENES.clarify = async function (host, ctx) {
+    host.innerHTML = '<div class="ask" role="group" aria-labelledby="cq"><div class="panel1"></div></div><div class="ans"></div>';
+    var card = host.querySelector(".ask"), panel = host.querySelector(".panel1"), ans = host.querySelector(".ans");
+    function q(n, text, why, chips, sel) {
+      return '<div class="stack"><p class="q" id="cq">' + text + '</p><span class="why">' + why + '</span><div class="line" role="radiogroup" aria-labelledby="cq">' +
+        chips.map(function (c) { return '<button class="chip" type="button" role="radio" aria-checked="' + (c === sel) + '">' + c + "</button>"; }).join("") +
+        '</div><div class="line"><input aria-label="Or type an answer" placeholder="Or type it, e.g. Thu after 6 pm"><button class="btn sm" type="button">Send</button></div><div class="ask-foot"><span class="meta">Question ' + n + ' of 2</span><button class="btn sm ghost" type="button">Skip · I\'ll use ' + (n === 1 ? "this week" : "your usual budget") + "</button></div></div>";
+    }
+    function select(text) { panel.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-checked", String(c.textContent === text)); }); }
+    function advance(html) {
+      var old = panel.firstElementChild;
+      return A(old, [{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "translateX(-8px)", filter: "blur(2px)" }], { dur: "--dur-collapse", ease: "--ease-exit", fill: "forwards" }).then(function () {
+        follow(card, function () { panel.innerHTML = html; }, "--dur-cross");
+        return A(panel.firstElementChild, [{ opacity: 0, transform: "translateX(8px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-cross", ease: "--ease-settle" });
+      });
+    }
+    panel.innerHTML = q(1, "When should the plumber come?", "So I only show slots you can make.", ["Today", "Tomorrow", "This week", "Weekend"]);
+    panel.addEventListener("click", function (e) { var c = e.target.closest(".chip"); if (c) select(c.textContent); });
+    M.row(card);
+    await ctx.wait(1300); select("This week");
+    await ctx.wait(500); await advance(q(2, "Any budget for this one?", "Your usual for plumbing is under ₹1,500.", ["Under ₹1,000", "Under ₹1,500", "No limit"]));
+    await ctx.wait(1300); select("Under ₹1,500");
+    await ctx.wait(600);
+    await close(card, "--dur-expand");
+    ans.innerHTML = '<div class="memnote"><span class="ico" aria-hidden="true">?</span>When · <b>this week</b><span class="sep" aria-hidden="true">·</span>Budget · <b>under ₹1,500</b><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button">Change</button></div>';
+    M.chip(ans.firstElementChild);
+  };
+
+  var NOTE_ON = '<span class="ico" aria-hidden="true">◆</span>Remembered: <b>budget under ₹1,500</b><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button">View</button><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button" data-undo>Undo</button>';
+  var NOTE_OFF = '<span class="ico" aria-hidden="true">◇</span>Not remembered: <s>budget under ₹1,500</s><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button" data-redo>Remember again</button>';
+  SCENES.memory = async function (host, ctx) {
+    host.innerHTML = '<div class="thread"><div class="msg-user">Keep it under ₹1,500, always</div><div class="memnote" role="status"></div></div>';
+    var note = host.querySelector(".memnote");
+    function set(html, focusSel) { return M.chipOut(note).then(function (a) { note.innerHTML = html; if (a && a.cancel) a.cancel(); M.chip(note); var f = note.querySelector(focusSel); if (f && host.contains(document.activeElement)) f.focus(); }); }
+    note.addEventListener("click", function (e) { if (e.target.closest("[data-undo]")) set(NOTE_OFF, "[data-redo]"); else if (e.target.closest("[data-redo]")) set(NOTE_ON, "[data-undo]"); });
+    M.rise(host.querySelector(".msg-user"));
+    await ctx.wait(600);
+    note.innerHTML = NOTE_ON; M.chip(note);
+    await ctx.wait(2400); set(NOTE_OFF, "[data-redo]");
+  };
+
+  SCENES.why = async function (host, ctx) {
+    host.innerHTML = '<div class="msg-agent"><p>Three plumbers can come this week. Shiva Sanitary fits best.</p><div class="used"><span>Used:</span><b>area Koramangala</b><span aria-hidden="true">,</span><b class="inf">earliest 10:00</b><span aria-hidden="true">·</span><button class="btn link" type="button" aria-expanded="false" aria-controls="why1" style="font-size:var(--text-meta)">Why?</button></div>' +
+      '<div class="sources" id="why1" hidden><div class="fact"><div class="grow"><div class="t">Area · Koramangala</div><div class="meta">you said · 2 Nov</div></div><span class="tag">explicit</span><button class="btn sm ghost" type="button">Correct</button><button class="btn sm ghost" type="button">Forget</button></div>' +
+      '<div class="fact inferred"><div class="grow"><div class="t">Not before 10:00?</div><div class="meta">inferred from 3 bookings</div></div><button class="btn sm" type="button">Yes</button><button class="btn sm ghost" type="button">No</button></div></div></div>';
+    var btn = host.querySelector("[aria-controls]"), src = host.querySelector(".sources");
+    function toggle(on) {
+      btn.setAttribute("aria-expanded", String(on));
+      if (on) {
+        src.hidden = false;
+        [].forEach.call(src.children, function (c, i) { M.item(c, ms("--dur-exit") + stg(i, "--stagger-tight")); });
+        // popover: perspective(600px) rotateX(-20deg) scale(.94) to rest over 300ms, opacity over 160ms
+        A(src, [{ transform: "perspective(600px) rotateX(-20deg) scale(.94)", transformOrigin: "top left" }, { transform: "none", transformOrigin: "top left" }], { dur: "--dur-expand", ease: "--ease-snap" });
+        A(src, [{ opacity: 0 }, { opacity: 1 }], { dur: "--dur-exit", ease: "--ease-snap" });
+      } else {
+        A(src, [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.96)" }], { dur: "--dur-exit", ease: "--ease-snap", fill: "forwards" }).then(function (a) { src.hidden = true; if (a && a.cancel) a.cancel(); });
+      }
+    }
+    btn.addEventListener("click", function () { toggle(btn.getAttribute("aria-expanded") !== "true"); });
+    await ctx.wait(900); toggle(true);
+  };
+
+  SCENES.rebook = async function (host, ctx) {
+    host.innerHTML = '<div class="trust alert" role="alert" aria-label="Provider update"><div style="padding:var(--space-2) var(--space-3);display:grid;gap:2px"><p style="margin:0;font-size:var(--text-label);font-weight:var(--weight-medium)" class="t-err"><span aria-hidden="true">✕</span> Provider update</p><p style="margin:0" class="emph">Shiva Sanitary cancelled your plumber visit on Thu 5 Nov at 10:00 IST.</p><p style="margin:0;font-size:var(--text-label)">Sorry about this. You haven\'t been charged. I found 1 replacement close to your time.</p></div></div><div class="rep"></div>';
+    M.row(host.firstElementChild);
+    await ctx.wait(900);
+    var rep = host.querySelector(".rep");
+    rep.innerHTML = approval("rebook");
+    M.rise(rep.firstElementChild);
+    await ctx.wait(ms("--dur-layout") + 150);
+    var diffs = rep.querySelectorAll("[data-diff]"), was = rep.querySelectorAll("[data-was]");
+    [].forEach.call(diffs, function (d, i) {
+      var delay = i * ms("--stagger-loose") * 3;
+      M.pop(d, delay);
+      if (was[i]) M.flash(was[i], delay + ms("--dur-enter"));
+    });
+  };
+
+  SCENES.home = async function (host, ctx) {
+    host.innerHTML = '<div class="stack"><div class="bar"><span class="emph" style="font-weight:var(--weight-medium)">⌂ Home</span><span class="grow"></span><span class="meta">Waiting on you</span><span class="badge count" data-wait>1</span><button class="iconbtn" type="button" aria-label="Alerts, none"><span aria-hidden="true">🔔</span><span class="badge alert" aria-hidden="true" data-bell hidden>1</span></button></div>' +
+      '<div class="w"><div class="wh"><span aria-hidden="true">!</span> Alerts <span class="badge alert" data-count>0</span></div><div class="rows"><div class="row"><span class="t-meta" aria-hidden="true">↻</span><div class="grow"><div class="t">Deep clean, Sat 7 Nov</div><div class="meta">finding replacements…</div></div></div></div></div></div>';
+    await ctx.wait(800);
+    var bell = host.querySelector("[data-bell]"), count = host.querySelector("[data-count]"), rows = host.querySelector(".rows");
+    bell.hidden = false; M.pop(bell); M.blurPulse(bell);
+    host.querySelector(".iconbtn").setAttribute("aria-label", "Alerts, 1 needs you");
+    tick(count, "1"); M.pop(count);
+    var tmp = document.createElement("div");
+    tmp.innerHTML = '<div class="trust alert"><div class="row" style="padding:var(--space-2) var(--space-3)"><span class="t-err" aria-hidden="true">✕</span><div class="grow"><div class="t">Shiva Sanitary cancelled your plumber visit</div><div class="meta">Thu 5 Nov 10:00 · 1 replacement ready</div></div><button class="btn sm" type="button">See options</button></div></div>';
+    var row = tmp.firstElementChild;
+    follow(rows, function () { rows.insertBefore(row, rows.firstChild); }, "--dur-open");
+    M.row(row);
+    await ctx.wait(700);
+    var w = host.querySelector("[data-wait]");
+    tick(w, "2"); M.pop(w);
+  };
+
+  SCENES.visit = async function (host, ctx) {
+    host.innerHTML = visitHtml("onway");
+    var c = host.firstElementChild;
+    M.row(c);
+    c.querySelectorAll(".otp span").forEach(function (d, i) { A(d, [{ opacity: 0, transform: "translateY(4px)", filter: "blur(1.5px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { dur: "--dur-tick", ease: "--ease-snap", delay: 250 + i * ms("--stagger-loose") }); });
+    await ctx.wait(2000);
+    swap(c.querySelector(".vh"), "Mahesh is running 15 min late");
+    swap(c.querySelector(".vs"), '<span class="status" role="status"><i class="t-warn">●</i>Running late</span>');
+    var n = c.querySelector('[data-part="notice"]');
+    n.classList.remove("info"); n.classList.add("warn");
+    swap(n.querySelector("[data-line]"), "Now about");
+    tick(n.querySelector("[data-eta]"), "10:20");
+    var was = n.querySelector("[data-was]");
+    was.className = "was"; was.textContent = "was 10:05"; M.chip(was, ms("--dur-tick"));
+    var acts = c.querySelector('[data-part="actions"]');
+    acts.insertAdjacentHTML("beforeend", '<button class="btn ghost" type="button">Move the visit</button>');
+    M.chip(acts.lastElementChild, ms("--dur-tick"));
+    await ctx.wait(1300);
+    share(c.querySelector("[data-share]"));
+  };
+
+  SCENES.rate = async function (host, ctx) {
+    host.innerHTML = '<div class="trust"><div class="trust-h"><span class="mono-av" style="--av:var(--cat-2)">SK</span><b class="rh">How was Suresh\'s visit?</b><span class="r meta">Sat 1 Nov · ceiling fan</span></div><div class="rate"><div class="stars" role="radiogroup" aria-label="Rate Suresh\'s visit"></div><p class="meta" data-stxt>Not rated yet</p><div class="keep" hidden><p class="emph">Keep Suresh as your usual electrician?</p><p class="meta">Next time you ask for an electrician, I\'ll check Suresh first.</p><div class="line" style="margin-top:4px"><button class="btn" type="button" data-keep>Keep as usual</button><button class="btn ghost" type="button">Not now</button></div></div></div></div><div class="kept" style="margin-top:var(--space-2)"></div>';
+    var stars = host.querySelector(".stars"), txt = host.querySelector("[data-stxt]"), keep = host.querySelector(".keep"), kept = host.querySelector(".kept"), rating = 0;
+    function draw(n, animate) {
+      stars.innerHTML = "";
+      for (var i = 1; i <= 5; i++) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "star" + (i <= n ? " on" : ""); b.setAttribute("role", "radio");
+        b.setAttribute("aria-checked", String(i === n)); b.setAttribute("aria-label", i + " of 5 stars");
+        b.tabIndex = i === (n || 1) ? 0 : -1; b.textContent = i <= n ? "★" : "☆"; b.dataset.v = i;
+        stars.appendChild(b);
+        if (animate && i <= n && i > rating) M.pop(b, (i - rating - 1) * ms("--stagger-loose"));
+      }
+      tick(txt, n ? n + " of 5" : "Not rated yet");
+      rating = n;
+    }
+    function rate(n) { var f = stars.contains(document.activeElement); draw(n, true); if (f) stars.querySelector('[data-v="' + n + '"]').focus(); if (keep.hidden) open(keep); }
+    stars.addEventListener("click", function (e) { var b = e.target.closest(".star"); if (b) rate(+b.dataset.v); });
+    stars.addEventListener("keydown", function (e) { var d = e.key === "ArrowRight" || e.key === "ArrowUp" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 0; if (!d) return; e.preventDefault(); rate(Math.min(5, Math.max(1, rating + d))); });
+    function keepIt() {
+      if (kept.firstElementChild) return;
+      kept.innerHTML = '<div class="thread"><div class="memnote" role="status"><span class="ico" aria-hidden="true">◆</span>Remembered: <b>usual electrician Suresh</b><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button">View</button><span class="sep" aria-hidden="true">·</span><button class="btn link" type="button">Undo</button></div><div class="w"><div class="row"><span class="mono-av" style="--av:var(--cat-2)">SK</span><div class="grow"><div class="t">Suresh · Sri Sai Electricals</div><div class="meta">last visit ₹450 · Sat 1 Nov</div></div><button class="btn sm" type="button">Book again</button></div></div><p class="meta" style="margin:0">Book again starts "Electrician, Suresh, same as last time". The agent holds a slot and shows an approval card.</p></div>';
+      var items = kept.firstElementChild.children;
+      M.chip(items[0]); M.rise(items[1], ms("--stagger-loose")); M.fadeIn(items[2], 2 * ms("--stagger-loose"));
+      swap(host.querySelector(".rh"), "You rated Suresh " + rating + " of 5");
+    }
+    keep.addEventListener("click", function (e) { if (e.target.closest("[data-keep]")) keepIt(); });
+    draw(0);
+    await ctx.wait(800);
+    rate(5);
+    await ctx.wait(1600);
+    keepIt();
+  };
+
+  function layoutScene(rails, title) { return async function (host, ctx) {
+    host.innerHTML = '<div class="app"><div class="app-h"><b class="emph" style="font-weight:var(--weight-medium)">' + title + '</b><span class="grow"></span>' + rails.map(function (r) { return '<button class="btn sm" type="button" aria-pressed="false" data-rail="' + r + '">' + (r === "trace" ? "Trace" : "Memory") + "</button>"; }).join("") + '</div>' +
+      '<div class="app-b"><div class="chat"><div class="msg-user" data-f>Kitchen tap is leaking, need a plumber this week</div><p class="msg-agent" data-f style="margin:0">Three plumbers can come this week. Shiva Sanitary fits best.</p>' + cards() + '</div><aside class="rail" aria-label="Rail" hidden></aside></div></div>';
+    var rail = host.querySelector(".rail"), chat = host.querySelector(".chat"), state = null;
+    function railHtml(kind) {
+      if (kind === "trace") {
+        var rows = [["invoke_agent", 0, 100, "--chart-2", "6.1s"], ["chat MiniMax-M3", 0, 22, "--chart-1", "1.3s"], ["search_providers", 23, 8, "--chart-3", "0.5s"], ["get_provider ×3", 32, 30, "--chart-3", "1.8s"], ["hold_slot", 63, 9, "--chart-3", "0.6s"], ["propose_action", 73, 18, "--chart-4", "running"]];
+        return '<p class="lbl" style="margin:0">Trace · turn 4</p><div class="wf2">' + rows.map(function (r, i) { return '<div class="r"><span>' + r[0] + '</span><span class="tr"><i class="bar' + (i === 5 ? " run" : "") + '" style="--bs:' + r[1] + "%;--bw:" + r[2] + "%;--bc:var(" + r[3] + ')"></i></span><span class="t">' + r[4] + "</span></div>"; }).join("") + "</div>";
+      }
+      return '<p class="lbl" style="margin:0">Memory · used this turn</p><div class="stack"><div class="fact"><div class="grow"><div class="t">Area · Koramangala</div><div class="meta">you said · 2 Nov</div></div><span class="tag">explicit</span></div><div class="fact"><div class="grow"><div class="t">Budget · under ₹1,500</div><div class="meta">you said · 3 Nov</div></div><span class="tag">explicit</span></div><div class="fact inferred"><div class="grow"><div class="t">Not before 10:00?</div><div class="meta">inferred from 3 bookings</div></div><span class="tag inferred">inferred</span></div></div>';
+    }
+    function setRail(kind) {
+      var els = [].slice.call(chat.querySelectorAll(".pcard, [data-f]"));
+      host.querySelectorAll("[data-rail]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.rail === kind)); });
+      var wasOpen = !rail.hidden;
+      flip(els, function () {
+        rail.hidden = !kind;
+        if (kind) { rail.innerHTML = railHtml(kind); rail.setAttribute("aria-label", kind === "trace" ? "Trace" : "Memory"); }
+      });
+      state = kind;
+      if (!kind) return;
+      if (!wasOpen) A(rail, [{ opacity: 0, transform: "translateX(16px)" }, { opacity: 1, transform: "none" }], { dur: "--dur-layout", ease: "--ease-snap" });
+      if (kind === "trace") {
+        rail.querySelectorAll(".r").forEach(function (r, i) {
+          var d = stg(i, "--stagger-tight");
+          M.row(r, d);
+          A(r.querySelector(".bar"), [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { dur: "--dur-row", ease: "--ease-settle", delay: d + ms("--dur-micro") });
+        });
+      } else {
+        rail.querySelectorAll(".fact").forEach(function (f, i) { M.item(f, stg(i, "--stagger-tight")); });
+      }
+    }
+    host.querySelector(".app-h").addEventListener("click", function (e) { var b = e.target.closest("[data-rail]"); if (b) setRail(state === b.dataset.rail ? null : b.dataset.rail); });
+    for (var i = 0; i < rails.length; i++) { await ctx.wait(900); setRail(rails[i]); await ctx.wait(2400); }
+    setRail(null);
+  }; }
+  SCENES.layout = layoutScene(["memory"], "Plumber · Koramangala");
+  SCENES["layout-ops"] = layoutScene(["trace"], "Operator console · session wrun_01M6…");
+
+  // ---------- journey ----------
+  function frame(n, title, clock, body) {
+    return '<figure class="phone" style="margin:0"><figcaption class="phone-h"><b>' + n + " · " + title + "</b><span>" + clock + '</span></figcaption><div class="phone-b">' + body + "</div></figure>";
+  }
+  function journeyHtml() {
+    var J = [];
+    J.push(frame(1, "Request", "09:58", '<div class="composer"><div class="in">Kitchen tap is leaking, need a plumber this week</div><div class="line"><span class="chip">📍 <b>Koramangala</b></span><span class="chip inferred">Under ₹1,500</span><span style="margin-left:auto" class="btn sm primary" aria-hidden="true">↑</span></div></div>' +
+      '<div class="msg-agent stack"><p class="plan">' + PLAN + '</p><div class="steps-body"><ol><li class="st" data-s="done"><span class="sico ck-on" aria-hidden="true">' + CHECK + '</span><span class="slab">Searched plumbers in Koramangala</span></li><li class="st" data-s="active"><span class="sico" aria-hidden="true"><span class="ring"></span></span><span class="slab shimmer">Comparing 3 that fit</span></li></ol></div></div>' +
+      '<div class="memnote"><span class="ico" aria-hidden="true">◆</span>Remembered: <b>budget under ₹1,500</b> · <button class="btn link" type="button">Undo</button></div>'));
+    J.push(frame(2, "Cards", "09:59", '<div class="msg-user">Kitchen tap is leaking, need a plumber this week</div><p class="mnote">✓ Worked for <span class="mono">12s</span> · 3 steps ›</p>' + echo() + cards() +
+      '<div class="used"><span>Used:</span><b>area Koramangala</b>,<b class="inf">earliest 10:00</b>· <button class="btn link" type="button" style="font-size:var(--text-meta)">Why?</button></div>'));
+    J.push(frame(3, "Slot", "10:00", '<div class="msg-user">I\'ll take Shiva Sanitary</div>' + slot("held", "10:00")));
+    J.push(frame(4, "Approval", "10:00", approval("pending")));
+    J.push(frame(5, "Tracker", "10:01", '<div class="msg-user" style="font-size:var(--text-label)">Approved ₹399</div>' + trackerHtml("confirming")));
+    J.push(frame(6, "Receipt", "10:02", trackerHtml("booked") + '<div class="line"><button class="chip suggest" type="button">Add to calendar</button><button class="chip suggest" type="button">Move or cancel</button></div>'));
+    return J.join("");
+  }
+  SCENES.journey = function (host) {
+    host.innerHTML = journeyHtml();
+    host.querySelectorAll(".phone-b .dates, .phone-b .times").forEach(function (g) { highlight(g); });
+    host.querySelectorAll(".phone").forEach(function (f, i) { M.rise(f, stg(i, "--stagger-loose")); });
+  };
+
+  // ---------- start: inject Replay, run each scene when it first scrolls into view ----------
+  var scenes = document.querySelectorAll("[data-scene]");
+  scenes.forEach(addReplay);
+  var io = "IntersectionObserver" in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { if (en.isIntersecting && !en.target._run) { play(en.target); io.unobserve(en.target); } });
+  }, { threshold: .15 }) : null;
+  scenes.forEach(function (s) { if (io) io.observe(s); else play(s); });
+})();
+</script>
+</body></html>
