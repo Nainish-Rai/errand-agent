@@ -1,6 +1,6 @@
-import { API_PREFIX, type ProviderDetails as WireProviderDetails } from "@errand/contracts";
+import type { ListServiceOptionsResponse, ProviderDetails as WireProviderDetails, ServiceOptionView } from "@errand/contracts";
 
-import type { ProviderDetails, ProviderSummary } from "../../src/core/ports/provider-world";
+import type { ProviderDetails, ProviderSummary, ServiceOption, ServiceOptions } from "../../src/core/ports/provider-world";
 
 // Core types to wire shapes. Kept apart from the tools so a wire change can't reach core.
 
@@ -24,6 +24,16 @@ export function presentProviderDetails(provider: ProviderDetails): WireProviderD
     about: provider.about,
     cancellationTerms: provider.cancellationTerms,
     reviews: provider.reviews.map((review) => ({ ...review })),
-    photos: provider.photos.map((photo) => ({ src: `${API_PREFIX}/assets/providers/${photo.file}`, alt: photo.alt })),
+    // Asset keys as the world named them, never turned into URLs: clients draw only keys they ship.
+    image: provider.image,
+    photos: [...provider.photos],
   };
+}
+
+function presentServiceOption(option: ServiceOption): ServiceOptionView {
+  return { ...option };
+}
+
+export function presentServiceOptions(options: ServiceOptions): ListServiceOptionsResponse {
+  return { services: options.services.map(presentServiceOption), kinds: options.kinds.map(presentServiceOption) };
 }

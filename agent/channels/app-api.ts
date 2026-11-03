@@ -33,6 +33,7 @@ import {
   type ListOperatorSessionsResponse,
   type InjectWorldFaultResponse,
   type ListActionIntentsResponse,
+  type ListServiceOptionsResponse,
   type LoadModelScriptResponse,
   type SetRunLimitsResponse,
   type SimulateProviderCancellationResponse,
@@ -63,6 +64,7 @@ import { getProposal, listProposals } from "../../src/core/use-cases/list-propos
 import { listActionIntents } from "../../src/core/use-cases/reconcile-pending-actions";
 import { listOperatorReads } from "../../src/core/use-cases/list-operator-reads";
 import { listOperatorSessions } from "../../src/core/use-cases/list-operator-sessions";
+import { listServiceOptions } from "../../src/core/use-cases/list-service-options";
 import { recordOperatorRead } from "../../src/core/use-cases/record-operator-read";
 import { presentActionIntent, presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
@@ -77,7 +79,7 @@ import { presentSessionTrace } from "../lib/trace-presenter";
 import { presentSessionTranscript } from "../lib/transcript-presenter";
 import { operatorOf } from "../lib/operator";
 import { claimCallersSession, isCallersSession, sessionNotFound } from "../lib/session-access";
-import { presentProviderDetails } from "../lib/world-presenter";
+import { presentProviderDetails, presentServiceOptions } from "../lib/world-presenter";
 
 // The app API: everything a client needs besides chat, at /api/v1 on the same origin as /eve/v1.
 // Handlers stay humble: parse the request, call a use case, present the result.
@@ -197,12 +199,11 @@ export default defineChannel({
       return Response.json(body);
     }),
 
-    // The committed provider photos (src/adapters/world/assets), so every client shows the same
-    // images and nothing is fetched from the internet at runtime.
-    GET(`${API_PREFIX}/assets/providers/:file`, async (_request, { params }) => {
-      const bytes = await container().providerPhotoFiles.read(params.file ?? "");
-      if (bytes === undefined) return failure(404, "photo_not_found", "No provider photo has that name.");
-      return new Response(bytes, { headers: { "content-type": "image/webp", "cache-control": "public, max-age=86400" } });
+    // The services and kinds of service the person can pick from: home tiles and service choice
+    // cards. Photos are image asset keys the world names; each client ships its own files.
+    GET(`${API_PREFIX}/services`, async () => {
+      const body: ListServiceOptionsResponse = presentServiceOptions(await listServiceOptions(container().world));
+      return Response.json(body);
     }),
 
     // The operator console's trace panel polls this while a run is going; a session with no trace

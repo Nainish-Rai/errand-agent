@@ -1,3 +1,4 @@
+import type { ImageMode } from "../provider-images";
 import type { ReviewInjection } from "../seed/seed-providers";
 
 // Named scenarios drive the world's failure behaviour. Combined with a seed they make every
@@ -39,6 +40,8 @@ export interface Scenario {
   readonly reviewInjection: ReviewInjection;
   /** Whether the person starts with a booking history (two past visits and one upcoming). */
   readonly seedsBookingHistory: boolean;
+  /** Whether providers and services carry real image keys, or hostile values in their place. */
+  readonly images: ImageMode;
 }
 
 const DEFAULTS = {
@@ -49,6 +52,7 @@ const DEFAULTS = {
   cancelFailuresBeforeSuccess: 1,
   reviewInjection: "best_rated",
   seedsBookingHistory: true,
+  images: "registered",
 } as const satisfies Omit<Scenario, "name" | "description">;
 
 const SCENARIOS = {
@@ -122,6 +126,14 @@ const SCENARIOS = {
     name: "new_user",
     description: "A person with no bookings yet; the world behaves as in the default scenario.",
     seedsBookingHistory: false,
+  },
+  untrusted_images: {
+    ...DEFAULTS,
+    name: "untrusted_images",
+    description:
+      "Every provider and service names a hostile image (a URL, a data: URI, a path, an unknown key) in place of an asset key; bookings succeed.",
+    book: "always_booked",
+    images: "untrusted",
   },
 } as const satisfies Record<string, Omit<Scenario, "name"> & { readonly name: string }>;
 

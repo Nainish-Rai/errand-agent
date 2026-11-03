@@ -1,3 +1,5 @@
+import type { ImageKey } from "@errand/contracts";
+
 import type { CancellationPolicy, ServiceKind } from "../../../core/ports/provider-world";
 
 export const SERVICES: readonly ServiceKind[] = [
@@ -230,4 +232,30 @@ export const CANCELLATION_TERMS: readonly { readonly text: string; readonly poli
     text: "Free cancellation up to 24 hours before the visit; 20% of the price after that.",
     policy: { freeUntilHoursBefore: 24, lateFee: { kind: "percent_of_price", percent: 20 } },
   },
+];
+
+/** A pickable service or kind of service, with the image key the world names for it. */
+export interface CatalogServiceOption {
+  readonly id: string;
+  readonly service: ServiceKind;
+  readonly label: string;
+  readonly description: string;
+  readonly fromPriceInr: number;
+  readonly image: ImageKey;
+}
+
+/** The home tiles: one per service, in v3's order. Each starts at the service's lowest visit price. */
+export const SERVICE_TILES: readonly CatalogServiceOption[] = [
+  { id: "plumber", service: "plumber", label: "Plumbing", description: "Leaks, taps, drains and fittings", fromPriceInr: PRICE_RANGE_INR.plumber[0], image: "plumbing" },
+  { id: "ac_servicing", service: "ac_servicing", label: "AC servicing", description: "Service, gas refill and repair", fromPriceInr: PRICE_RANGE_INR.ac_servicing[0], image: "ac-servicing" },
+  { id: "electrician", service: "electrician", label: "Electrician", description: "Wiring, switches and breakers", fromPriceInr: PRICE_RANGE_INR.electrician[0], image: "electrician" },
+  { id: "cleaner", service: "cleaner", label: "Deep cleaning", description: "Kitchens, bathrooms and whole homes", fromPriceInr: PRICE_RANGE_INR.cleaner[0], image: "deep-cleaning" },
+  { id: "carpenter", service: "carpenter", label: "Carpentry", description: "Furniture, doors and fittings", fromPriceInr: PRICE_RANGE_INR.carpenter[0], image: "carpentry" },
+];
+
+/** The kinds of AC service, for "Which AC service?". Prices are for one split AC. */
+export const SERVICE_KINDS: readonly CatalogServiceOption[] = [
+  { id: "ac_gas_refill", service: "ac_servicing", label: "Gas refill", description: "Cooling is weak or the AC blows warm", fromPriceInr: 2_499, image: "ac-gas-refill" },
+  { id: "ac_deep_clean", service: "ac_servicing", label: "Deep clean", description: "Jet wash of the filters, coil and tray", fromPriceInr: 599, image: "ac-deep-clean" },
+  { id: "ac_repair", service: "ac_servicing", label: "Repair", description: "Noise, leaks, or the AC will not start", fromPriceInr: 299, image: "ac-repair" },
 ];

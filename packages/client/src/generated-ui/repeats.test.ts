@@ -15,6 +15,7 @@ function provider(id: string) {
     reviewCount: 10,
     attributes: [],
     freeSlots: [SLOT],
+    image: "plumbing",
     photos: [],
   };
 }

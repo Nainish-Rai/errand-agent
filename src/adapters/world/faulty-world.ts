@@ -6,7 +6,8 @@ import type { ProviderWorld } from "../../core/ports/provider-world";
 // backend between sending `book` and recording its reply. The composition root wraps the world in
 // it only after the dev-only world-fault route asked for it; production never builds one.
 
-export type WorldOperation = keyof ProviderWorld;
+// Listing service options is a static menu, not a provider call that can time out, so it takes no fault.
+export type WorldOperation = Exclude<keyof ProviderWorld, "listServiceOptions">;
 
 export const WORLD_OPERATIONS: readonly WorldOperation[] = [
   "searchProviders",

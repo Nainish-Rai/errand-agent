@@ -1,3 +1,4 @@
+import { IMAGE_KEYS } from "@errand/contracts";
 import { equals } from "eve/evals/expect";
 
 import { bookingChanges, cardsIn, executionsIn } from "../../approval-checks";
@@ -20,11 +21,11 @@ export default defineScenario({
     "Choose sends \"I'll take Shiva Sanitary Solutions, <its earliest slot>.\"; that turn holds the slot and shows the card with no execute; after Approve exactly one booking for the held slot",
   async expect(t, run) {
     t.succeeded();
-    // The card's photo is served by the backend itself (committed files, nothing fetched at runtime).
-    const [cover] = (await run.api.getProvider(CHEAPEST_PLUMBER.providerId)).photos;
-    const photo = cover === undefined ? undefined : await t.target.fetch(cover.src);
-    t.check([photo?.status, photo?.headers.get("content-type"), ((await photo?.arrayBuffer())?.byteLength ?? 0) > 1_000], equals([200, "image/webp", true])).label(
-      "the card's photo is served as WebP",
+    // The card's photos are image asset keys the app ships, never URLs: nothing is fetched by address.
+    const provider = await run.api.getProvider(CHEAPEST_PLUMBER.providerId);
+    const keys: readonly string[] = IMAGE_KEYS;
+    t.check([provider.image, ...provider.photos].every((key) => keys.includes(key)) && provider.photos.length > 0, equals(true)).label(
+      "the card's thumbnail and photos are registered image keys",
     );
     t.check(run.uiTaps.map((tap) => tap.sent), equals(["I'll take Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST."])).label(
       "Choose sends the card's name and earliest slot",

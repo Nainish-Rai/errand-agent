@@ -43,6 +43,8 @@ export const COMPONENT_RULES: Readonly<Record<string, ComponentRule>> = {
   SlotPicker: rule("ask", { providerIdProps: ["providerId"] }),
   PickOne: rule("ask"),
   PickOption: rule("part", { tappableTextProps: ["label"] }),
+  ServiceChoices: rule("ask"),
+  ServiceChoice: rule("part", { tappableTextProps: ["label"] }),
   BookingPicker: rule("ask", { bookingIdProps: ["bookingIds"] }),
   PreferenceCard: rule("ask", { factIdProps: ["factIds"] }),
   AskForm: rule("ask"),

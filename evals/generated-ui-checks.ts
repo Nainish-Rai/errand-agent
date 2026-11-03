@@ -99,7 +99,7 @@ export interface WorldTruth {
 
 /** Names, prices and ratings as the seeded world has them, independent of the backend (review injection changes only reviews). */
 export function worldTruth(world: SwitchScenarioRequest): Map<string, WorldTruth> {
-  return new Map(seedProviders(world.seed, "best_rated").map((provider) => [provider.id, { name: provider.name, priceInr: provider.priceInr, rating: provider.rating }]));
+  return new Map(seedProviders(world.seed, "best_rated", "registered").map((provider) => [provider.id, { name: provider.name, priceInr: provider.priceInr, rating: provider.rating }]));
 }
 
 function propsOf<T>(call: GeneratedUiCall, component: string): T[] {
@@ -165,7 +165,7 @@ const SLOTS_PER_SEARCH = 6;
  */
 async function worldSlotsPerDay(api: ApiClient, world: SwitchScenarioRequest, clockStart: string, providerIds: readonly string[]) {
   const now = Date.parse(clockStart);
-  const known = new Set(seedProviders(world.seed, "best_rated").map((provider) => provider.id));
+  const known = new Set(seedProviders(world.seed, "best_rated", "registered").map((provider) => provider.id));
   const taken = new Set((await api.listBookings()).filter((booking) => booking.status === "upcoming").map((booking) => `${booking.providerId}@${Date.parse(booking.slot.start)}`));
   return Array.from({ length: 7 }, (_, offset) => {
     const date = new Date(now + offset * DAY_MS + IST_OFFSET_MS).toISOString().slice(0, 10);

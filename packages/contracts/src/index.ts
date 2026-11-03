@@ -1,5 +1,6 @@
 export * from "./api";
 export * from "./world";
+export * from "./images";
 export * from "./trace";
 export * from "./model-script";
 export * from "./errand";
