@@ -46,7 +46,7 @@ function cardDescription(terms: ProposalTermsView): string {
         `Buttons: "Approve ₹${terms.priceInr}", "Other options", "Decline"]`
       );
     case "cancel": {
-      const approve = terms.priceInr === 0 ? "Approve free cancellation" : `Approve ₹${terms.priceInr} fee`;
+      const approve = terms.priceInr === 0 ? "Approve free cancellation" : `Approve ₹${terms.priceInr}`;
       return (
         `[Cancellation card on screen: ${terms.providerName}, booking ${terms.bookingId}, ${terms.slot.start}, ` +
         `cancellation fee ₹${terms.priceInr}. Buttons: "${approve}" (approve), "Keep booking" (decline)]`

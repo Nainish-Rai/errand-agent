@@ -229,7 +229,7 @@ export function presentProposeOutcome(outcome: ProposeBookingOutcome): ProposeAc
 /** "Approve ₹899" for a booking or a move; a cancellation's button names its fee, or says it's free. */
 export function approveButtonOf(terms: ProposalTerms): string {
   if (terms.action !== "cancel") return `Approve ${rupees(terms.priceInr)}`;
-  return terms.priceInr === 0 ? "Approve free cancellation" : `Approve ${rupees(terms.priceInr)} fee`;
+  return terms.priceInr === 0 ? "Approve free cancellation" : `Approve ${rupees(terms.priceInr)}`;
 }
 
 function proposedChangeMessage(terms: BookingChangeTerms): string {

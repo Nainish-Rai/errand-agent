@@ -99,10 +99,10 @@ export function approvalAmount(proposal: ApprovalProposal): number {
   return proposal.kind === "cancel" ? proposal.fee : proposal.price;
 }
 
-/** "Approve ₹899"; a cancellation names its fee, or says it is free. */
+/** "Approve ₹899", the price (a cancellation's fee) on the button; a cancellation with no fee says it is free. */
 export function approveLabel(proposal: ApprovalProposal): string {
   if (proposal.kind !== "cancel") return `Approve ${formatRupees(approvalAmount(proposal))}`;
-  return proposal.fee === 0 ? "Approve free cancellation" : `Approve ${formatRupees(proposal.fee)} fee`;
+  return proposal.fee === 0 ? "Approve free cancellation" : `Approve ${formatRupees(proposal.fee)}`;
 }
 
 /** What the person approved, for the approved card's note. */
