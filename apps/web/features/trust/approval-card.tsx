@@ -107,7 +107,8 @@ export function approveLabel(proposal: ApprovalProposal): string {
 
 /** What the person approved, for the approved card's note. */
 function approvedWhat(proposal: ApprovalProposal): string {
-  return proposal.kind === "cancel" ? "the cancellation" : formatRupees(approvalAmount(proposal));
+  const what = { book: formatRupees(approvalAmount(proposal)), cancel: "the cancellation", reschedule: "the move" } as const;
+  return what[proposal.kind];
 }
 
 /** The buttons besides Approve: a booking offers other options; a change offers to keep the booking as it is. */
@@ -173,7 +174,8 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
       );
       break;
   }
-  if (holdLeft !== undefined) rows.push({ label: "Hold", value: holdLeft, mono: true });
+  // A booking card lasts as long as its slot hold; a cancel or reschedule card holds nothing, it just expires.
+  if (holdLeft !== undefined) rows.push({ label: proposal.kind === "book" ? "Hold" : "Valid", value: holdLeft, mono: true });
   return rows;
 }
 

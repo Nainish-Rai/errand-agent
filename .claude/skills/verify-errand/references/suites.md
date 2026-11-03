@@ -65,6 +65,7 @@ A FAIL scenario keeps `failure.png`, the settled state when it stopped.
 
 | Suite | Proves |
 | --- | --- |
+| `booking-changes.json` | "Move my AC servicing to Saturday" shows a fixed reschedule card with the old time struck through beside the new one, and one tap moves `bkg_seed_3` once with its grant consumed; a refused 8 am moves nothing, says why, and the closest free time (2 pm) is a fresh pending card that alone moves it; a cancellation card shows "No fee" and the provider's terms, a 503 is retried and `Cancelled` appears with the intent confirmed after two attempts; "the same electrician as last time, not before 10" puts Lakshmi Wiring Services at 11:00 on the card with the errand's earliest hour 10 |
 | `chat-search.json` | scripted search renders 8 providers from the world (Enter and Send), the reply follows, the trace holds one `search_providers` |
 | `trace-panel.json` | Hide/Show trace toggle and close button; the waterfall shows 2 model spans and 1 tool span, matching the backend trace; a panel open before the first message shows the turn |
 | `clarify-errand.json` | "I need a plumber this week" gets one area question with area chips; a chip answers it; two or three options tagged Best match / Cheapest / Earliest; the open trace panel lists the errand's state transitions, matching the backend errand and trace |
