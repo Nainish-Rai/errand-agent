@@ -17,7 +17,7 @@ Mock images: every provider in the world has a service photo and a small gallery
 
 **Blocked by:** 04, 05, 18
 
-**Status:** ready-for-agent
+**Status:** done (PR #17)
 
 - [x] Spike result recorded: how OpenUI's assistant-ui tools are wired to eve's server-side tools, and how *ask* resumes the turn
 - [x] Eval: a request missing the time window renders an *ask* form containing only that field; submitting it fills the errand without a typed reply
