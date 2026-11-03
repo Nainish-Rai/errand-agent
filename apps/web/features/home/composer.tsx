@@ -219,6 +219,7 @@ export function Composer({ composer }: { readonly composer: ErrandComposer }) {
     <form
       onSubmit={submit}
       aria-label="New errand"
+      data-slot="chat-input"
       className="grid gap-1 rounded-sheet border border-line-strong bg-field p-1.5 transition-colors duration-(--dur-instant) ease-out focus-within:border-accent-line"
     >
       <textarea

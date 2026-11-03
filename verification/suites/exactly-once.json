@@ -361,12 +361,12 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Upcoming bookings\"] >> text=Shiva Sanitary Solutions"
+            "role=region[name=\"Upcoming\"s] >> text=Shiva Sanitary Solutions"
           ],
           "options": {
             "count": 1
           },
-          "note": "home: Upcoming bookings shows the booking exactly once"
+          "note": "home: Upcoming shows the booking exactly once"
         },
         {
           "command": "api",
@@ -703,12 +703,12 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Upcoming bookings\"] >> text=Shiva Sanitary Solutions"
+            "role=region[name=\"Upcoming\"s] >> text=Shiva Sanitary Solutions"
           ],
           "options": {
             "count": 1
           },
-          "note": "home: Upcoming bookings shows the booking exactly once"
+          "note": "home: Upcoming shows the booking exactly once"
         },
         {
           "command": "api",

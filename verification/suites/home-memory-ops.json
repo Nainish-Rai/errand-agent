@@ -221,7 +221,7 @@
     },
     {
       "id": "motion-mid-animation",
-      "title": "Mid-animation frames: the memory sheet rising and a forgotten row collapsing",
+      "title": "Mid-animation frames: the memory sheet rising and the chat's memory panel widening",
       "viewport": "desktop",
       "setup": [
         { "command": "api", "args": ["POST", "/api/v1/dev/scenario"], "options": { "body": { "scenario": "happy_path", "seed": 42 } }, "note": "seed the world: happy_path, seed 42" },
@@ -248,8 +248,11 @@
         { "command": "assert", "options": { "role": "dialog", "name": "Memory", "state": "visible" }, "note": "the sheet settled open" },
         { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"] },
         { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
-        { "command": "screenshot", "args": ["mid-row-forget.png"], "options": { "animations": "allow", "viewport": true }, "note": "taken while the row collapses and the tombstone arrives" },
-        { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" } }
+        { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" }, "note": "the row collapsed and its tombstone arrived" },
+        { "command": "goto", "args": ["/chat"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        { "command": "screenshot", "args": ["mid-panel-opening.png"], "options": { "animations": "allow", "viewport": true }, "note": "taken while the memory panel widens from 0 to --sheet over --dur-base and the chat column gives way" },
+        { "command": "assert", "options": { "role": "complementary", "name": "Memory", "state": "visible" }, "note": "the panel settled open" }
       ]
     },
     {
@@ -281,10 +284,14 @@
         { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> :focus"], "options": { "count": 1 }, "note": "focus moved into the sheet" },
         { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"More for area\"s]"] },
         { "command": "click", "options": { "role": "menuitem", "name": "Forget" } },
-        { "command": "screenshot", "args": ["reduced-row-forget.png"], "options": { "animations": "allow", "viewport": true }, "note": "the same moment as mid-row-forget.png: the row is already gone" },
+        { "command": "screenshot", "args": ["reduced-row-forget.png"], "options": { "animations": "allow", "viewport": true }, "note": "right after Forget: the row is already gone and its tombstone is there" },
         { "command": "assert", "args": ["role=status >> text=Forgot your area"], "options": { "count": 1 }, "note": "feedback is kept: the toast" },
         { "command": "assert", "options": { "role": "listitem", "name": "Forgotten: Area", "text": "never used again" } },
-        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> button[data-more=\"budget\"]:focus"], "options": { "count": 1 }, "note": "focus moved to the next row" }
+        { "command": "assert", "args": ["role=dialog[name=\"Memory\"s] >> button[data-more=\"budget\"]:focus"], "options": { "count": 1 }, "note": "focus moved to the next row" },
+        { "command": "goto", "args": ["/chat"] },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        { "command": "screenshot", "args": ["reduced-panel-at-once.png"], "options": { "animations": "allow", "viewport": true }, "note": "the same moment as mid-panel-opening.png: under reduced motion the panel is already full width" },
+        { "command": "assert", "options": { "role": "button", "name": "Hide memory", "attr": "aria-pressed=true" }, "note": "the toggle still says what happened" }
       ]
     }
   ]

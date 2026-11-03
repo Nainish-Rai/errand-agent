@@ -47,6 +47,8 @@
 .lime ::selection { background: var(--accent); color: var(--on-accent); }
 /* Focus is a 2px outline in the accent's line step (3.95:1 on white), 2px out. Two classes of specificity beat a site-wide a:focus-visible. */
 .lime :where(*):is(:focus-visible, [data-force-focus-visible]) { outline: var(--line-focus) solid var(--ring); outline-offset: var(--focus-offset); }
+/* v3 ChatInput: the field's border shows focus (and the forced-colors outline below), so its textarea draws no second ring. */
+[data-slot="chat-input"] textarea:focus-visible { outline: none; }
 .lime, .lime * { scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* iOS Safari zooms the page when a field under 16px takes focus. On a coarse pointer every text field is at least 16px. */
