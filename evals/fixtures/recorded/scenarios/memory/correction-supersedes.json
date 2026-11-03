@@ -1,0 +1,88 @@
+{
+  "scenario": "scenarios/memory/correction-supersedes",
+  "recordedAt": "2026-11-03T01:03:14.418Z",
+  "evalRunId": "204f375f-4642-4397-8d51-a628439ca828",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need to update my location. My usual area is HSR Layout now, not Koramangala. Can you remember that for me?"
+    },
+    {
+      "newSession": true
+    },
+    {
+      "say": "I need a plumber this week"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll update that for you.",
+            "toolCalls": [
+              {
+                "name": "correct_fact",
+                "input": {
+                  "key": "area",
+                  "value": "HSR Layout",
+                  "evidence_quote": "My usual area is HSR Layout now, not Koramangala."
+                }
+              }
+            ]
+          },
+          {
+            "text": "Done — your usual area is now HSR Layout, replacing Koramangala. I'll use it next time you book a service."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "text": "I'll get that started — using your usual area, HSR Layout.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "HSR Layout",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "HSR Layout",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are your options for a plumber in HSR Layout this week:\n\n**Lakshmi Sanitary Solutions** — Best match & earliest\n- ₹949 · 4.5 rating (52 reviews)\n- Earliest: Wed, 4 Nov, 10:00 am IST\n- Reason: Best match: rated 4.5 from 52 reviews · Earliest: Wed, 4 Nov, 10:00 am IST\n\n**Venkatesh Plumbing Works** — Cheapest\n- ₹749 · 4.1 rating (227 reviews)\n- Earliest: Thu, 5 Nov, 9:00 am IST\n- Reason: Cheapest: ₹749\n\nWant me to narrow these down by budget, time of day, or anything else — a female technician, for instance, is available with Venkatesh Plumbing Works?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.005876579999999999,
+    "simulatedUser": 0.056767899999999996
+  }
+}

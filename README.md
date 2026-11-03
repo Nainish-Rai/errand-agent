@@ -102,6 +102,7 @@ Every tool is exported as `withRunBudget(defineTool({...}))` (`agent/lib/run-bud
 
 Every run ends in one typed outcome: `completed`, `needs_user`, `verifying`, `budget_exhausted` or `failed` (`src/core/budget/outcome.ts`). A stopped run answers with its outcome's message as the reply; a run that ends on its own takes its outcome from where it left the errand. Each outcome has one message, from `agent/lib/run-outcome-presenter.ts`. A `failed` run moves its errand to `failed`. The outcome is a `run_outcome` event in the run trace, and the global invariant "every run ends with a typed outcome" checks every scenario's trace for exactly one per run. The evals and browser checks tighten the limits with `PUT /api/v1/dev/run-limits` and make a world operation slow or throw with `PUT /api/v1/dev/world-fault` (dev only; a scenario switch resets both).
 
+<<<<<<< HEAD
 ## Approval
 
 The model can't book. It holds the chosen slot (`hold_slot`) and calls `propose_action`, and core (`src/core/approval/`) snapshots the world's hold, not the model's arguments, into a proposal whose fingerprint is SHA-256 over action, provider, slot, price and hold. The chat renders the fixed approval card (`apps/web/features/trust`) from `GET /api/v1/proposals/:id`: provider, time in IST, address, price, cancellation terms, the hold's countdown, and Approve ₹PRICE, Other options and Decline.
@@ -112,6 +113,19 @@ The model can't book. It holds the chosen slot (`hold_slot`) and calls `propose_
 - **Decline** (and Other options) calls `POST /api/v1/proposals/:id/decline`: nothing is booked, the hold is released, and the errand goes back to its options.
 
 Proposals and grants live in SQLite (`src/adapters/sqlite/sqlite-proposal-store.ts`, migrations `0500_proposals` and `0501_grants`). `GET /api/v1/bookings` lists the world's bookings, each with the proposal and grant that made it. `GET /api/v1/proposals?status=pending` and `GET /api/v1/sessions/:id/proposals` list proposals.
+=======
+## Memory
+
+The agent remembers a person's usual area, budget, earliest start hour, favourite technician and standing preferences (`src/core/memory/`), per person from the auth context, in SQLite (`memory_facts`, `memory_tombstones`).
+
+- A fact is `explicit` (the person said it) or `inferred` (the agent noticed it). An inferred fact is `pending_confirmation` and never used until the person confirms it.
+- Nothing is ever edited in place. A correction closes the old fact's validity window and adds a new fact that supersedes it; a forget marks the key's facts forgotten and writes a tombstone, so the key is never guessed again (only said again). A SQLite trigger refuses any change to what a fact said.
+- Core refuses a write whose quote comes from tool output or can't be found in the person's own messages (`untrusted_source`), whatever the model was told. The invariant `memory-only-from-the-user` checks every scenario.
+- `selectContext` (`context-selection.ts`) is a pure filter-then-rank over facts: superseded, forgotten, unconfirmed and out-of-window facts are excluded before ranking. The eve memory provider (`agent/memory/preferences.ts`) adds the selected facts to each turn as "Remembered about this person" and traces a `memory context` event with what was included and excluded, and why.
+- A session's first errand is prefilled from memory through `updateErrand`, traced as `memory → errand: <fields>`, and the tool result carries a notice the agent says ("Using your usual area, Koramangala."). A value the person gives now wins.
+- Tools: `remember_fact`, `correct_fact`, `forget_fact`, `confirm_fact`, `list_memory`. Routes: `GET /api/v1/memory`, `PATCH /api/v1/memory/:key`, `DELETE /api/v1/memory/:key`, `POST /api/v1/memory/:id/confirm`, and dev only `PUT /api/v1/dev/memory` (replace the person's memory with seed facts; the evals use it per scenario).
+- The chat's `Show memory` toggle opens the Memory panel: current facts with explicit/inferred badges, Confirm, Correct and Forget, plus forgotten and replaced facts.
+>>>>>>> 75f724d (Ticket 11: README memory section, live replay fixture for correction-supersedes, regenerated eval table, ticket boxes)
 
 ## Layout
 
