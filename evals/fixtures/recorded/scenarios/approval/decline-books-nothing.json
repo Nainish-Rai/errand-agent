@@ -1,0 +1,105 @@
+{
+  "scenario": "scenarios/approval/decline-books-nothing",
+  "recordedAt": "2026-11-03T00:54:49.876Z",
+  "evalRunId": "3daab9dc-f066-4fcf-b550-f5d3d6ad3b10",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber in Koramangala this week. Can you help?"
+    },
+    {
+      "say": "I want the cheapest one please, Shiva Sanitary Solutions."
+    },
+    {
+      "card": "decline"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are your options for a plumber in Koramangala this week:\n\n**Venkatesh Sanitary Solutions** — best match · earliest₹499 · rated 4.8 (241 reviews)\nEarliest: Wed, 4 Nov, 10:00 am IST\nBest match: rated 4.8 from 241 reviews · Earliest: Wed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — cheapest\n₹399 · rated 4.5 (133 reviews)\nEarliest: Thu, 5 Nov, 8:00 am IST\nCheapest: ₹399\n\nWhich one would you like me to hold?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_plumber_koramangala_5",
+                  "slot": {
+                    "start": "2026-11-05T08:00:00+05:30",
+                    "end": "2026-11-05T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "I've held that slot — please check the card on screen and tap Approve ₹399 if it looks right. Nothing is booked until you do."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "text": "No problem — the hold is released. Here's the options again:\n\n**Venkatesh Sanitary Solutions** — best match · earliest\n₹499 · rated 4.8 (241 reviews)\nEarliest: Wed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — cheapest\n₹399 · rated 4.5 (133 reviews)\nEarliest: Thu, 5 Nov, 8:00 am IST\n\nWant me to hold one of these, or would you prefer I search with a different budget or time of day?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.00484854,
+    "simulatedUser": 0.0461356
+  }
+}

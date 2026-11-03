@@ -102,6 +102,17 @@ Every tool is exported as `withRunBudget(defineTool({...}))` (`agent/lib/run-bud
 
 Every run ends in one typed outcome: `completed`, `needs_user`, `verifying`, `budget_exhausted` or `failed` (`src/core/budget/outcome.ts`). A stopped run answers with its outcome's message as the reply; a run that ends on its own takes its outcome from where it left the errand. Each outcome has one message, from `agent/lib/run-outcome-presenter.ts`. A `failed` run moves its errand to `failed`. The outcome is a `run_outcome` event in the run trace, and the global invariant "every run ends with a typed outcome" checks every scenario's trace for exactly one per run. The evals and browser checks tighten the limits with `PUT /api/v1/dev/run-limits` and make a world operation slow or throw with `PUT /api/v1/dev/world-fault` (dev only; a scenario switch resets both).
 
+## Approval
+
+The model can't book. It holds the chosen slot (`hold_slot`) and calls `propose_action`, and core (`src/core/approval/`) snapshots the world's hold, not the model's arguments, into a proposal whose fingerprint is SHA-256 over action, provider, slot, price and hold. The chat renders the fixed approval card (`apps/web/features/trust`) from `GET /api/v1/proposals/:id`: provider, time in IST, address, price, cancellation terms, the hold's countdown, and Approve ₹PRICE, Other options and Decline.
+
+- **Approve** posts the card's fingerprint to `POST /api/v1/proposals/:id/approve`, the only place a grant is minted (dependency-cruiser rule `only-the-approve-route-mints-grants`). The person comes from the channel's auth context. Repeating it returns the same grant. The grant is single-use and expires with the hold or after five minutes, whichever is first. Then the card sends "I approved it on the card." and the agent calls `execute_proposal`.
+- **`execute_proposal`** books only with an unused grant whose fingerprint matches. It uses the grant (atomically, once), calls `book` with the key `book:<grantId>`, and checks `get_booking_status` before it reports `booked` with the booking ID. A timeout the status can't settle is `verifying`, never booked or failed.
+- **A typed "yes"** reaches `execute_proposal` too, which finds no grant, books nothing and hands the card back to be shown again.
+- **Decline** (and Other options) calls `POST /api/v1/proposals/:id/decline`: nothing is booked, the hold is released, and the errand goes back to its options.
+
+Proposals and grants live in SQLite (`src/adapters/sqlite/sqlite-proposal-store.ts`, migrations `0500_proposals` and `0501_grants`). `GET /api/v1/bookings` lists the world's bookings, each with the proposal and grant that made it. `GET /api/v1/proposals?status=pending` and `GET /api/v1/sessions/:id/proposals` list proposals.
+
 ## Layout
 
 ```
@@ -142,8 +153,8 @@ After each run a custom eve reporter (`evals/reporter.ts`) writes `evals/results
 
 The global invariants from [SPEC.md](SPEC.md) run after every scenario. Until the ticket that builds a feature gives its invariant a `check` in `evals/invariants.ts`, it is recorded as pending, with no pass rule, so it never counts as passing.
 
-**Add a scenario:** create `evals/scenarios/<area>/<name>.eval.ts` with `defineScenario` (see `evals/scenarios/approval/approve-click-reaches-the-api.eval.ts`). Give it the eval id of its path, the world (`scenario` and `seed`), the scripted user's steps (`{ say }` or `{ approve: { proposalId, fingerprint } }`), the scripted model turns, a goal for the simulated user, a one-line `expected`, and `expect(t, run)` asserting the end state. Record it with `pnpm eval:record <id>` so replay covers it.
+**Add a scenario:** create `evals/scenarios/<area>/<name>.eval.ts` with `defineScenario` (see `evals/scenarios/approval/approve-click-reaches-the-api.eval.ts`). Give it the eval id of its path, the world (`scenario` and `seed`), the scripted user's steps (`{ say }`, `{ card: "approve" | "decline" | "other_options" }` to tap the latest approval card as the web app does, or a hand-made `{ approve: { proposalId, fingerprint } }` request), the scripted model turns, a goal for the simulated user, a one-line `expected`, and `expect(t, run)` asserting the end state. Record it with `pnpm eval:record <id>` so replay covers it.
 
 ## Mock world
 
-`src/adapters/world` implements the assignment's eight tools (`search_providers`, `get_provider`, `hold_slot`, `book`, `get_booking_status`, `cancel`, `reschedule`, `list_bookings`) with their failure behaviour. Every outcome is a function of a seed and a named scenario (`default`, `happy_path`, `slot_taken`, `timeout_after_success`, `timeout_without_booking`, `price_changed_on_hold`, `reschedule_conflict`). Switch with `POST /api/v1/dev/scenario {"scenario":"…","seed":42}`. Only `search_providers` is exposed to the agent so far, through the errand (see above).
+`src/adapters/world` implements the assignment's eight tools (`search_providers`, `get_provider`, `hold_slot`, `book`, `get_booking_status`, `cancel`, `reschedule`, `list_bookings`) with their failure behaviour. Every outcome is a function of a seed and a named scenario (`default`, `happy_path`, `slot_taken`, `timeout_after_success`, `timeout_without_booking`, `price_changed_on_hold`, `reschedule_conflict`). Switch with `POST /api/v1/dev/scenario {"scenario":"…","seed":42}`; a switch also discards every proposal and grant, since they name the old world's holds. The agent sees `search_providers` (through the errand, see above) and `hold_slot`. It never sees `book`: only core's ExecuteProposal calls it, with a grant. The world also has a `releaseHold`, which is not one of the eight tools and which only core calls, when a proposal is declined.
