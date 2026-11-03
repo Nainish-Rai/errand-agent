@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuiState } from "@assistant-ui/react";
-import { providersShownBySearch, type ApiClient } from "@errand/client";
+import { providersShownBySearch, type AppApi } from "@errand/client";
 import {
   GetProviderInsightOutputSchema,
   type BookingView,
@@ -20,7 +20,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 // these reads by id, never from the program the model wrote.
 
 export interface GeneratedUiHost {
-  readonly api: ApiClient;
+  readonly api: AppApi;
   /** Sends text as the person's next message: the only thing a generated button can do. */
   readonly send: (text: string) => Promise<void>;
   readonly sessionId: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiClient } from "@errand/client";
+import type { AppApi } from "@errand/client";
 import type { GetSessionTraceResponse } from "@errand/contracts";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +30,7 @@ interface FetchedTrace {
  * Polls the session's trace while the panel is open, and fetches at once whenever the chat
  * reports new activity, so a turn shows up as soon as it starts rather than on the next tick.
  */
-function useSessionTrace(api: ApiClient, sessionId: string, activity: number): { fetched?: FetchedTrace; error?: string } {
+function useSessionTrace(api: AppApi, sessionId: string, activity: number): { fetched?: FetchedTrace; error?: string } {
   const [fetched, setFetched] = useState<FetchedTrace>();
   const [error, setError] = useState<string>();
   const pollNow = useRef<() => void>(() => undefined);
@@ -148,7 +148,7 @@ export function TracePanel({
   /** Changes whenever the caller sees new session events, so the panel refetches at once. */
   readonly activity?: number;
   /** The operator's API client: the trace and context routes answer nobody else. */
-  readonly api: ApiClient;
+  readonly api: AppApi;
   /** Shows a close button when the panel can be dismissed. */
   readonly onClose?: () => void;
 }) {

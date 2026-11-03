@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiClient } from "@errand/client";
+import type { AppApi } from "@errand/client";
 import type { ListMemoryResponse, MemoryFactView, MemoryKey, TombstoneView } from "@errand/contracts";
 import { motion } from "motion/react";
 import { Ellipsis, PencilLine, Trash2 } from "lucide-react";
@@ -58,7 +58,7 @@ function announceMemoryChange() {
   for (const refresh of memoryChanged) refresh();
 }
 
-export function useMemoryFacts(api: ApiClient, activity: number) {
+export function useMemoryFacts(api: AppApi, activity: number) {
   const [memory, setMemory] = useState<ListMemoryResponse>();
   const [error, setError] = useState<string>();
   const latest = useRef(0);
@@ -301,7 +301,7 @@ export function MemoryFacts({
   activity = 0,
   returnFocus,
 }: {
-  readonly api: ApiClient;
+  readonly api: AppApi;
   /** Changes whenever the chat sees new session events, so a fact changed in chat shows up here. */
   readonly activity?: number;
   readonly returnFocus?: () => void;

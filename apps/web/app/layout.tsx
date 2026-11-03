@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { themeInitScript } from "@/components/theme-init-script";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DemoBanner } from "@/features/chat/backend";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            {children}
+            {DemoBanner !== undefined && <DemoBanner />}
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
