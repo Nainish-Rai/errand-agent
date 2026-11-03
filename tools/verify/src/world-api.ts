@@ -6,6 +6,7 @@ import {
   ProposalStatusSchema,
   SetRunLimitsRequestSchema,
   CorrectMemoryFactRequestSchema,
+  DraftErrandRequestSchema,
   MemoryKeySchema,
   SeedMemoryRequestSchema,
   SwitchScenarioRequestSchema,
@@ -73,6 +74,20 @@ const ROUTES: readonly Route[] = [
     pattern: /^\/sessions\/([^/]+)\/errand$/,
     route: "GET /api/v1/sessions/:id/errand",
     handle: async (client, match) => ({ errand: await client.getErrand(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "POST",
+    pattern: /^\/sessions\/([^/]+)\/errand$/,
+    route: "POST /api/v1/sessions/:id/errand",
+    handle: async (client, match, _url, body) => ({
+      errand: await client.draftErrand(decodeURIComponent(match[1] ?? ""), DraftErrandRequestSchema.parse(body)),
+    }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/home$/,
+    route: "GET /api/v1/home",
+    handle: async (client) => await client.getHomeSummary(),
   },
   {
     method: "GET",

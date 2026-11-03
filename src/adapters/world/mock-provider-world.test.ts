@@ -354,4 +354,8 @@ describe("list_bookings", () => {
     expect(bookings.map((booking) => booking.status).sort()).toEqual(["completed", "completed", "upcoming"]);
     expect(await worldFor("default").listBookings("someone-else")).toEqual([]);
   });
+
+  it("a new user starts with no bookings at all", async () => {
+    expect(await worldFor("new_user").listBookings("dev-user")).toEqual([]);
+  });
 });

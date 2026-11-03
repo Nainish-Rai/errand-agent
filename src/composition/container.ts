@@ -10,6 +10,9 @@ import type { ProposalStore } from "../core/ports/proposal-store";
 import type { MemoryStore } from "../core/ports/memory-store";
 import type { ServiceCatalog } from "../core/ports/service-catalog";
 import type { ModelContextDependencies } from "../core/use-cases/build-model-context";
+import type { DraftErrandDependencies } from "../core/use-cases/draft-errand";
+import type { HomeSummaryDependencies } from "../core/use-cases/get-home-summary";
+import type { AlertFeed } from "../core/ports/alert-feed";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
 import type { ProposalDependencies } from "../core/use-cases/proposal-session";
 import type { MemoryDependencies } from "../core/use-cases/memory-session";
@@ -28,10 +31,12 @@ import { clockStartingAt } from "../adapters/clock/clock-starting-at";
 import { randomIds, sha256Hasher } from "../adapters/crypto/node-crypto";
 import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
+import { EmptyAlertFeed } from "../adapters/alerts/empty-alert-feed";
 import { gatedModel } from "../adapters/models/run-budget-gate";
 import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
+import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { reviewReadersFor } from "../adapters/review-reader/select-review-readers";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
@@ -90,7 +95,10 @@ class Container {
     sanitizer: new Sanitizer({ secrets: runtimeSecrets() }),
   });
   readonly modelPricing: ModelPricing = new PriceTable();
-  readonly errands: ErrandStore = new InMemoryErrandStore();
+  readonly #errandRecords = new InMemoryErrandStore();
+  readonly errands: ErrandStore = this.#errandRecords;
+  /** Provider alerts for the home screen; empty until ticket 14 raises them. */
+  readonly alertFeed: AlertFeed = new EmptyAlertFeed();
   readonly catalog: ServiceCatalog = worldCatalog;
   #world: MockProviderWorld;
   #settings: WorldSettings;
@@ -140,8 +148,8 @@ class Container {
 
   /**
    * Dev only: replace the world with a freshly seeded one for the named scenario. A new scenario
-   * starts clean: default run limits, no world fault, and no proposals or grants (they name the
-   * old world's holds and bookings, whose ids the new world reuses).
+   * starts clean: default run limits, no world fault, and no proposals, grants or errands (they name
+   * the old world's holds and bookings, whose ids the new world reuses).
    */
   async switchScenario(settings: WorldSettings): Promise<WorldSettings> {
     this.#settings = settings;
@@ -149,6 +157,7 @@ class Container {
     this.#runLimits = DEFAULT_RUN_LIMITS;
     this.#worldFault = undefined;
     await this.proposals.discardAll();
+    this.#errandRecords.discardAll();
     return settings;
   }
 
@@ -244,6 +253,30 @@ class Container {
       pricing: this.modelPricing,
     });
     return { world: this.world, readers: this.#reviewReaders, traceSink: this.traceSink, clock: this.wallClock };
+  }
+
+  /** What the home composer starts an errand with: its chips become the errand before the first model turn. */
+  get draftErrandDependencies(): DraftErrandDependencies {
+    return { ...this.errandDependencies, calendar: this.clock };
+  }
+
+  /** Everything the home screen reads, on the world's clock. */
+  get homeDependencies(): HomeSummaryDependencies {
+    return {
+      errands: this.#errandRecords,
+      proposals: this.proposals,
+      world: this.world,
+      memory: this.memory,
+      alerts: this.alertFeed,
+      catalog: this.catalog,
+      worldClock: this.clock,
+    };
+  }
+
+  /** The model the agent's main role runs on, as the composer's model chip names it. */
+  get mainModel(): { readonly provider: "minimax" | "scripted"; readonly modelId: string } {
+    const provider = parseModelSelection(process.env.ERRAND_MODELS).main;
+    return provider === "minimax" ? { provider, modelId: MINIMAX_MODEL_ID } : { provider: "scripted", modelId: "scripted" };
   }
 
   modelFor(role: ModelRole): LanguageModel {

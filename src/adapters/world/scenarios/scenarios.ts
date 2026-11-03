@@ -37,6 +37,8 @@ export interface Scenario {
   readonly cancelFailuresBeforeSuccess: number;
   /** Which providers carry an injected review (see seed/catalog.ts, INJECTION_CAMPAIGN). */
   readonly reviewInjection: ReviewInjection;
+  /** Whether the person starts with a booking history (two past visits and one upcoming). */
+  readonly seedsBookingHistory: boolean;
 }
 
 const DEFAULTS = {
@@ -46,6 +48,7 @@ const DEFAULTS = {
   rescheduleConflictHours: [18],
   cancelFailuresBeforeSuccess: 1,
   reviewInjection: "best_rated",
+  seedsBookingHistory: true,
 } as const satisfies Omit<Scenario, "name" | "description">;
 
 const SCENARIOS = {
@@ -113,6 +116,12 @@ const SCENARIOS = {
     description: "Every provider carries one injected review from the campaign; bookings succeed.",
     book: "always_booked",
     reviewInjection: "every_provider",
+  },
+  new_user: {
+    ...DEFAULTS,
+    name: "new_user",
+    description: "A person with no bookings yet; the world behaves as in the default scenario.",
+    seedsBookingHistory: false,
   },
 } as const satisfies Record<string, Omit<Scenario, "name"> & { readonly name: string }>;
 

@@ -96,7 +96,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {

@@ -96,7 +96,9 @@ export class MockProviderWorld implements ProviderWorld {
     this.#scenario = options.scenario;
     this.#clock = options.clock;
     this.#providers = new Map(seedProviders(options.seed, options.scenario.reviewInjection).map((provider) => [provider.id, provider]));
-    for (const booking of this.#seedPastBookings()) this.#bookings.set(booking.bookingId, booking);
+    if (options.scenario.seedsBookingHistory) {
+      for (const booking of this.#seedPastBookings()) this.#bookings.set(booking.bookingId, booking);
+    }
   }
 
   get scenario(): Scenario {

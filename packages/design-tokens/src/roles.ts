@@ -53,6 +53,14 @@ export const semanticRoleNames = [
   "hero-cloud",
   "hero-road",
   "hero-title-shadow",
+  "hero-star",
+  "hero-moon",
+  "hero-sun",
+  "hero-beam",
+  "hero-van",
+  "hero-van-glass",
+  "hero-tyre",
+  "hero-dither",
 ] as const;
 
 export type SemanticRole = (typeof semanticRoleNames)[number];
@@ -99,6 +107,15 @@ const dark: ThemeRoles = {
   "hero-cloud": ref("night-cloud"),
   "hero-road": ref("night-road"),
   "hero-title-shadow": shadow("0 2px 12px", "black", 60),
+  // The skyline's details. Stars, moon and headlight beam show at night, the sun by day.
+  "hero-star": ref("night-star"),
+  "hero-moon": ref("night-moon"),
+  "hero-sun": ref("day-sun"),
+  "hero-beam": ref("night-beam"),
+  "hero-van": ref("orange-bright"),
+  "hero-van-glass": ref("van-glass"),
+  "hero-tyre": ref("on-amber"),
+  "hero-dither": alpha("black", 18),
 };
 
 const light: ThemeRoles = {
@@ -137,6 +154,14 @@ const light: ThemeRoles = {
   "hero-cloud": ref("day-cloud"),
   "hero-road": ref("day-road"),
   "hero-title-shadow": shadow("0 1px 10px", "white", 80),
+  "hero-star": ref("night-star"),
+  "hero-moon": ref("night-moon"),
+  "hero-sun": ref("day-sun"),
+  "hero-beam": ref("night-beam"),
+  "hero-van": ref("orange-deep"),
+  "hero-van-glass": ref("van-glass"),
+  "hero-tyre": ref("on-amber"),
+  "hero-dither": alpha("black", 8),
 };
 
 export const themes: { readonly [theme in ThemeName]: ThemeRoles } = { dark, light };

@@ -22,7 +22,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         {
           "command": "assert",
           "options": { "role": "heading", "name": "What do you need done?", "state": "visible" },
@@ -90,7 +90,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         {
           "command": "fill",
           "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }

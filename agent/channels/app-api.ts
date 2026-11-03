@@ -3,6 +3,7 @@ import {
   ApproveProposalRequestSchema,
   InjectWorldFaultRequestSchema,
   CorrectMemoryFactRequestSchema,
+  DraftErrandRequestSchema,
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
   MemoryKeySchema,
@@ -37,7 +38,9 @@ import { declineProposal } from "../../src/core/use-cases/decline-proposal";
 import { confirmInferredFact } from "../../src/core/use-cases/confirm-inferred-fact";
 import { correctMemoryFact } from "../../src/core/use-cases/correct-memory-fact";
 import { forgetMemoryFact } from "../../src/core/use-cases/forget-memory-fact";
+import { draftErrand } from "../../src/core/use-cases/draft-errand";
 import { getErrand } from "../../src/core/use-cases/get-errand";
+import { getHomeSummary } from "../../src/core/use-cases/get-home-summary";
 import { listMemoryFacts } from "../../src/core/use-cases/list-memory-facts";
 import { seedMemory } from "../../src/core/use-cases/seed-memory";
 import { getProviders } from "../../src/core/use-cases/get-providers";
@@ -47,6 +50,7 @@ import { getProposal, listProposals } from "../../src/core/use-cases/list-propos
 import { presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
+import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
 import { memoryOwnerOfRequest } from "../lib/memory-owner";
 import { presentConfirmOutcome, presentCorrectOutcome, presentFact, presentMemory, presentTombstone } from "../lib/memory-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
@@ -123,6 +127,40 @@ export default defineChannel({
       const errand = await getErrand(errands, sessionId.data);
       const body: GetErrandResponse = { errand: errand === undefined ? null : presentErrand(errand, catalog) };
       return Response.json(body);
+    }),
+
+    // GetHomeSummary: every home widget in one call. The person is the auth context's, for both
+    // the world's bookings and memory. Clients poll it (see apps/web/features/home).
+    GET(`${API_PREFIX}/home`, async (request) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      const { homeDependencies, mainModel, wallClock } = container();
+      const summary = await getHomeSummary(homeDependencies, { userId, ownerId });
+      return Response.json(presentHomeSummary(summary, mainModel, wallClock.now().getTime()));
+    }),
+
+    // DraftErrand: the home composer's chips become the new session's errand before its first
+    // message, so the agent starts from them. An empty draft leaves the errand to the conversation.
+    POST(`${API_PREFIX}/sessions/:sessionId/errand`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const sessionId = SessionIdSchema.safeParse(params.sessionId);
+      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      const parsed = DraftErrandRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const { draftErrandDependencies, catalog } = container();
+      const outcome = await draftErrand(draftErrandDependencies, {
+        place: { traceId: sessionId.data, sessionId: sessionId.data },
+        draft: draftOf(parsed.data),
+      });
+      if (outcome.kind === "drafted" || outcome.kind === "empty_draft") {
+        const body: GetErrandResponse = { errand: outcome.kind === "drafted" ? presentErrand(outcome.errand, catalog) : null };
+        return Response.json(body);
+      }
+      const refusal = presentDraftRefusal(outcome);
+      return failure(refusal.status, refusal.code, refusal.message);
     }),
 
     // Memory: the person's own facts, read from the channel's auth context, never from the body.

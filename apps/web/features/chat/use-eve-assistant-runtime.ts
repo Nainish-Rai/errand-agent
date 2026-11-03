@@ -16,10 +16,12 @@ function textOf(message: AppendMessage): string {
 /**
  * assistant-ui's external-store runtime over eve's useEveAgent. eve owns the conversation state
  * (messages, status, streaming); assistant-ui only renders it and reports what the person typed.
- * The session comes from the client package, so every request goes through it.
+ * The session comes from the client package, so every request goes through it. eve replays the
+ * session's stream on mount and follows a turn still running, so a chat reopened from a link (or
+ * started from the home composer, which sends the first message itself) shows its conversation.
  */
 export function useEveAssistantRuntime(session: ClientSession) {
-  const agent = useEveAgent({ session });
+  const agent = useEveAgent({ session, resume: true });
 
   const runtime = useExternalStoreRuntime({
     messages: agent.messages,

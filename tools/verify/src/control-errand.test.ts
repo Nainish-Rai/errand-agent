@@ -113,6 +113,7 @@ describe("suite manifests", () => {
       "chat-search.json",
       "clarify-errand.json",
       "design-system.json",
+      "home.json",
       "memory.json",
       "review-insight.json",
       "run-budget.json",

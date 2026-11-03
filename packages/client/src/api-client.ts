@@ -8,6 +8,7 @@ import {
   ListProposalsResponseSchema,
   ForgetMemoryFactResponseSchema,
   GetErrandResponseSchema,
+  GetHomeSummaryResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
   GetSessionTraceResponseSchema,
@@ -25,6 +26,8 @@ import {
   type ProposalStatus,
   type ProposalView,
   type CorrectMemoryFactRequest,
+  type DraftErrandRequest,
+  type GetHomeSummaryResponse,
   type ErrandView,
   type ForgetMemoryFactResponse,
   type GetSessionTraceResponse,
@@ -90,6 +93,25 @@ export class ApiClient {
     const body = await this.#request(
       `/sessions/${encodeURIComponent(sessionId)}/errand`,
       { method: "GET", signal: options.signal },
+      GetErrandResponseSchema,
+    );
+    return body.errand;
+  }
+
+  /** Every home widget in one read: work in progress, what waits on the person, bookings, alerts, memory. */
+  async getHomeSummary(options: { readonly signal?: AbortSignal } = {}): Promise<GetHomeSummaryResponse> {
+    return await this.#request("/home", { method: "GET", signal: options.signal }, GetHomeSummaryResponseSchema);
+  }
+
+  /**
+   * The home composer's chips as a new session's errand, sent before its first message so the agent
+   * starts from them. Returns the errand, or null when nothing was chosen. A session that already
+   * has an errand (409 `errand_exists`) or an area outside the catalog (422) throws an ApiRequestError.
+   */
+  async draftErrand(sessionId: string, request: DraftErrandRequest): Promise<ErrandView | null> {
+    const body = await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/errand`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
       GetErrandResponseSchema,
     );
     return body.errand;
