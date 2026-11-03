@@ -9,5 +9,5 @@ export function formatRupees(amount: number): string {
 
 /** An amount in Geist Mono with tabular figures. */
 export function Money({ amount, className }: { readonly amount: number; readonly className?: string }) {
-  return <span className={cn("font-mono tabular-nums", className)}>{formatRupees(amount)}</span>;
+  return <span className={cn("tabular-nums", className)}>{formatRupees(amount)}</span>;
 }

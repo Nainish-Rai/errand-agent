@@ -30,11 +30,11 @@ function useAnswer() {
 }
 
 const optionClass =
-  "flex w-full items-baseline justify-between gap-2 rounded-md border border-edge bg-surface-canvas px-3 py-2 text-left text-label text-fg-body hover:border-edge-strong disabled:cursor-not-allowed disabled:opacity-45 data-sent:border-interactive data-sent:text-fg-emph";
+  "flex w-full items-baseline justify-between gap-2 rounded-md border border-line bg-page px-3 py-2 text-left text-xs text-fg-2 hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-45 data-sent:border-accent-line data-sent:text-fg";
 
 function Loading() {
   return (
-    <div aria-busy className="my-3 rounded-lg border border-edge bg-surface-card p-3">
+    <div aria-busy className="my-3 rounded-panel border border-line bg-surface p-3">
       <Skeleton className="h-12" />
     </div>
   );
@@ -45,13 +45,13 @@ export function SlotPicker({ providerId, date }: { readonly providerId: string; 
   const { disabled, sent, answer } = useAnswer();
   if (providers.status === "loading") return <Loading />;
   const provider = providers.status === "ready" ? providers.data[0] : undefined;
-  if (provider === undefined) return <p className="my-2 text-label text-fg-meta">Slots aren't available for this provider.</p>;
+  if (provider === undefined) return <p className="my-2 text-xs text-fg-3">Slots aren't available for this provider.</p>;
   const slots = provider.freeSlots.filter((slot) => date === undefined || slot.start.startsWith(date));
   return (
-    <section aria-label={`Free slots with ${provider.name}`} data-testid="slot-picker" className="my-3 flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
-      <p className="m-0 text-panel font-medium text-fg-emph">Free slots with {provider.name}</p>
+    <section aria-label={`Free slots with ${provider.name}`} data-testid="slot-picker" className="my-3 flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
+      <p className="m-0 text-sm font-medium text-fg">Free slots with {provider.name}</p>
       {slots.length === 0 ? (
-        <p className="m-0 text-label text-fg-meta">No free slot{date === undefined ? " this week" : " that day"}.</p>
+        <p className="m-0 text-xs text-fg-3">No free slot{date === undefined ? " this week" : " that day"}.</p>
       ) : (
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
           {slots.map((slot) => {
@@ -59,7 +59,7 @@ export function SlotPicker({ providerId, date }: { readonly providerId: string; 
             const text = slotMessage(provider.name, label);
             return (
               <button key={slot.start} type="button" disabled={disabled} data-sent={sent === text || undefined} className={optionClass} onClick={() => answer(text)}>
-                <span className="font-mono tabular-nums">{label}</span>
+                <span className="tabular-nums">{label}</span>
               </button>
             );
           })}
@@ -73,12 +73,12 @@ export function PickOne({ question, options }: { readonly question: string; read
   const { disabled, sent, answer } = useAnswer();
   const [own, setOwn] = useState("");
   return (
-    <section aria-label={question} data-testid="pick-one" className="my-3 flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
-      <p className="m-0 text-panel font-medium text-fg-emph">{question}</p>
+    <section aria-label={question} data-testid="pick-one" className="my-3 flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
+      <p className="m-0 text-sm font-medium text-fg">{question}</p>
       {options.map((option) => (
         <button key={option.label} type="button" disabled={disabled} data-sent={sent === option.label || undefined} className={optionClass} onClick={() => answer(pickMessage(option.label))}>
           <span>{option.label}</span>
-          {modelText(option.detail) !== undefined && <span className="text-fg-meta">{modelText(option.detail)}</span>}
+          {modelText(option.detail) !== undefined && <span className="text-fg-3">{modelText(option.detail)}</span>}
         </button>
       ))}
       <form
@@ -94,7 +94,7 @@ export function PickOne({ question, options }: { readonly question: string; read
           value={own}
           disabled={disabled}
           onChange={(event) => setOwn(event.target.value)}
-          className="h-8 flex-1 rounded-md border border-edge bg-surface-canvas px-2 text-label text-fg-emph outline-none placeholder:text-fg-meta focus-visible:border-interactive"
+          className="h-8 flex-1 rounded-md border border-line bg-page px-2 text-xs text-fg outline-none placeholder:text-fg-3 focus-visible:border-accent-line"
         />
         <Button type="submit" size="sm" variant="secondary" disabled={disabled || own.trim() === ""}>
           Send
@@ -108,19 +108,19 @@ export function BookingPicker({ question, bookingIds }: { readonly question: str
   const bookings = useBookings();
   const { disabled, sent, answer } = useAnswer();
   if (bookings.status === "loading") return <Loading />;
-  if (bookings.status === "failed") return <p className="my-2 text-label text-fg-meta">Your bookings aren't available right now.</p>;
+  if (bookings.status === "failed") return <p className="my-2 text-xs text-fg-3">Your bookings aren't available right now.</p>;
   const bound = bindBookings(bookingIds, bookings.data);
   return (
-    <section aria-label={question} data-testid="booking-picker" className="my-3 flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
-      <p className="m-0 text-panel font-medium text-fg-emph">{question}</p>
+    <section aria-label={question} data-testid="booking-picker" className="my-3 flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
+      <p className="m-0 text-sm font-medium text-fg">{question}</p>
       {bound.map((booking) => {
         const text = bookingMessage(booking.providerName, slotLabel(booking.slot));
         return (
           <button key={booking.bookingId} type="button" disabled={disabled} data-sent={sent === text || undefined} className={optionClass} onClick={() => answer(text)}>
             <span>
-              {booking.providerName} · <span className="font-mono tabular-nums">{slotLabel(booking.slot)}</span>
+              {booking.providerName} · <span className="tabular-nums">{slotLabel(booking.slot)}</span>
             </span>
-            <span className="font-mono tabular-nums text-fg-meta">
+            <span className="tabular-nums text-fg-3">
               {rupees(booking.priceInr)} · {booking.status}
             </span>
           </button>

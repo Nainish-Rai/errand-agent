@@ -16,7 +16,7 @@ import { generatedUiLibrary } from "./library";
 
 function TextFallback() {
   return (
-    <p data-testid="generated-ui-fallback" className="my-1 text-label text-fg-meta">
+    <p data-testid="generated-ui-fallback" className="my-1 text-xs text-fg-3">
       This part couldn't be drawn here, so the reply says it in text.
     </p>
   );
@@ -26,7 +26,7 @@ export const GeneratedUiPart: ToolCallMessagePartComponent = ({ args, result, is
   if (isError === true) return <TextFallback />;
   if (result === undefined) {
     return (
-      <div className="my-2 flex items-center gap-2 text-label text-fg-meta">
+      <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
         <Spinner /> Laying it out…
       </div>
     );

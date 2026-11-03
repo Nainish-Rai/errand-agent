@@ -97,14 +97,14 @@ function ChipMenu<T>({ label, icon, choices, chosen, onChoose, unset, remembered
           aria-label={`${label}: ${current === undefined ? "not set" : current.short}${remembered && current !== undefined ? " (from memory)" : ""}`}
         />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72 text-label">
-        <DropdownMenuLabel className="text-meta text-fg-meta">{label}</DropdownMenuLabel>
+      <DropdownMenuContent align="start" className="max-h-72 text-xs">
+        <DropdownMenuLabel className="text-xs text-fg-3">{label}</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={chosen} onValueChange={onChoose}>
-          <DropdownMenuRadioItem value={NOT_SET} className="text-label">
+          <DropdownMenuRadioItem value={NOT_SET} className="text-xs">
             {unset.long}
           </DropdownMenuRadioItem>
           {choices.map((choice) => (
-            <DropdownMenuRadioItem key={choice.key} value={choice.key} className="text-label">
+            <DropdownMenuRadioItem key={choice.key} value={choice.key} className="text-xs">
               {choice.long}
             </DropdownMenuRadioItem>
           ))}
@@ -119,16 +119,16 @@ function ModelChip({ model }: { readonly model: Summary["composer"]["model"] }) 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <FilterChip icon={<span className="text-ok">●</span>} value={name} aria-label={`Model: ${name}`} />
+        <FilterChip icon={<span className="text-success-text">●</span>} value={name} aria-label={`Model: ${name}`} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64 text-label">
-        <DropdownMenuLabel className="text-meta text-fg-meta">Model (calls tools)</DropdownMenuLabel>
+      <DropdownMenuContent align="start" className="w-64 text-xs">
+        <DropdownMenuLabel className="text-xs text-fg-3">Model (calls tools)</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={model.modelId}>
-          <DropdownMenuRadioItem value={model.modelId} className="text-label">
+          <DropdownMenuRadioItem value={model.modelId} className="text-xs">
             {name}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
-        <p className="m-0 px-2 py-1.5 text-meta text-fg-meta">The backend picks the model (ERRAND_MODELS). Only models that can call tools are offered.</p>
+        <p className="m-0 px-2 py-1.5 text-xs text-fg-3">The backend picks the model (ERRAND_MODELS). Only models that can call tools are offered.</p>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -162,7 +162,7 @@ function RunningList({ working }: { readonly working: Summary["working"] }) {
     <ul aria-label="Running errands" className="m-0 list-none px-3 py-1">
       {working.map((errand) => (
         <li key={errand.errandId}>
-          <Link href={`/chat/${encodeURIComponent(errand.sessionId)}`} className="block rounded-md hover:bg-surface-raised">
+          <Link href={`/chat/${encodeURIComponent(errand.sessionId)}`} className="block rounded-md hover:bg-surface-2">
             <ListRow
               lead={<ErrandMark waitingOn={errand.waitingOn} />}
               title={errandTitle(errand)}
@@ -222,7 +222,7 @@ export function Composer({ summary, prompt, onPromptChange }: { readonly summary
         { value: "new", label: "New errand" },
         { value: "running", label: "Running", count: running },
       ]}
-      className="relative z-10 mx-auto -mt-1.5 w-[min(34rem,calc(100%-1.5rem))] rounded-lg border border-edge bg-surface-card pt-2 shadow-md [&>[role=tablist]]:border-b-0 [&>[role=tablist]]:px-3"
+      className="relative z-10 mx-auto -mt-1.5 w-[min(34rem,calc(100%-1.5rem))] rounded-panel border border-line bg-raised pt-2 shadow-card [&>[role=tablist]]:border-b-0 [&>[role=tablist]]:px-3"
     >
       <TabPanel value="new" className="outline-none">
         <form onSubmit={(event) => void send(event)}>
@@ -234,11 +234,11 @@ export function Composer({ summary, prompt, onPromptChange }: { readonly summary
             onKeyDown={onKeyDown}
             rows={2}
             placeholder="Fix a leaking tap, service the AC, book the same electrician…"
-            className="m-2 block h-12 w-[calc(100%-1rem)] resize-none rounded-md border border-edge bg-surface-canvas p-2.5 text-body text-fg-emph outline-none placeholder:text-fg-meta focus-visible:border-interactive"
+            className="m-2 block h-12 w-[calc(100%-1rem)] resize-none rounded-field border border-line-strong bg-field p-2.5 text-sm text-fg outline-none placeholder:text-fg-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           />
           <div className="flex flex-wrap items-center gap-1.5 px-2 pb-2">
             {chips === undefined ? (
-              <span className="text-meta text-fg-meta">Loading your preferences…</span>
+              <span className="text-xs text-fg-3">Loading your preferences…</span>
             ) : (
               <>
                 <ChipMenu
@@ -284,7 +284,7 @@ export function Composer({ summary, prompt, onPromptChange }: { readonly summary
             </Button>
           </div>
           {problem !== undefined && (
-            <p role="alert" className="m-0 px-3 pb-2 text-label text-err">
+            <p role="alert" className="m-0 px-3 pb-2 text-xs text-danger-text">
               {problem}
             </p>
           )}

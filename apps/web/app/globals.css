@@ -1,5 +1,5 @@
-/* The web app's only colour source is the generated design tokens. This file maps them onto Tailwind
- * and the UI libraries; it introduces no colours, durations or roles of its own (`pnpm check:tokens`).
+/* The web app's only colour source is the generated design tokens (Lime, design-system/design-system-v3.html).
+ * This file maps them onto Tailwind; it introduces no colours, durations or roles of its own (`pnpm check:tokens`).
  * Hanken Grotesk is loaded in app/layout.tsx under the family name the tokens use; mono is the system's. */
 /* OpenUI's styles sit in their own layer: above Tailwind's reset, below our components and utilities. */
 @layer theme, base, openui, components, utilities;
@@ -9,141 +9,157 @@
 @import "./lime.css";
 @source "../node_modules/streamdown/dist/*.js";
 
-/* Light is the default theme; data-theme on <html> or on any subtree picks one. agents-ui uses dark:. */
+/* Light is the default theme; data-theme on <html> or on any subtree picks one. Never a dark: variant in our
+ * own components (the roles change with the theme); vendored code may still use it. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *:not([data-theme="light"], [data-theme="light"] *)));
 
-/* No stock palette or shadows: every colour and shadow goes through a token. The few stock names the
- * vendored libraries use are remapped below, so nothing silently loses its colour. */
+/* No stock palette, shadows, type, radius, tracking, weights, curves or animations: every one goes through a
+ * Lime token, so a stock class that Lime has no token for generates nothing (and `pnpm check:tokens` flags it). */
 @theme {
   --color-*: initial;
   --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --font-weight-*: initial;
+  --font-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
 }
 
 @theme inline {
-  /* Library bridge (shadcn names): the eve template, assistant-ui and agents-ui read these. */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  /* Lime's --accent is the lime; v2's shadcn accent (a quiet highlight) became --accent-wash. */
-  --color-accent: var(--accent-wash);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  /* agents-ui status names. */
-  --color-success: var(--ok);
-  --color-warning: var(--warn-text);
-  --color-info: var(--info);
-
-  /* Semantic roles, for our own components: bg-surface-card, text-fg-meta, border-edge, text-ok … */
-  --color-surface-well: var(--surface-well);
-  --color-surface-canvas: var(--surface-canvas);
-  --color-surface-card: var(--surface-card);
-  --color-surface-raised: var(--surface-raised);
-  --color-surface-glass: var(--surface-glass);
-  --color-edge: var(--edge);
-  --color-edge-strong: var(--edge-strong);
-  --color-edge-glass: var(--edge-glass);
-  --color-fg-emph: var(--fg-emph);
-  --color-fg-body: var(--fg-body);
-  --color-fg-meta: var(--fg-meta);
-  --color-fg-faint: var(--fg-faint);
-  --color-interactive: var(--interactive);
-  --color-interactive-tint: var(--interactive-tint);
-  --color-ok: var(--ok);
-  --color-ok-tint: var(--ok-tint);
-  /* Lime's --warn is a mark (3.5:1); v2's text tone is --warn-text. */
-  --color-warn: var(--warn-text);
-  --color-warn-tint: var(--warn-tint);
-  --color-warn-fill: var(--warn-fill);
-  --color-on-warn-fill: var(--on-warn-fill);
-  --color-err: var(--err);
-  --color-err-tint: var(--err-tint);
-  --color-err-fill: var(--err-fill);
-  --color-on-err-fill: var(--on-err-fill);
-  --color-brand: var(--brand);
+  /* Lime roles: bg-page, bg-surface-2, text-fg-3, border-line, bg-accent, text-danger-text … */
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-raised: var(--raised);
+  --color-field: var(--field);
   --color-scrim: var(--scrim);
-  --color-cat-1: var(--cat-1);
-  --color-cat-2: var(--cat-2);
-  --color-cat-3: var(--cat-3);
-  --color-cat-4: var(--cat-4);
-  --color-cat-5: var(--cat-5);
-  --color-cat-6: var(--cat-6);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-disabled: var(--fg-disabled);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-on-accent: var(--on-accent);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-control: var(--control);
+  --color-ink: var(--ink);
+  --color-ink-hover: var(--ink-hover);
+  --color-ink-active: var(--ink-active);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-wash: var(--accent-wash);
+  --color-accent-line: var(--accent-line);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-success-text: var(--success-text);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --color-warn-text: var(--warn-text);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-tint: var(--danger-tint);
+  --color-danger-text: var(--danger-text);
+  --color-on-danger: var(--on-danger);
+  --color-thumb: var(--thumb);
+  /* Errand's additions. */
+  --color-errand-ok-fill: var(--errand-ok-fill);
+  --color-errand-on-ok-fill: var(--errand-on-ok-fill);
+  --color-errand-inferred-edge: var(--errand-inferred-edge);
   --color-transparent: transparent;
   --color-current: currentColor;
 
-  /* Stock names still used by vendored code, remapped to tokens:
-   * white/black: agents-ui button highlights and trace bar labels; black/10: streamdown.
-   * red-50/100 and red-600…800: streamdown's error blocks. */
-  --color-white: var(--white);
-  --color-black: var(--black);
-  --color-red-50: var(--err-tint);
-  --color-red-100: var(--err-tint);
-  --color-red-600: var(--err);
-  --color-red-700: var(--err);
-  --color-red-800: var(--err);
+  /* Streamdown ships compiled shadcn class names (bg-muted, text-muted-foreground, border-border, bg-background,
+   * text-foreground, text-primary, bg-primary) and red-* on its error blocks. They are mapped to the Lime role that
+   * took each job, for that library only: our own components use the Lime names (`pnpm check:tokens` flags the rest). */
+  --color-background: var(--page);
+  --color-foreground: var(--fg);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--fg-3);
+  --color-border: var(--line);
+  --color-primary: var(--fg);
+  --color-red-50: var(--danger-tint);
+  --color-red-100: var(--danger-tint);
+  --color-red-600: var(--danger-text);
+  --color-red-700: var(--danger-text);
+  --color-red-800: var(--danger-text);
 
-  /* Only floating things cast a shadow (popovers, menus, dialogs, toasts): shadow-md and up are the pop
-   * shadow. Resting controls (shadow-2xs … shadow-sm in the shadcn template) cast none. */
-  --shadow-2xs: 0 0 transparent;
-  --shadow-xs: 0 0 transparent;
-  --shadow-sm: 0 0 transparent;
-  --shadow-md: var(--shadow-pop);
-  --shadow-lg: var(--shadow-pop);
-  --shadow-xl: var(--shadow-pop);
-  --shadow-2xl: var(--shadow-pop);
+  /* Elevation: only Lime's shadows. */
+  --shadow-card: var(--shadow-card);
+  --shadow-menu: var(--shadow-menu);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-thumb: var(--shadow-thumb);
 
-  --radius-sm: var(--radius-1);
-  --radius-md: var(--radius-2);
-  --radius-lg: var(--radius-3);
-  --radius-xl: calc(var(--radius-3) + 4px);
-
+  /* Type: Lime's seven sizes, three weights and one tracking. */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  /* agents-ui's own typefaces give way to ours. */
-  --font-pixel: var(--font-mono);
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
+  --font-weight-normal: var(--weight-normal);
+  --font-weight-medium: var(--weight-medium);
+  --font-weight-semibold: var(--weight-semibold);
+  --tracking-tight: var(--tracking-tight);
+  --leading-tight: var(--leading-tight);
+  --leading-snug: var(--leading-snug);
+  --leading-normal: var(--leading-normal);
 
-  --text-meta: var(--text-meta);
-  --text-label: var(--text-label);
-  --text-body: var(--text-body);
-  --text-panel: var(--text-panel);
-  --text-title: var(--text-title);
-  --text-kpi: var(--text-kpi);
+  /* Radius: Lime's six. rounded-full stays for circles. */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-field: var(--radius-field);
+  --radius-panel: var(--radius-panel);
+  --radius-sheet: var(--radius-sheet);
+  --radius-control: var(--radius-control);
 
-  /* Tailwind's own motion runs on the duration tokens, so reduced motion zeroes it too. */
-  --default-transition-duration: var(--dur-micro);
+  /* Motion: Tailwind's transitions and the two popup animations run on the duration tokens, so the tokens'
+   * prefers-reduced-motion block zeroes them too. The spinner is the only loop, and it keeps turning under reduced
+   * motion (--dur-spin is never zeroed). */
+  --default-transition-duration: var(--dur-instant);
   --default-transition-timing-function: var(--ease-out);
   --ease-out: var(--ease-out);
-  --animate-spin: spin var(--dur-spin) linear infinite;
-  --animate-pulse: pulse calc(var(--dur-spin) * 2) ease-in-out infinite;
+  --ease-in: var(--ease-in);
+  --animate-spin: lime-spin var(--dur-spin) linear infinite;
+  /* A popup arrives from --scale-enter over --dur-base and leaves over --dur-fast (Lime's motion section). */
+  --animate-enter: lime-enter var(--dur-base) var(--ease-out);
+  --animate-leave: lime-leave var(--dur-fast) var(--ease-in) forwards;
 }
 
-/* Inferred facts, estimates and heuristic scores: a dashed edge in the warn tone. Explicit facts never. */
+@keyframes lime-enter {
+  from {
+    opacity: 0;
+    scale: var(--scale-enter);
+  }
+}
+
+@keyframes lime-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Inferred facts, estimates and heuristic scores: a dashed edge in Errand's inferred tone. Explicit facts never. */
 @utility inferred {
   border-style: dashed;
-  border-color: color-mix(in oklab, var(--warn) 55%, transparent);
+  border-color: var(--errand-inferred-edge);
 }
 
-/* Base rules sit in the base layer, so utilities (border-info, bg-surface-card …) override them.
- * Unlayered, `* { border-color }` would beat every border colour utility. */
+/* Base rules sit in the base layer, so utilities (border-line-strong, bg-surface …) override them.
+ * Unlayered, `* { border-color }` would beat every border colour utility. Lime's own base is in lime.css. */
 @layer base {
   * {
-    border-color: var(--border);
+    border-color: var(--line);
   }
 
   html {
@@ -153,10 +169,11 @@
   body {
     min-height: 100%;
     margin: 0;
-    background: var(--background);
-    color: var(--foreground);
+    background: var(--page);
+    color: var(--fg);
     font-family: var(--font-sans);
-    font-size: var(--text-body);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
   }
 
   code,
@@ -184,36 +201,5 @@
 
   html[data-eve-chat-sidebar="closed"] [data-desktop-sidebar] {
     width: 0;
-  }
-}
-
-.shimmer-text {
-  background: linear-gradient(
-    90deg,
-    var(--muted-foreground) 0%,
-    var(--foreground) 45%,
-    var(--muted-foreground) 90%
-  );
-  background-size: 220% 100%;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer-text calc(var(--dur-spin) * 2) linear infinite;
-  will-change: background-position;
-}
-
-@keyframes shimmer-text {
-  from {
-    background-position: 120% 0;
-  }
-
-  to {
-    background-position: -120% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shimmer-text {
-    animation: none;
-    color: var(--muted-foreground);
   }
 }

@@ -12,33 +12,34 @@ export const focusRing =
 
 const buttonVariants = cva(
   [
-    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-medium whitespace-nowrap",
-    "transition-[background-color,border-color,color,opacity]",
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control border font-medium whitespace-nowrap",
+    "transition-[background-color,border-color,color,opacity,scale] duration-(--dur-instant) ease-out active:scale-(--scale-press)",
     focusRing,
     // A loading button is blocked but not faded: its in-progress label must stay readable.
     "disabled:cursor-not-allowed [&:disabled:not([aria-busy])]:opacity-45 aria-busy:cursor-progress",
     "aria-disabled:pointer-events-none aria-disabled:opacity-45",
-    "aria-invalid:border-err [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+    "aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   ],
   {
     variants: {
       variant: {
-        primary: "border-primary bg-primary text-primary-foreground hover:bg-primary/85",
-        secondary: "border-edge-strong bg-surface-card text-fg-emph hover:bg-surface-raised",
-        ghost: "border-transparent bg-transparent text-fg-body hover:bg-surface-raised hover:text-fg-emph",
-        danger: "border-err/40 bg-err-tint text-err hover:border-err/70",
-        link: "border-transparent text-interactive underline-offset-4 hover:underline",
+        // Lime's primary: the lit lime body (the glow), one per view.
+        primary: "glow glow-accent border-transparent text-on-accent",
+        secondary: "border-transparent bg-surface-2 text-fg hover:bg-surface-3",
+        ghost: "border-transparent bg-transparent text-fg-2 hover:bg-surface-2 hover:text-fg",
+        danger: "border-transparent bg-danger-tint text-danger-text hover:bg-danger hover:text-on-danger",
+        link: "border-transparent text-fg underline-offset-4 hover:underline",
         // The eve template's names, kept so its components restyle without code changes.
-        default: "border-primary bg-primary text-primary-foreground hover:bg-primary/85",
-        outline: "border-edge-strong bg-transparent text-fg-emph hover:bg-surface-raised",
-        destructive: "border-err/40 bg-err-tint text-err hover:border-err/70",
+        default: "glow glow-accent border-transparent text-on-accent",
+        outline: "border-line-strong bg-page text-fg hover:bg-surface-2",
+        destructive: "border-transparent bg-danger-tint text-danger-text hover:bg-danger hover:text-on-danger",
       },
       size: {
-        sm: "h-6 px-2 text-meta",
-        md: "h-8 px-3 text-label",
-        default: "h-8 px-3 text-label",
-        xs: "h-6 px-2 text-meta",
-        lg: "h-10 px-4 text-body",
+        sm: "h-6 px-2.5 text-xs",
+        md: "h-8 px-3.5 text-sm",
+        default: "h-8 px-3.5 text-sm",
+        xs: "h-6 px-2.5 text-xs",
+        lg: "h-10 px-4 text-sm",
         icon: "size-8",
         "icon-xs": "size-6",
         "icon-sm": "size-7",

@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 import { cn } from "@/lib/utils";
 
 export type MonogramTone = 1 | 2 | 3 | 4 | 5 | 6;
@@ -7,19 +5,18 @@ export type MonogramTone = 1 | 2 | 3 | 4 | 5 | 6;
 type MonogramProps = {
   /** One or two letters. Providers get initials, never photos of people. */
   readonly initials: string;
-  /** A categorical palette slot (--cat-1 … --cat-6), so a provider keeps its colour everywhere. */
+  /** Kept so callers compile: Lime has no category hue, so every monogram is the same quiet grey. */
   readonly tone?: MonogramTone;
   readonly className?: string;
 };
 
-export function Monogram({ initials, tone = 1, className }: MonogramProps) {
+/** A provider's initials on --surface, the v3 fallback where a photo is missing. */
+export function Monogram({ initials, className }: MonogramProps) {
   return (
     <span
       aria-hidden
-      style={{ "--av": `var(--cat-${tone})` } as CSSProperties}
       className={cn(
-        "grid size-6 flex-none place-items-center rounded-md border text-meta font-semibold text-fg-emph",
-        "border-[color-mix(in_oklab,var(--av)_45%,transparent)] bg-[color-mix(in_oklab,var(--av)_28%,var(--surface-card))]",
+        "grid size-6 flex-none place-items-center rounded-full border border-line bg-surface text-xs font-semibold text-fg-2",
         className,
       )}
     >

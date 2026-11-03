@@ -40,26 +40,26 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
   const label = `${(query.service ?? "providers").replaceAll("_", " ")} in ${query.area ?? "your area"}`;
 
   // A call that threw has no result; without this it would look like a search still running.
-  if (isError === true) return <p className="my-2 text-label text-fg-meta">The search for {label} failed.</p>;
+  if (isError === true) return <p className="my-2 text-xs text-fg-3">The search for {label} failed.</p>;
   if (result === undefined) {
     return (
-      <div className="my-2 flex items-center gap-2 text-label text-fg-meta">
+      <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
         <Spinner /> Searching {label}…
       </div>
     );
   }
 
   const parsed = ErrandSearchOutputSchema.safeParse(result);
-  if (!parsed.success || status.type === "incomplete") return <p className="my-2 text-label text-fg-meta">The search for {label} failed.</p>;
+  if (!parsed.success || status.type === "incomplete") return <p className="my-2 text-xs text-fg-3">The search for {label} failed.</p>;
   const output = parsed.data;
   if (output.kind === "no_options") {
     return (
-      <p className="my-2 text-label text-fg-meta">
+      <p className="my-2 text-xs text-fg-3">
         None of the {output.searched} {label} fit. {exclusionsLine(output.excluded.overBudget, output.excluded.outsideTimeWindow)}
       </p>
     );
   }
-  if (output.kind !== "found") return <p className="my-2 text-label text-fg-meta">No search for {label}: {output.kind.replaceAll("_", " ")}.</p>;
+  if (output.kind !== "found") return <p className="my-2 text-xs text-fg-3">No search for {label}: {output.kind.replaceAll("_", " ")}.</p>;
 
   const optionIds = new Set(output.options.map((option) => option.providerId));
   const choices = output.options.map(choiceFromOption);
@@ -75,7 +75,7 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
   return (
     <div className="flex flex-col">
       <ProviderChoiceCards title={`Options for ${label}`} everyoneLabel={label} choices={choices} more={more} />
-      {left !== undefined && <p className="-mt-1 mb-2 text-label text-fg-meta">{left}</p>}
+      {left !== undefined && <p className="-mt-1 mb-2 text-xs text-fg-3">{left}</p>}
     </div>
   );
 };

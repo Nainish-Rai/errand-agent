@@ -19,11 +19,11 @@ function SessionRow({ session }: { readonly session: OperatorSession }) {
   return (
     <li>
       <Link
-        className="grid gap-0.5 rounded-md border border-edge bg-surface-card px-3 py-2 hover:bg-surface-raised focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="grid gap-0.5 rounded-md border border-line bg-surface px-3 py-2 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         href={`/ops/sessions/${encodeURIComponent(session.sessionId)}`}
       >
-        <span className="text-body text-fg-emph">{title}</span>
-        <span className="font-mono text-label text-fg-meta tabular-nums">
+        <span className="text-sm text-fg">{title}</span>
+        <span className="text-xs text-fg-3 tabular-nums">
           {session.ownerId} · {startedFormat.format(new Date(session.startedAt))} IST
           {session.errand === null ? "" : ` · ${stepLabel(session.errand.state)}`} · {session.sessionId}
         </span>
@@ -35,10 +35,10 @@ function SessionRow({ session }: { readonly session: OperatorSession }) {
 export function SessionList({ sessions }: { readonly sessions: OperatorRead<readonly OperatorSession[]> }) {
   return (
     <section aria-label="Sessions" className="grid gap-2">
-      <h2 className="m-0 text-label font-normal text-fg-meta">Sessions</h2>
+      <h2 className="m-0 text-xs font-normal text-fg-3">Sessions</h2>
       {sessions.status === "loading" && <Spinner aria-label="Loading sessions" />}
       {sessions.status === "failed" && (
-        <p className="m-0 rounded-md bg-err-tint px-3 py-2 text-body" role="alert">
+        <p className="m-0 rounded-md bg-danger-tint px-3 py-2 text-sm" role="alert">
           Can&apos;t read the sessions: {sessions.message}
         </p>
       )}

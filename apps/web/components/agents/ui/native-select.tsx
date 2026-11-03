@@ -5,28 +5,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 /*
- * Measured from the reference:
- * - 32px tall, 10px radius, 1px input border, 4px / 10px padding with 32px on the chevron side.
- *   Dark adds a 30% input fill that rises to 50% on hover.
- * - Focus moves the border to the ring colour and adds a 0.5px inner ring, over 150ms on the ease-out
- *   curve (cubic-bezier(0.23, 1, 0.32, 1)).
- * - A 16px muted chevron sits 10px from the end edge.
+ * Errand: restyled on Lime (design-system-v3.html). A --field fill with a --line-strong edge and --radius-field;
+ * focus draws Lime's ring. Colour changes over --dur-instant on --ease-out.
  */
 const nativeSelectVariants = cva(
   [
-    'w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent text-sm text-foreground outline-none',
-    'transition-[color,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]',
-    'dark:bg-input/30 dark:hover:bg-input/50',
-    'focus-visible:border-ring focus-visible:shadow-[inset_0_0_0_0.5px_var(--ring)]',
-    'aria-invalid:border-destructive aria-invalid:focus-visible:shadow-[inset_0_0_0_0.5px_var(--destructive)]',
+    'w-full min-w-0 appearance-none rounded-field border border-line-strong bg-field text-sm text-fg outline-none',
+    'transition-[color,background-color,border-color] duration-(--dur-instant) ease-out',
+    'hover:border-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+    'aria-invalid:border-danger',
     'disabled:pointer-events-none disabled:cursor-not-allowed',
-    'motion-reduce:transition-none',
   ],
   {
     variants: {
       size: {
         default: 'h-8 py-1 ps-2.5 pe-8',
-        sm: 'h-7 rounded-md py-0.5 ps-2 pe-7 text-[13px]',
+        sm: 'h-7 py-0.5 ps-2 pe-7 text-xs',
       },
     },
     defaultVariants: { size: 'default' },
@@ -66,7 +60,7 @@ function NativeSelect({ className, wrapperClassName, size = 'default', onChange,
         data-slot="native-select-icon"
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground select-none',
+          'pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-fg-3 select-none',
           size === 'sm' ? 'end-2' : 'end-2.5',
         )}
       />
@@ -75,12 +69,12 @@ function NativeSelect({ className, wrapperClassName, size = 'default', onChange,
 }
 
 function NativeSelectOption({ className, ...props }: React.ComponentProps<'option'>) {
-  return <option data-slot="native-select-option" className={cn('bg-popover text-popover-foreground', className)} {...props} />
+  return <option data-slot="native-select-option" className={cn('bg-raised text-fg', className)} {...props} />
 }
 
 function NativeSelectOptGroup({ className, ...props }: React.ComponentProps<'optgroup'>) {
   return (
-    <optgroup data-slot="native-select-optgroup" className={cn('bg-popover text-popover-foreground', className)} {...props} />
+    <optgroup data-slot="native-select-optgroup" className={cn('bg-raised text-fg', className)} {...props} />
   )
 }
 

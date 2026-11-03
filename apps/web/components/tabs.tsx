@@ -28,22 +28,22 @@ type UnderlineTabsProps<Value extends string> = {
 export function UnderlineTabs<Value extends string>({ items, value, onValueChange, label, children, className }: UnderlineTabsProps<Value>) {
   return (
     <TabsPrimitive.Root value={value} onValueChange={(next) => onValueChange(next as Value)} className={className}>
-      <TabsPrimitive.List aria-label={label} className="flex gap-4 border-b border-edge text-label">
+      <TabsPrimitive.List aria-label={label} className="flex gap-4 border-b border-line text-xs">
         {items.map((item) => (
           <TabsPrimitive.Trigger
             key={item.value}
             value={item.value}
             className={cn(
               focusRing,
-              "pb-1.5 text-fg-meta transition-colors hover:text-fg-body disabled:opacity-45",
-              "data-[state=active]:text-fg-emph data-[state=active]:shadow-[inset_0_-2px_0_var(--fg-emph)]",
+              "-mb-px border-b-2 border-transparent pb-1.5 text-fg-3 transition-colors duration-(--dur-instant) ease-out hover:text-fg-2 disabled:opacity-45",
+              "data-[state=active]:border-fg data-[state=active]:text-fg",
             )}
           >
             {item.label}
             {item.count !== undefined && (
               <>
                 {" "}
-                <span className="ml-0.5 font-mono text-fg-emph tabular-nums">{item.count}</span>
+                <span className="ml-0.5 text-fg tabular-nums">{item.count}</span>
               </>
             )}
           </TabsPrimitive.Trigger>
@@ -73,7 +73,7 @@ export function SegmentedControl<Value extends string>({ items, value, onValueCh
       value={value}
       // Radix sends "" when the selected item is pressed again; a segmented control always has a value.
       onValueChange={(next) => next !== "" && onValueChange(next as Value)}
-      className={cn("inline-flex rounded-md border border-edge bg-surface-well p-0.5", className)}
+      className={cn("inline-flex rounded-control bg-surface-2 p-0.5", className)}
     >
       {items.map((item) => (
         <ToggleGroup.Item
@@ -81,8 +81,8 @@ export function SegmentedControl<Value extends string>({ items, value, onValueCh
           value={item.value}
           className={cn(
             focusRing,
-            "rounded-sm px-2 py-0.5 text-label text-fg-meta transition-colors hover:text-fg-body",
-            "data-[state=on]:bg-surface-raised data-[state=on]:text-fg-emph",
+            "rounded-control px-2.5 py-0.5 text-xs text-fg-3 transition-colors duration-(--dur-instant) ease-out hover:text-fg-2",
+            "data-[state=on]:bg-raised data-[state=on]:text-fg data-[state=on]:shadow-card",
           )}
         >
           {item.label}

@@ -59,9 +59,9 @@ const UNREADABLE_LABELS: Readonly<Record<Exclude<ProviderInsightResult["kind"], 
 function TagList({ label, items }: { readonly label: string; readonly items: readonly string[] }) {
   return (
     <div className="flex flex-wrap items-center gap-1" role="group" aria-label={label}>
-      <span className="text-label text-fg-meta">{label}</span>
+      <span className="text-xs text-fg-3">{label}</span>
       {items.length === 0 ? (
-        <span className="text-label text-fg-meta">none reported</span>
+        <span className="text-xs text-fg-3">none reported</span>
       ) : (
         items.map((item) => (
           <Badge key={item} variant={label === "Strengths" ? "verified" : "tag"}>
@@ -80,11 +80,11 @@ export function InsightCard({ insight }: { readonly insight: ProviderInsightView
     <li>
       <section
         aria-label={`Review insight for ${insight.providerName}`}
-        className="flex flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2.5"
+        className="flex flex-col gap-2 rounded-panel border border-line bg-surface px-3 py-2.5"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <span className="font-medium">{insight.providerName}</span>
-          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground tabular-nums">
+          <span className="inline-flex items-center gap-1 text-sm text-fg-3 tabular-nums">
             <Star aria-hidden className="size-3.5" />
             {insight.averageRating.toFixed(1)} from {insight.reviewsRead} reviews · {SENTIMENT_LABELS[insight.sentiment]}
           </span>
@@ -97,7 +97,7 @@ export function InsightCard({ insight }: { readonly insight: ProviderInsightView
             label={`${flagged} review${flagged === 1 ? "" : "s"} tried to instruct the assistant and ${flagged === 1 ? "was" : "were"} ignored`}
           />
         )}
-        <p className="text-label text-fg-meta">Read by {READER_LABELS[insight.readBy]}; review text is never shown to the agent.</p>
+        <p className="text-xs text-fg-3">Read by {READER_LABELS[insight.readBy]}; review text is never shown to the agent.</p>
       </section>
     </li>
   );
@@ -106,7 +106,7 @@ export function InsightCard({ insight }: { readonly insight: ProviderInsightView
 function ResultRow({ result }: { readonly result: ProviderInsightResult }) {
   if (result.kind === "insight") return <InsightCard insight={result.insight} />;
   return (
-    <li className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-muted-foreground">
+    <li className="rounded-panel border border-line bg-surface px-3 py-2.5 text-sm text-fg-3">
       {UNREADABLE_LABELS[result.kind]} ({result.providerId})
     </li>
   );
@@ -115,18 +115,18 @@ function ResultRow({ result }: { readonly result: ProviderInsightResult }) {
 export const ProviderInsight: ToolCallMessagePartComponent = ({ result, status }) => {
   if (result === undefined) {
     return (
-      <div className="my-2 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="my-2 flex items-center gap-2 text-sm text-fg-3">
         <Spinner /> Reading reviews…
       </div>
     );
   }
   const parsed = GetProviderInsightOutputSchema.safeParse(result);
   if (!parsed.success || status.type === "incomplete") {
-    return <p className="my-2 text-sm text-muted-foreground">Review insight not available.</p>;
+    return <p className="my-2 text-sm text-fg-3">Review insight not available.</p>;
   }
   return (
     <section aria-label="Review insight" className="my-3 flex flex-col gap-2">
-      <p className="text-sm text-muted-foreground">What reviews say</p>
+      <p className="text-sm text-fg-3">What reviews say</p>
       <ul className="flex flex-col gap-2">
         {parsed.data.insights.map((insight) => (
           <ResultRow key={insight.kind === "insight" ? insight.insight.providerId : insight.providerId} result={insight} />

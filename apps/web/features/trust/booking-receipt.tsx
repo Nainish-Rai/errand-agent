@@ -37,7 +37,7 @@ export function BookingReceipt({ booking, state, onSeeOptions }: BookingReceiptP
     case "booked":
       return (
         <TrustCard label="Booked">
-          <TrustHeader lead={<span aria-hidden className="text-ok">✓</span>} title="Booked" status={<Badge variant="verified">verified</Badge>} />
+          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Booked" status={<Badge variant="verified">verified</Badge>} />
           <DetailTable rows={rows(state.bookingId, "Paid")} />
         </TrustCard>
       );
@@ -52,7 +52,7 @@ export function BookingReceipt({ booking, state, onSeeOptions }: BookingReceiptP
       return (
         <TrustCard label="Not booked" tone="voided">
           <TrustHeader title="Not booked" status={<StatusMark kind="cancelled" label="Failed" />} />
-          <Notice tone="err" lead={<span aria-hidden className="text-err">✕</span>}>
+          <Notice tone="err" lead={<span aria-hidden className="text-danger-text">✕</span>}>
             {state.reason} You were not charged.
           </Notice>
           <DetailTable faded rows={rows("not available", "Price")} />

@@ -15,9 +15,9 @@ type InferredValueProps = {
  */
 export function InferredValue({ label, children, className }: InferredValueProps) {
   return (
-    <span className={cn("inferred inline-flex items-baseline gap-1 rounded-sm border px-1.5 py-px text-label", className)}>
-      <span className="font-mono text-fg-emph tabular-nums">{children}</span>
-      <span className="text-meta text-warn">{label}</span>
+    <span className={cn("inferred inline-flex items-baseline gap-1 rounded-sm border px-1.5 py-px text-xs", className)}>
+      <span className="text-fg tabular-nums">{children}</span>
+      <span className="text-xs text-warn-text">{label}</span>
     </span>
   );
 }

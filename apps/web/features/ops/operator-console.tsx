@@ -26,8 +26,8 @@ const SESSION_POLL_MS = 2_000;
 
 function Shell({ title, back, onSignOut, children }: { readonly title: string; readonly back?: boolean; readonly onSignOut: () => void; readonly children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-surface-canvas">
-      <header className="flex items-center gap-2 border-b border-edge bg-surface-card px-3 py-2">
+    <div className="min-h-dvh bg-page">
+      <header className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2">
         {back === true && (
           <Button asChild size="sm" variant="ghost">
             <Link href="/ops">
@@ -36,8 +36,8 @@ function Shell({ title, back, onSignOut, children }: { readonly title: string; r
             </Link>
           </Button>
         )}
-        <h1 className="m-0 flex min-w-0 items-center gap-2 truncate text-panel font-medium text-fg-emph">
-          <ShieldCheck aria-hidden className="size-4 shrink-0 text-fg-meta" />
+        <h1 className="m-0 flex min-w-0 items-center gap-2 truncate text-sm font-medium text-fg">
+          <ShieldCheck aria-hidden className="size-4 shrink-0 text-fg-3" />
           {title}
         </h1>
         <div className="ml-auto flex items-center gap-1">
@@ -65,7 +65,7 @@ function useSignOutWhenRefused(reads: readonly OperatorRead<unknown>[], signOut:
 
 function Waiting() {
   return (
-    <div className="flex min-h-dvh items-center justify-center text-fg-meta">
+    <div className="flex min-h-dvh items-center justify-center text-fg-3">
       <Spinner aria-label="Loading" />
     </div>
   );
@@ -104,7 +104,7 @@ function SessionView({
           <Transcript transcript={transcript} />
           <AccessLog reads={reads} />
         </div>
-        <div className="rounded-lg border border-edge bg-background lg:sticky lg:top-3 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
+        <div className="rounded-panel border border-line bg-page lg:sticky lg:top-3 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
           <TracePanel api={api} sessionId={sessionId} />
         </div>
       </main>

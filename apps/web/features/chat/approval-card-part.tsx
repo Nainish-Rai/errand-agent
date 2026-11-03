@@ -224,10 +224,10 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
       id={cardElementId(card.proposalId)}
       data-proposal-id={card.proposalId}
       tabIndex={-1}
-      className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-lg outline-none focus:outline-2 focus:outline-offset-4 focus:outline-ring"
+      className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-panel outline-none focus:outline-2 focus:outline-offset-4 focus:outline-ring"
     >
       {proposal === undefined ? (
-        <div className="flex items-center gap-2 text-label text-fg-meta">
+        <div className="flex items-center gap-2 text-xs text-fg-3">
           <Spinner /> Loading the approval card…
         </div>
       ) : (
@@ -251,7 +251,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
         />
       )}
       {problem !== undefined && (
-        <p role="alert" className="m-0 text-label text-err">
+        <p role="alert" className="m-0 text-xs text-danger-text">
           {problem}
         </p>
       )}
@@ -286,7 +286,7 @@ export const ProposalCardPart: ToolCallMessagePartComponent = ({ result }) => {
   const parsed = ProposeActionOutputSchema.safeParse(result);
   if (result === undefined) {
     return (
-      <div className="my-2 flex items-center gap-2 text-label text-fg-meta">
+      <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
         <Spinner /> Preparing the approval card…
       </div>
     );
@@ -349,5 +349,5 @@ export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
       </div>
     );
   }
-  return <p className="my-1 text-label text-fg-meta">{output.message}</p>;
+  return <p className="my-1 text-xs text-fg-3">{output.message}</p>;
 };

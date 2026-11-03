@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 export type ToastTone = "ok" | "err" | "info";
 
 const toastGlyph: Record<ToastTone, { readonly glyph: string; readonly tone: string; readonly word: string }> = {
-  ok: { glyph: "✓", tone: "text-ok", word: "Done" },
-  err: { glyph: "✕", tone: "text-err", word: "Failed" },
-  info: { glyph: "i", tone: "text-info", word: "Note" },
+  ok: { glyph: "✓", tone: "text-success-text", word: "Done" },
+  err: { glyph: "✕", tone: "text-danger-text", word: "Failed" },
+  info: { glyph: "i", tone: "text-fg-2", word: "Note" },
 };
 
 type ToastProps = {
@@ -27,7 +27,7 @@ export function Toast({ tone, children, action, className }: ToastProps) {
     <div
       role={tone === "err" ? "alert" : "status"}
       className={cn(
-        "flex items-center gap-2 rounded-md border border-edge-strong bg-surface-raised px-3 py-2 text-label text-fg-emph shadow-md",
+        "flex items-center gap-2 rounded-panel bg-ink px-3 py-2 text-xs text-fg-inverse shadow-menu",
         className,
       )}
     >

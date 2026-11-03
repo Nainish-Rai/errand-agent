@@ -43,7 +43,7 @@ function UserMessage() {
   }
   return (
     <MessagePrimitive.Root className="flex justify-end py-2">
-      <div className="max-w-[80%] rounded-2xl bg-secondary px-4 py-2 text-secondary-foreground">
+      <div className="max-w-[80%] rounded-panel bg-surface-2 px-4 py-2 text-fg">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -76,11 +76,11 @@ function AssistantMessage() {
 
 function Composer() {
   return (
-    <ComposerPrimitive.Root className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2">
+    <ComposerPrimitive.Root className="flex items-end gap-2 rounded-panel border border-line bg-surface p-2">
       <ComposerPrimitive.Input
         aria-label="Message the errand agent"
         autoFocus
-        className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 outline-none placeholder:text-muted-foreground"
+        className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 outline-none placeholder:text-fg-3"
         placeholder="Find a plumber in Koramangala this week…"
         rows={1}
       />
@@ -104,18 +104,18 @@ function Composer() {
 
 export function Thread() {
   return (
-    <ThreadPrimitive.Root className="flex h-dvh flex-col bg-background">
+    <ThreadPrimitive.Root className="flex h-dvh flex-col bg-page">
       <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto px-4">
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col pt-8">
           <ThreadPrimitive.Empty>
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
               <h1 className="text-2xl font-medium">What do you need done?</h1>
-              <p className="text-muted-foreground">Ask for a plumber, an electrician, AC servicing and more.</p>
+              <p className="text-fg-3">Ask for a plumber, an electrician, AC servicing and more.</p>
             </div>
           </ThreadPrimitive.Empty>
           <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
         </div>
-        <div className="sticky bottom-0 mx-auto w-full max-w-2xl bg-background pt-2 pb-4">
+        <div className="sticky bottom-0 mx-auto w-full max-w-2xl bg-page pt-2 pb-4">
           <Composer />
         </div>
       </ThreadPrimitive.Viewport>

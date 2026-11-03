@@ -20,12 +20,12 @@ type WidgetProps = {
 /** The base of every home widget: header (icon, title, count, action), then compact rows. */
 export function Widget({ icon, title, count, action, busy = false, children, className }: WidgetProps) {
   return (
-    <section aria-label={title} aria-busy={busy || undefined} className={cn("rounded-lg border border-edge bg-surface-card px-3 py-2.5", className)}>
-      <header className="mb-2 flex items-center gap-1.5 text-label text-fg-meta">
+    <section aria-label={title} aria-busy={busy || undefined} className={cn("rounded-panel border border-line bg-surface px-3 py-2.5", className)}>
+      <header className="mb-2 flex items-center gap-1.5 text-xs text-fg-3">
         {icon !== undefined && <span aria-hidden>{icon}</span>}
-        <h3 className="m-0 text-label font-normal">{title}</h3>
+        <h3 className="m-0 text-sm font-medium text-fg">{title}</h3>
         {count?.tone === "needs-you" && <Badge variant="count">{count.value}</Badge>}
-        {count?.tone === "plain" && <span className="font-mono text-fg-emph tabular-nums">{count.value}</span>}
+        {count?.tone === "plain" && <span className="text-fg tabular-nums">{count.value}</span>}
         {action !== undefined && <div className="ml-auto">{action}</div>}
       </header>
       {children}
@@ -49,8 +49,8 @@ export function ListRow({ lead, title, meta, action, className }: ListRowProps) 
     <div className={cn("flex items-center gap-2 py-1", className)}>
       {lead}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-fg-emph">{title}</div>
-        {meta !== undefined && <div className="truncate font-mono text-meta text-fg-meta">{meta}</div>}
+        <div className="truncate text-fg">{title}</div>
+        {meta !== undefined && <div className="truncate text-xs text-fg-3">{meta}</div>}
       </div>
       {action}
     </div>
@@ -81,7 +81,7 @@ export function MiniBarChart({ values, label, current, className }: MiniBarChart
         <div
           // Bars are positional: the index is the day.
           key={index}
-          className={cn("flex-1 rounded-t-[2px] bg-chart-1", current !== undefined && index !== current && "opacity-80")}
+          className={cn("flex-1 rounded-t-sm bg-ink", current !== undefined && index !== current && "opacity-80")}
           style={{ height: `${Math.max((value / max) * 100, 2)}%` }}
         />
       ))}

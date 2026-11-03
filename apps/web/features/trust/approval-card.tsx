@@ -124,7 +124,7 @@ function providerValue(provider: ApprovalProvider): ReactNode {
     <>
       <Monogram initials={provider.initials} tone={provider.tone} />
       {provider.name}
-      {provider.rating !== undefined && <span className="font-mono text-meta text-fg-meta">★ {provider.rating}</span>}
+      {provider.rating !== undefined && <span className="font-mono text-xs text-fg-3">★ {provider.rating}</span>}
     </>
   );
 }
@@ -143,7 +143,7 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
           value: (
             <>
               <Money amount={proposal.price} />
-              {proposal.priceNote !== undefined && <span className="font-mono text-meta text-fg-meta">{proposal.priceNote}</span>}
+              {proposal.priceNote !== undefined && <span className="font-mono text-xs text-fg-3">{proposal.priceNote}</span>}
             </>
           ),
         },
@@ -166,7 +166,7 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
           label: "When",
           value: (
             <>
-              <s className="text-fg-meta">{proposal.fromSlot}</s>
+              <s className="text-fg-3">{proposal.fromSlot}</s>
               <span aria-hidden>→</span>
               <span className="sr-only">moves to</span>
               {proposal.toSlot}
@@ -191,7 +191,7 @@ function ChangeLine({ change }: { readonly change: ApprovalChange }) {
   return (
     <>
       {changeLabels[change.field]}
-      <s className="font-mono text-fg-meta">{from}</s> <span aria-hidden>→</span>
+      <s className="font-mono text-fg-3">{from}</s> <span aria-hidden>→</span>
       <span className="sr-only">to</span> <span className="font-mono">{to}</span>.{" "}
     </>
   );
@@ -243,7 +243,7 @@ export function ApprovalCard(props: ApprovalCardProps) {
       return (
         <TrustCard label={title} tone="voided">
           <TrustHeader title={title} status={<Badge variant="tag">voided</Badge>} />
-          <Notice tone="err" lead={<span aria-hidden className="text-err">✕</span>}>
+          <Notice tone="err" lead={<span aria-hidden className="text-danger-text">✕</span>}>
             {state.changes.map((change) => (
               <ChangeLine key={change.field} change={change} />
             ))}
@@ -264,7 +264,7 @@ export function ApprovalCard(props: ApprovalCardProps) {
       return (
         <TrustCard label={title}>
           <TrustHeader title={title} status={<StatusMark kind="cancelled" label="Declined" />} />
-          <Notice tone="info" lead={<span aria-hidden className="text-fg-meta">✕</span>}>
+          <Notice tone="info" lead={<span aria-hidden className="text-fg-3">✕</span>}>
             You declined. {nothingDone[proposal.kind]}
           </Notice>
           <DetailTable faded rows={detailRows(proposal, provider, undefined)} />
@@ -274,7 +274,7 @@ export function ApprovalCard(props: ApprovalCardProps) {
       return (
         <TrustCard label={title}>
           <TrustHeader title={title} status={<StatusMark kind="expired" label="Expired" />} />
-          <Notice tone="info" lead={<span aria-hidden className="text-fg-meta">◷</span>}>
+          <Notice tone="info" lead={<span aria-hidden className="text-fg-3">◷</span>}>
             The hold expired at <span className="font-mono">{state.expiredAt}</span>. {nothingDone[proposal.kind]}
           </Notice>
           <DetailTable faded rows={detailRows(proposal, provider, undefined)} />

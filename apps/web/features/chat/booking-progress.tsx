@@ -64,7 +64,7 @@ export function RunningExecution() {
   const inFlight = intents?.filter(isUnresolved).at(-1);
   if (inFlight !== undefined && isBeingChecked(inFlight)) return <VerificationBanner promise={VERIFYING_PROMISE} />;
   return (
-    <div className="my-2 flex items-center gap-2 text-label text-fg-meta">
+    <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
       <Spinner /> Checking the approval…
     </div>
   );

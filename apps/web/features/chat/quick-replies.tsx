@@ -22,7 +22,7 @@ function ReplyGroup({ field, replies }: { readonly field: RequiredField; readonl
   const send = useSendText();
   return (
     <div role="group" aria-label={`Quick replies: ${FIELD_LABELS[field]}`} className="flex flex-wrap items-center gap-1.5">
-      <span className="text-label text-fg-meta">{FIELD_LABELS[field]}</span>
+      <span className="text-xs text-fg-3">{FIELD_LABELS[field]}</span>
       {replies.map((reply) => (
         <SuggestionChip key={reply.text} onClick={() => void send(reply.text)}>
           {reply.text}

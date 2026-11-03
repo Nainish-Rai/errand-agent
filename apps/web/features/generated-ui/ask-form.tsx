@@ -84,7 +84,7 @@ function Field({
   const choices = choicesFor(field, errand);
   return (
     <div role="group" aria-label={FIELD_LABELS[field]} className="flex flex-col gap-1.5">
-      <span className="text-label text-fg-meta">{FIELD_LABELS[field]}</span>
+      <span className="text-xs text-fg-3">{FIELD_LABELS[field]}</span>
       {field === "timeWindow" ? (
         <WhenField choices={choices} value={value} onChange={onChange} />
       ) : (
@@ -96,7 +96,7 @@ function Field({
               placeholder="Another area"
               value={choices.includes(value) ? "" : value}
               onChange={(event) => onChange(event.target.value)}
-              className="h-8 rounded-md border border-edge bg-surface-canvas px-2 text-label text-fg-emph outline-none placeholder:text-fg-meta focus-visible:border-interactive"
+              className="h-8 rounded-md border border-line bg-page px-2 text-xs text-fg outline-none placeholder:text-fg-3 focus-visible:border-accent-line"
             />
           )}
         </>
@@ -115,7 +115,7 @@ export function AskForm({ fields, title }: { readonly fields: readonly AskField[
 
   if (errand.status === "loading") {
     return (
-      <div aria-busy className="my-3 rounded-lg border border-edge bg-surface-card p-3">
+      <div aria-busy className="my-3 rounded-panel border border-line bg-surface p-3">
         <Skeleton className="h-16" />
       </div>
     );
@@ -130,20 +130,20 @@ export function AskForm({ fields, title }: { readonly fields: readonly AskField[
     <form
       aria-label={title ?? "Missing details"}
       data-testid="ask-form"
-      className="my-3 flex flex-col gap-3 rounded-lg border border-edge bg-surface-card p-3"
+      className="my-3 flex flex-col gap-3 rounded-panel border border-line bg-surface p-3"
       onSubmit={(event) => {
         event.preventDefault();
         setSent(true);
         void send(askFormMessage({ values: Object.fromEntries(asking.map((field) => [field, values[field] ?? ""])), ...(budget === undefined ? {} : { budgetInr: budget }) }));
       }}
     >
-      <p className="m-0 text-panel font-medium text-fg-emph">{title ?? "A few details"}</p>
+      <p className="m-0 text-sm font-medium text-fg">{title ?? "A few details"}</p>
       {asking.map((field) => (
         <Field key={field} field={field} errand={current} value={values[field] ?? ""} onChange={(value) => setValues((before) => ({ ...before, [field]: value }))} />
       ))}
       {current?.budgetInr === null && (
         <div role="group" aria-label="Budget (optional)" className="flex flex-col gap-1.5">
-          <label className="flex items-center gap-2 text-label text-fg-meta">
+          <label className="flex items-center gap-2 text-xs text-fg-3">
             <input type="checkbox" checked={budget !== undefined} onChange={(event) => setBudget(event.target.checked ? BUDGET.start : undefined)} />
             Set a budget (optional)
           </label>
@@ -156,7 +156,7 @@ export function AskForm({ fields, title }: { readonly fields: readonly AskField[
               value={[budget]}
               onValueChange={(next: number[]) => setBudget(next[0] ?? budget)}
               aria-label="Budget"
-              rightContent={<span className="font-mono text-label tabular-nums text-fg-emph">up to ₹{budget.toLocaleString("en-IN")}</span>}
+              rightContent={<span className="text-xs tabular-nums text-fg">up to ₹{budget.toLocaleString("en-IN")}</span>}
             />
           )}
         </div>

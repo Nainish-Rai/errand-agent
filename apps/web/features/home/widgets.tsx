@@ -74,12 +74,12 @@ export function WorkingNow({ summary, nowMs }: { readonly summary?: Summary; rea
         <Rows label="Errands in progress">
           {working.slice(0, 4).map((errand) => (
             <li key={errand.errandId}>
-              <Link href={chatHref(errand.sessionId)} className="block rounded-md hover:bg-surface-raised">
+              <Link href={chatHref(errand.sessionId)} className="block rounded-md hover:bg-surface-2">
                 <ListRow
                   lead={<ErrandMark waitingOn={errand.waitingOn} />}
                   title={errandTitle(errand)}
                   meta={`${stepLabel(errand.state)} · ${errandDetails(errand)}`}
-                  action={<span className="font-mono text-meta text-fg-meta tabular-nums">{sinceLabel(errand.since, nowMs)}</span>}
+                  action={<span className="text-xs text-fg-3 tabular-nums">{sinceLabel(errand.since, nowMs)}</span>}
                 />
               </Link>
             </li>
@@ -161,17 +161,17 @@ function visitRow(visit: UpcomingVisitView) {
         lead={<StatusMark kind="ok" label="Booked" className="w-20 flex-none" />}
         title={title}
         meta={slotLabel(visit.slot.start)}
-        action={<Money amount={visit.priceInr} className="text-meta text-fg-meta" />}
+        action={<Money amount={visit.priceInr} className="text-xs text-fg-3" />}
       />
     );
   }
   return (
-    <Link href={chatHref(visit.sessionId)} className="block rounded-md hover:bg-surface-raised">
+    <Link href={chatHref(visit.sessionId)} className="block rounded-md hover:bg-surface-2">
       <ListRow
         lead={<StatusMark kind="checking" label="Checking" className="w-20 flex-none" />}
         title={title}
         meta={`${slotLabel(visit.slot.start)} · checking with the provider`}
-        action={<Money amount={visit.priceInr} className="text-meta text-fg-meta" />}
+        action={<Money amount={visit.priceInr} className="text-xs text-fg-3" />}
       />
     </Link>
   );
@@ -211,7 +211,7 @@ export function providerAlertHref(alert: ProviderAlertView): string {
 }
 
 function alertRow(alert: HomeAlertView, nowMs: number) {
-  const since = <span className="font-mono text-meta text-fg-meta tabular-nums">{sinceLabel(alert.at, nowMs)}</span>;
+  const since = <span className="text-xs text-fg-3 tabular-nums">{sinceLabel(alert.at, nowMs)}</span>;
   switch (alert.kind) {
     case "provider_cancelled": {
       const row = (
@@ -232,14 +232,14 @@ function alertRow(alert: HomeAlertView, nowMs: number) {
       return alert.sessionId === null ? (
         row
       ) : (
-        <Link href={providerAlertHref(alert)} className="block rounded-md hover:bg-surface-raised">
+        <Link href={providerAlertHref(alert)} className="block rounded-md hover:bg-surface-2">
           {row}
         </Link>
       );
     }
     case "booking_recovered":
       return (
-        <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-raised">
+        <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-2">
           <ListRow
             lead={<StatusMark kind="ok" label="Recovered" className="w-20 flex-none" />}
             title={`${serviceLabel(alert.service)} booking confirmed after a check`}
@@ -250,7 +250,7 @@ function alertRow(alert: HomeAlertView, nowMs: number) {
       );
     case "errand_failed":
       return (
-        <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-raised">
+        <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-2">
           <ListRow
             lead={<StatusMark kind="cancelled" label="Failed" className="w-20 flex-none" />}
             title={alert.service === null ? "An errand stopped" : `${errandTitle(alert)} stopped`}
@@ -316,8 +316,8 @@ export function BookingActivity({ summary, onStart }: { readonly summary?: Summa
       ) : (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-kpi font-semibold text-fg-emph tabular-nums">{measure === "visits" ? visits : `₹${booked.toLocaleString("en-IN")}`}</span>
-            <span className="font-mono text-meta text-fg-meta">
+            <span className="text-xl font-semibold text-fg tabular-nums">{measure === "visits" ? visits : `₹${booked.toLocaleString("en-IN")}`}</span>
+            <span className="text-xs text-fg-3">
               {measure === "visits" ? `visits · ₹${booked.toLocaleString("en-IN")} booked` : `booked · ${visits} visits`}
             </span>
           </div>
@@ -327,9 +327,9 @@ export function BookingActivity({ summary, onStart }: { readonly summary?: Summa
             label={`${measure === "visits" ? "Visits" : "Rupees booked"} per day, ${range}; today is ${today === undefined ? "" : dateLabel(today)}`}
           />
           {/* Under the bars, one column per day: the first day, today (the seventh) and the last. */}
-          <div aria-hidden className="mt-1 grid grid-cols-14 gap-1 font-mono text-meta whitespace-nowrap text-fg-meta">
+          <div aria-hidden className="mt-1 grid grid-cols-14 gap-1 text-xs whitespace-nowrap text-fg-3">
             <span className="col-start-1 col-end-4">{first === undefined ? "" : dateLabel(first)}</span>
-            <span className="col-start-7 justify-self-center text-fg-emph">today</span>
+            <span className="col-start-7 justify-self-center text-fg">today</span>
             <span className="col-start-12 col-end-15 justify-self-end">{last === undefined ? "" : dateLabel(last)}</span>
           </div>
         </>
@@ -369,7 +369,7 @@ export function MemoryWidget({ summary }: { readonly summary?: Summary }) {
               </li>
             ))}
           </ul>
-          <Link href="/chat?rail=memory" className="mt-2 inline-block text-label text-interactive underline-offset-4 hover:underline">
+          <Link href="/chat?rail=memory" className="mt-2 inline-block text-xs text-fg underline-offset-4 hover:underline">
             Open memory
           </Link>
         </>

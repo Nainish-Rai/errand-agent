@@ -27,11 +27,11 @@ export function MemoryFactRow({ fact, onCorrect, onForget, onConfirm }: MemoryFa
   return (
     <div
       data-origin={fact.origin}
-      className={cn("flex items-center gap-2 rounded-md border bg-surface-card px-2 py-1.5", inferred ? "inferred" : "border-edge")}
+      className={cn("flex items-center gap-2 rounded-md border bg-surface px-2 py-1.5", inferred ? "inferred" : "border-line")}
     >
       <div className="min-w-0 flex-1">
-        <div className={cn("truncate", inferred ? "text-warn" : "text-fg-emph")}>{fact.statement}</div>
-        <div className="font-mono text-meta text-fg-meta">{fact.source}</div>
+        <div className={cn("truncate", inferred ? "text-warn-text" : "text-fg")}>{fact.statement}</div>
+        <div className="text-xs text-fg-3">{fact.source}</div>
       </div>
       <Badge variant={inferred ? "inferred" : "tag"}>{fact.origin}</Badge>
       {onConfirm !== undefined && (
@@ -52,10 +52,10 @@ export function MemoryFactRow({ fact, onCorrect, onForget, onConfirm }: MemoryFa
 /** A forgotten fact: a tombstone line. It is never used again, and says so. */
 export function ForgottenFactRow({ statement, forgottenOn }: { readonly statement: string; readonly forgottenOn: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-dotted border-edge bg-transparent px-2 py-1.5">
+    <div className="flex items-center gap-2 rounded-md border border-dotted border-line bg-transparent px-2 py-1.5">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-fg-meta line-through">{statement}</div>
-        <div className="font-mono text-meta text-fg-meta">forgotten {forgottenOn} · never used again</div>
+        <div className="truncate text-fg-3 line-through">{statement}</div>
+        <div className="text-xs text-fg-3">forgotten {forgottenOn} · never used again</div>
       </div>
     </div>
   );
@@ -72,10 +72,10 @@ type InferredFactPromptProps = {
 /** Asks the user to confirm an inferred fact. */
 export function InferredFactPrompt({ question, source, onYes, onNo }: InferredFactPromptProps) {
   return (
-    <div data-origin="inferred" className="inferred flex items-center gap-2 rounded-md border bg-surface-card px-2 py-1.5">
+    <div data-origin="inferred" className="inferred flex items-center gap-2 rounded-md border bg-surface px-2 py-1.5">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-warn">{question}</div>
-        <div className="font-mono text-meta text-fg-meta">{source}</div>
+        <div className="truncate text-warn-text">{question}</div>
+        <div className="text-xs text-fg-3">{source}</div>
       </div>
       <Button size="sm" variant="secondary" onClick={onYes}>
         Yes

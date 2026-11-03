@@ -1,7 +1,6 @@
 // Renders the typed tokens as CSS custom properties. The output is `packages/design-tokens/tokens.css`,
 // which the web app imports and both design-system checks read.
 import { errandColorExtensions, errandDarkFixes, errandMotionExtensions, errandReducedMotion } from "./errand";
-import { legacyAliases, legacyScaleAliases } from "./legacy";
 import { limeDark, limeReducedMotion, limeScaleGroups, limeThemeGroups, type LimeToken } from "./lime";
 
 const HEADER = `/* Errand design tokens: Lime (design-system/design-system-v3.html), light by default, dark behind the toggle.
@@ -24,8 +23,6 @@ const DARK = '[data-theme="dark"], [data-system="lime"][data-theme="dark"], .lim
 const EVERY_THEME = ":root, [data-theme], :where(.lime)";
 
 const decl = ([name, value, note]: LimeToken) => `  --${name}: ${value};${note ? ` /* ${note} */` : ""}`;
-const aliasLines = (aliases: Readonly<Record<string, string>>) =>
-  Object.entries(aliases).map(([name, value]) => decl([name, value, ""]));
 
 const lightTokens: readonly LimeToken[] = limeThemeGroups.flatMap((group) => group.tokens);
 const darkNames = new Set<string>(limeDark.map(([name]) => name));
@@ -70,11 +67,5 @@ export function renderTokensCss(): string {
     "/* Errand fix for two Lime dark values that fall under AA with the dark --on-danger (see packages/design-tokens/src/errand.ts). */",
     ...rule(DARK, errandDarkFixes.map(decl)),
   ];
-  const legacy = [
-    "/* ---- v2 names, pointed at the Lime role that took each job (expand step; removed once nothing reads them). */",
-    ...rule(":root, [data-theme]", aliasLines(legacyAliases)),
-    "",
-    ...rule(":root", aliasLines(legacyScaleAliases)),
-  ];
-  return [HEADER, ...lime, "", ...errand, "", ...legacy, ""].join("\n");
+  return [HEADER, ...lime, "", ...errand, ""].join("\n");
 }

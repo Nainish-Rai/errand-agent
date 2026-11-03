@@ -13,10 +13,10 @@ export function ProviderUpdateNotice({ update }: ProviderUpdateNoticeProps) {
   return (
     <TrustCard label="Provider update" tone="alert">
       <div role="status" className="grid gap-0.5 px-3 py-2">
-        <p className="m-0 flex items-center gap-1.5 text-label font-medium text-err">
+        <p className="m-0 flex items-center gap-1.5 text-xs font-medium text-danger-text">
           <span aria-hidden>✕</span> Provider update
         </p>
-        <p className="m-0 text-fg-body">{update}</p>
+        <p className="m-0 text-fg-2">{update}</p>
       </div>
     </TrustCard>
   );

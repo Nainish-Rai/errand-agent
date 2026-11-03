@@ -34,14 +34,14 @@ import { cn } from "@/lib/utils";
 import { errandTitle, stepLabel } from "./errand-words";
 import { providerAlertHref } from "./widgets";
 
-// The bar over the hero: the home switcher, search (a command menu, ⌘K), the theme toggle and the
+// The bar at the top of home: the home switcher, search (a command menu, ⌘K), the theme toggle and the
 // notification bell. The bell counts alerts that need the person; ticket 14 adds the live feed.
 
 type Summary = GetHomeSummaryResponse;
 
 const glass = cn(
   focusRing,
-  "inline-flex h-7 items-center gap-1.5 rounded-md border border-edge-glass bg-surface-glass px-2 text-label text-fg-emph backdrop-blur-sm hover:bg-surface-raised",
+  "inline-flex h-7 items-center gap-1.5 rounded-control border border-line bg-page px-2.5 text-xs text-fg hover:bg-surface-2",
 );
 
 function HomeSwitcher({ waiting }: { readonly waiting: number }) {
@@ -57,20 +57,20 @@ function HomeSwitcher({ waiting }: { readonly waiting: number }) {
         )}
         <span aria-hidden>⌄</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-52 text-label">
-        <DropdownMenuLabel className="text-meta text-fg-meta">Go to</DropdownMenuLabel>
-        <DropdownMenuItem asChild className="text-label">
+      <DropdownMenuContent align="start" className="w-52 text-xs">
+        <DropdownMenuLabel className="text-xs text-fg-3">Go to</DropdownMenuLabel>
+        <DropdownMenuItem asChild className="text-xs">
           <Link href="/">
             <House /> Home
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild className="text-label">
+        <DropdownMenuItem asChild className="text-xs">
           <Link href="/chat">
             <MessageSquarePlus /> New chat
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="text-label">
+        <DropdownMenuItem asChild className="text-xs">
           <Link href="/design">
             <Palette /> Design system
           </Link>
@@ -125,7 +125,7 @@ function CommandMenu({ open, onOpenChange, summary, onNewErrand }: {
           <CommandGroup heading="Running errands">
             {summary?.working.map((errand) => (
               <CommandItem key={errand.errandId} value={`${errandTitle(errand)} ${errand.sessionId}`} onSelect={() => go(`/chat/${encodeURIComponent(errand.sessionId)}`)}>
-                {errandTitle(errand)} <span className="ml-auto text-meta text-fg-meta">{stepLabel(errand.state)}</span>
+                {errandTitle(errand)} <span className="ml-auto text-xs text-fg-3">{stepLabel(errand.state)}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -148,22 +148,22 @@ function NotificationBell({ summary }: { readonly summary?: Summary }) {
             label="Notifications"
             icon={<Bell />}
             variant="ghost"
-            className="size-7 rounded-md border border-edge-glass bg-surface-glass backdrop-blur-sm"
+            className="size-7 rounded-control border border-line bg-page"
             {...(count > 0 ? { badge: { value: count, tone: "alert" as const } } : {})}
           />
         }
       />
-      <PopoverContent align="end" className="w-72 p-3 text-label">
-        <p className="m-0 mb-1 font-medium text-fg-emph">Notifications</p>
+      <PopoverContent align="end" className="w-72 p-3 text-xs">
+        <p className="m-0 mb-1 font-medium text-fg">Notifications</p>
         {needing.length === 0 ? (
-          <p className="m-0 text-fg-meta">Nothing needs you. Provider cancellations will show up here.</p>
+          <p className="m-0 text-fg-3">Nothing needs you. Provider cancellations will show up here.</p>
         ) : (
           <ul className="m-0 grid list-none gap-1 p-0">
             {needing.map((alert) => (
-              <li key={alert.kind === "provider_cancelled" ? alert.alertId : alert.errandId} className="text-fg-body">
+              <li key={alert.kind === "provider_cancelled" ? alert.alertId : alert.errandId} className="text-fg-2">
                 <Link
                   href={alert.kind === "provider_cancelled" ? providerAlertHref(alert) : `/chat/${encodeURIComponent(alert.sessionId)}`}
-                  className={cn("block rounded-sm px-1 py-0.5 hover:bg-surface-raised", focusRing)}
+                  className={cn("block rounded-sm px-1 py-0.5 hover:bg-surface-2", focusRing)}
                 >
                   {alert.kind === "provider_cancelled"
                     ? `${alert.providerName} cancelled a booking`
@@ -203,7 +203,7 @@ export function TopBar({ summary, onNewErrand }: { readonly summary?: Summary; r
           Search
           <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
         </button>
-        <ThemeToggle className="size-7 rounded-md border border-edge-glass bg-surface-glass backdrop-blur-sm" />
+        <ThemeToggle className="size-7 rounded-control border border-line bg-page" />
         <NotificationBell summary={summary} />
       </div>
       <CommandMenu open={searching} onOpenChange={setSearching} summary={summary} onNewErrand={onNewErrand} />

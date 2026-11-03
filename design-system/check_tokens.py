@@ -33,6 +33,29 @@ Lime rules (--lime, for pages built on the Lime system)
   radius         a literal border-radius other than 0 or 50%; use --radius-*
   dash-emoji     an em dash, en dash or emoji (copy is sentence case with no em dash and no emoji)
   off-scale      a padding, margin or gap in px off Lime's 4px scale (2px and 6px half steps allowed)
+
+Lime rules for components (--lime on a .ts or .tsx file: the same rules, read as Tailwind classes and
+script motion; comment lines are skipped)
+  weight-700     font-bold, font-extrabold, font-black, font-[700], fontWeight 700
+  uppercase      the uppercase class or textTransform "uppercase"
+  letter-spacing a tracking-* class other than tracking-tight
+  gradient       a gradient class (bg-linear-*, bg-radial-*, bg-conic-*, bg-gradient-*) or a gradient()
+  palette        a stock Tailwind colour (bg-red-500, text-white …); every colour is a Lime role
+  literal-duration a duration-N, delay-N or [transition-duration:Nms] class, an animate-[… Nms …], or a
+                 motion prop (duration: / delay:) with a number; use --dur-* (duration-(--dur-base)) or
+                 the typed `motion` from @errand/design-tokens
+  curve          an ease-[…], ease-in-out or ease-linear class, a cubic-bezier, a motion `ease: [ … ]`,
+                 a spring (type: "spring", stiffness, damping, bounce). A curve spread or interpolated from
+                 the typed tokens (`ease: [...motion.easeOut]`, `cubic-bezier(${…})`) is the token itself
+  loop           infinite, repeat: Infinity, animate-pulse, animate-bounce, animate-ping
+  scroll-reveal  IntersectionObserver or whileInView
+  transition-all the transition-all class
+  shadow         a shadow-* class other than shadow-none and Lime's shadow-card, -menu, -overlay, -thumb
+  font-size      a text-[N…] class or fontSize with a number; use Lime's text-xs … text-3xl
+  radius         a rounded-[…] class other than rounded-[inherit], or a stock key Lime lacks (rounded-xs,
+                 -lg, -xl, -2xl, -3xl, -4xl); use rounded-sm, -md, -field, -panel, -sheet, -control, -full
+  legacy-role    a v2 or shadcn role name (bg-surface-card, text-fg-meta, text-muted-foreground,
+                 var(--edge) …), which v3 renamed or dropped
 """
 import re
 import sys
@@ -57,6 +80,38 @@ LIME = [
     ("radius", re.compile(r"border(?:-[a-z]+)*-radius\s*:\s*(?!\s)(?!var\(|0\s*[;}\"']|50%)[^;}\"']+")),
     ("dash-emoji", re.compile("[–—\U0001F000-\U0001FAFF☀-➿⭐⬆✅❌]")),
 ]
+ROLE_PREFIX = r"(?<![\w-])(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|outline|fill|stroke|from|via|to|decoration|divide|placeholder|caret|accent)-"
+LEGACY_ROLE = (
+    r"(?:surface-(?:well|canvas|card|raised|glass)|edge(?:-strong|-glass)?|fg-(?:emph|body|meta|faint)|interactive(?:-tint)?"
+    r"|ok(?:-tint|-fill)?|on-ok-fill|warn-fill|on-warn-fill|err(?:-tint|-fill)?|on-err-fill|info|brand|cat-\d|chart-\d"
+    r"|muted(?:-foreground)?|card(?:-foreground)?|popover(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?"
+    r"|accent-foreground|destructive|background|foreground|input|border|warning|hero-[\w-]+)"
+)
+PALETTE = (
+    r"(?:white|black|(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo"
+    r"|violet|purple|fuchsia|pink|rose)-\d{2,3})"
+)
+LIME_CLASSES = [
+    ("weight-700", re.compile(r"(?<![\w-])font-(?:bold|extrabold|black|\[[789]00\])(?![\w-])|fontWeight\s*:\s*[\"']?(?:[789]00|bold)")),
+    ("uppercase", re.compile(r"(?<![\w-])uppercase(?![\w-])|textTransform\s*:\s*[\"']uppercase")),
+    ("letter-spacing", re.compile(r"(?<![\w-])tracking-(?!tight(?![\w-]))[\w\[\](.-]+")),
+    ("gradient", re.compile(r"(?<![\w-])bg-(?:linear|radial|conic|gradient)-|\b(?:linear|radial|conic|repeating-linear|repeating-radial)-gradient\(")),
+    ("palette", re.compile(ROLE_PREFIX + PALETTE + r"(?![\w-])")),
+    ("literal-duration", re.compile(
+        r"(?<![\w-])(?:duration|delay)-(?:\d|\[)|\[(?:transition|animation)-(?:duration|delay):\d|animate-\[[^\]]*\d+m?s"
+        r"|(?<![\w-])(?:duration|delay)\s*:\s*(?:reduce[d]?\s*\?\s*0\s*:\s*)?(?:[1-9]|0\.\d)")),
+    ("curve", re.compile(
+        r"(?<![\w-])ease-(?:\[|in-out(?![\w-])|linear(?![\w-]))|cubic-bezier(?!\(\$\{)|(?<![\w-])ease\s*:\s*\[(?!\.\.\.)|type\s*:\s*[\"']spring|\b(?:stiffness|damping|bounce)\s*:")),
+    ("loop", re.compile(r"\binfinite\b|repeat\s*:\s*Infinity|(?<![\w-])animate-(?:pulse|bounce|ping)(?![\w-])")),
+    ("scroll-reveal", re.compile(r"IntersectionObserver|whileInView")),
+    ("transition-all", re.compile(r"(?<![\w-])transition-all(?![\w-])")),
+    ("shadow", re.compile(r"(?<![\w-])(?:inset-|drop-)?shadow-(?!none(?![\w-])|card(?![\w-])|menu(?![\w-])|overlay(?![\w-])|thumb(?![\w-]))[\w\[\](./-]+")),
+    ("font-size", re.compile(r"(?<![\w-])text-\[\d|fontSize\s*:\s*[\"']?\d|(?<![\w-])text-(?:[4-9]xl)(?![\w-])")),
+    ("radius", re.compile(r"(?<![\w-])rounded(?:-[trblse]{1,2})?-(?:\[(?!inherit\])|(?:xs|lg|xl|2xl|3xl|4xl)(?![\w-]))")),
+    ("legacy-role", re.compile(ROLE_PREFIX + LEGACY_ROLE + r"(?![\w-])|var\(--" + LEGACY_ROLE + r"\)|(?<![\w-])text-(?:meta|label|body|panel|title|kpi)(?![\w-])")),
+]
+COMMENT = re.compile(r"^\s*(?://|/\*|\*)")
+
 SPACING = re.compile(r"(?<![\w-])(?:padding|margin|gap|row-gap|column-gap)(?:-(?:top|right|bottom|left|inline|block)(?:-(?:start|end))?)?\s*:\s*([^;}\"']+)")
 PX = re.compile(r"(-?\d*\.?\d+)px")
 
@@ -99,6 +154,25 @@ def lime_findings(lines):
     return findings
 
 
+def class_findings(lines):
+    """The Lime rules for a component file, read as Tailwind classes and script motion."""
+    findings = []
+    for n, line in enumerate(lines, 1):
+        if COMMENT.match(line):
+            continue
+        for rule, pattern in LIME_CLASSES:
+            for m in pattern.finditer(line):
+                if rule == "loop" and "lime-spin" in line:
+                    continue
+                findings.append((n, rule, m.group(0).strip()))
+    return findings
+
+
+def script_definitions(text):
+    """Custom properties a component sets itself: style={{ "--x": … }} or [--x:…] classes."""
+    return set(re.findall(r"[\"'](--[\w-]+)[\"']\s*:", text)) | set(re.findall(r"\[(--[\w-]+):", text))
+
+
 def check(path, shared=frozenset(), lime=False):
     text = open(path, encoding="utf-8").read()
     findings = []
@@ -107,22 +181,24 @@ def check(path, shared=frozenset(), lime=False):
         code = re.sub(r"&#\w+;|#[a-z][\w-]*\b(?=[\s,{:.)\"'\[]|$)", "", line)  # ids and entities are not colours
         for m in COLOR.finditer(code):
             findings.append((n, "raw-color", m.group(0)))
-    defined = definitions(text) | shared
+    script = path.endswith((".ts", ".tsx"))
+    defined = definitions(text) | shared | (script_definitions(text) if script else set())
     for n, line in enumerate(lines, 1):
         for name in re.findall(r"var\((--[\w-]+)", line):
-            if name not in defined and not name.startswith("--k"):  # --kc / --kv are set inline per element
+            # --kc / --kv are set inline per element; --radix-* and --tw-* are set by the libraries
+            if name not in defined and not name.startswith(("--k", "--radix-", "--tw-")):
                 findings.append((n, "token-parity", name))
     for n, line in enumerate(lines, 1):
         for decl in MOTION.findall(line):
             for m in DURATION.finditer(decl):
                 if float(m.group(1)) > 0:
                     findings.append((n, "literal-duration", m.group(0)))
-    if "prefers-reduced-motion" not in text:
+    if "prefers-reduced-motion" not in text and not script:
         findings.append((0, "reduced-motion", "no prefers-reduced-motion block"))
-    if re.search(r"\.animate\(|requestAnimationFrame", text) and not re.search(r"\breduced\b", text):
+    if re.search(r"\.animate\(|requestAnimationFrame", text) and not re.search(r"\breduced\b|useReducedMotion", text):
         findings.append((0, "reduced-motion", "script animation without a reduced-motion guard"))
     if lime:
-        findings += lime_findings(lines)
+        findings += class_findings(lines) if script else lime_findings(lines)
     return sorted(findings)
 
 

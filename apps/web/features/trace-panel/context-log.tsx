@@ -27,10 +27,10 @@ const REASONS: Readonly<Record<string, string>> = {
 };
 
 const PARTS = [
-  { key: "instructions", label: "instructions", className: "bg-chart-1" },
-  { key: "tools", label: "tools", className: "bg-chart-2" },
-  { key: "memory", label: "memory", className: "bg-chart-3" },
-  { key: "history", label: "history", className: "bg-chart-4" },
+  { key: "instructions", label: "instructions", className: "bg-ink" },
+  { key: "tools", label: "tools", className: "bg-fg-3" },
+  { key: "memory", label: "memory", className: "bg-fg-3" },
+  { key: "history", label: "history", className: "bg-fg-3" },
 ] as const;
 
 function reasonOf(reason: string): string {
@@ -81,7 +81,7 @@ function TokenBar({ call }: { readonly call: ModelCallContext }) {
     <div
       role="img"
       aria-label={`${tokens(call.tokens.total)} of ${tokens(call.capTokens)} tokens: ${described}`}
-      className="flex h-2 w-full overflow-hidden rounded-sm bg-surface-well"
+      className="flex h-2 w-full overflow-hidden rounded-sm bg-surface-2"
     >
       {PARTS.map((part) => (
         <span key={part.key} className={part.className} style={{ width: `${(100 * call.tokens[part.key]) / call.capTokens}%` }} />
@@ -94,14 +94,14 @@ function CallRow({ call, position }: { readonly call: ModelCallContext; readonly
   const refused = call.outcome === "refused";
   return (
     <li aria-label={`Call ${position}`} className="flex flex-col gap-1">
-      <div className="flex items-baseline justify-between gap-2 text-label">
-        <span className="text-fg-body">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="text-fg-2">
           Call {position}
           {call.history.dropped.length > 0 && (
-            <span className="text-fg-meta"> · {call.history.dropped.length} older messages dropped</span>
+            <span className="text-fg-3"> · {call.history.dropped.length} older messages dropped</span>
           )}
         </span>
-        <span className={cn("font-mono tabular-nums", refused ? "text-err" : "text-fg-meta")}>
+        <span className={cn("tabular-nums", refused ? "text-danger-text" : "text-fg-3")}>
           {refused ? `refused: ${call.overBudgetPart} over budget` : `${tokens(call.tokens.total)} / ${tokens(call.capTokens)}`}
         </span>
       </div>
@@ -114,7 +114,7 @@ function FactRow({ fact }: { readonly fact: ContextFact }) {
   const inferred = fact.source === "inferred";
   return (
     <li aria-label={`${fact.label} · ${fact.display}`} className="flex items-center justify-between gap-2 text-sm">
-      <span className={cn("min-w-0 truncate", fact.status === "active" ? "text-fg-emph" : "text-fg-meta")}>
+      <span className={cn("min-w-0 truncate", fact.status === "active" ? "text-fg" : "text-fg-3")}>
         {fact.label} · {fact.display}
       </span>
       <span className="flex shrink-0 items-center gap-1">
@@ -134,10 +134,10 @@ function ExcludedFacts({ facts }: { readonly facts: readonly ContextFact[] }) {
         <Collapsible key={reason}>
           <CollapsibleTrigger
             aria-label={`${reasonOf(reason)} (${grouped.length})`}
-            className="group flex w-full items-center gap-1 text-left text-label text-fg-body"
+            className="group flex w-full items-center gap-1 text-left text-xs text-fg-2"
           >
             <ChevronRight className="size-3 transition-transform group-data-[state=open]:rotate-90" aria-hidden />
-            {reasonOf(reason)} <span className="font-mono text-fg-meta tabular-nums">({grouped.length})</span>
+            {reasonOf(reason)} <span className="text-fg-3 tabular-nums">({grouped.length})</span>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <ul aria-label={`Left out: ${reasonOf(reason)}`} className="mt-1 flex flex-col gap-0.5 pl-4">
@@ -156,26 +156,26 @@ function History({ call }: { readonly call: ModelCallContext }) {
   const { kept, dropped, summary } = call.history;
   return (
     <section aria-label="History sent" className="flex flex-col gap-1">
-      <h4 className="text-label font-semibold text-fg-emph">History</h4>
-      <p className="text-sm text-fg-body">
+      <h4 className="text-xs font-semibold text-fg">History</h4>
+      <p className="text-sm text-fg-2">
         Kept {kept.length} {kept.length === 1 ? "message" : "messages"}
         {dropped.length > 0 ? `, dropped the ${dropped.length} oldest` : ", dropped none"} · limit {tokens(call.historyLimitTokens)} tokens
       </p>
       {summary !== null && (
-        <blockquote aria-label="Summary of the dropped messages" className="whitespace-pre-wrap rounded-sm border-l-2 border-edge-strong pl-2 text-label text-fg-meta">
+        <blockquote aria-label="Summary of the dropped messages" className="whitespace-pre-wrap rounded-sm border-l-2 border-line-strong pl-2 text-xs text-fg-3">
           {summary}
         </blockquote>
       )}
       {dropped.length > 0 && (
         <Collapsible>
-          <CollapsibleTrigger className="group flex items-center gap-1 text-label text-fg-body">
+          <CollapsibleTrigger className="group flex items-center gap-1 text-xs text-fg-2">
             <ChevronRight className="size-3 transition-transform group-data-[state=open]:rotate-90" aria-hidden />
             Dropped messages
           </CollapsibleTrigger>
           <CollapsibleContent>
             <ol aria-label="Dropped messages" className="mt-1 flex flex-col gap-0.5 pl-4">
               {dropped.map((message) => (
-                <li key={message.index} className="truncate font-mono text-meta text-fg-meta">
+                <li key={message.index} className="truncate text-xs text-fg-3">
                   {message.role} · {tokens(message.tokens)} · {message.preview}
                 </li>
               ))}
@@ -200,25 +200,25 @@ function Turn({ turn, position, open, onOpenChange }: TurnProps) {
   const { included, excluded } = last.memory;
   const name = `Turn ${position} context`;
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="rounded-md border border-edge bg-surface-card">
+    <Collapsible open={open} onOpenChange={onOpenChange} className="rounded-md border border-line bg-surface">
       <CollapsibleTrigger aria-label={name} className="group flex w-full items-center gap-2 px-2 py-1.5 text-left">
-        <ChevronRight className="size-3.5 shrink-0 text-fg-meta transition-transform group-data-[state=open]:rotate-90" aria-hidden />
-        <span className="flex-1 text-sm font-medium text-fg-emph">{name}</span>
-        <span className="font-mono text-meta text-fg-meta tabular-nums">
+        <ChevronRight className="size-3.5 shrink-0 text-fg-3 transition-transform group-data-[state=open]:rotate-90" aria-hidden />
+        <span className="flex-1 text-sm font-medium text-fg">{name}</span>
+        <span className="text-xs text-fg-3 tabular-nums">
           {included.length} sent · {excluded.length} left out · {tokens(last.tokens.total)} / {tokens(last.capTokens)}
         </span>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <section aria-label={name} className="flex flex-col gap-3 border-t border-edge px-2 py-2">
+        <section aria-label={name} className="flex flex-col gap-3 border-t border-line px-2 py-2">
           <ol aria-label="Model calls" className="flex flex-col gap-2">
             {turn.calls.map((call, index) => (
               <CallRow key={call.eventId} call={call} position={index + 1} />
             ))}
           </ol>
           <section aria-label="Facts sent" className="flex flex-col gap-1">
-            <h4 className="text-label font-semibold text-fg-emph">Facts sent</h4>
+            <h4 className="text-xs font-semibold text-fg">Facts sent</h4>
             {included.length === 0 ? (
-              <p className="text-sm text-fg-meta">{last.memory.text === "" ? "No memory in this turn." : "None: nothing remembered applies."}</p>
+              <p className="text-sm text-fg-3">{last.memory.text === "" ? "No memory in this turn." : "None: nothing remembered applies."}</p>
             ) : (
               <ul aria-label="Facts sent" className="flex flex-col gap-0.5">
                 {included.map((fact) => (
@@ -229,7 +229,7 @@ function Turn({ turn, position, open, onOpenChange }: TurnProps) {
           </section>
           {excluded.length > 0 && (
             <section aria-label="Facts left out" className="flex flex-col gap-1">
-              <h4 className="text-label font-semibold text-fg-emph">Facts left out</h4>
+              <h4 className="text-xs font-semibold text-fg">Facts left out</h4>
               <ExcludedFacts facts={excluded} />
             </section>
           )}
@@ -248,16 +248,16 @@ export function ContextLog({ api, sessionId, contextEvents }: { readonly api: Ap
   if (first === undefined) return null;
   const { split } = first;
   return (
-    <section aria-label="Context log" className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+    <section aria-label="Context log" className="flex flex-col gap-2 rounded-md border border-line bg-surface p-3">
       <div>
-        <h2 className="text-label font-semibold text-fg-emph">Context sent to the model</h2>
-        <p className="text-meta text-fg-meta">
-          Cap <span className="font-mono tabular-nums">{tokens(first.capTokens)}</span> tokens: instructions{" "}
-          <span className="font-mono tabular-nums">{tokens(split.instructions)}</span>, memory{" "}
-          <span className="font-mono tabular-nums">{tokens(split.memory)}</span>, history at least{" "}
-          <span className="font-mono tabular-nums">{tokens(split.history)}</span>. Counted conservatively ({first.estimator}).
+        <h2 className="text-xs font-semibold text-fg">Context sent to the model</h2>
+        <p className="text-xs text-fg-3">
+          Cap <span className="tabular-nums">{tokens(first.capTokens)}</span> tokens: instructions{" "}
+          <span className="tabular-nums">{tokens(split.instructions)}</span>, memory{" "}
+          <span className="tabular-nums">{tokens(split.memory)}</span>, history at least{" "}
+          <span className="tabular-nums">{tokens(split.history)}</span>. Counted conservatively ({first.estimator}).
         </p>
-        <ul aria-label="Parts" className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-meta text-fg-meta">
+        <ul aria-label="Parts" className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-fg-3">
           {PARTS.map((part) => (
             <li key={part.key} className="flex items-center gap-1">
               <span className={cn("inline-block size-2 rounded-sm", part.className)} aria-hidden />

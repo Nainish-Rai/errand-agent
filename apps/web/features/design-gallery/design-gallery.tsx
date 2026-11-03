@@ -1,7 +1,7 @@
 "use client";
 
 // The /design route: every foundation and trust component in every state, in both themes side by
-// side. The app-side twin of design-system/gallery.html. Data here is sample data, not the API's.
+// side. The app-side twin of design-system/design-system-v3.html. Data here is sample data, not the API's.
 import { Bell, TriangleAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -58,25 +58,27 @@ const ranges = [
 ] as const;
 
 const swatches = [
-  ["surface-well", "well"],
-  ["surface-canvas", "canvas"],
-  ["surface-card", "card"],
-  ["surface-raised", "raised"],
-  ["edge-strong", "edge-strong"],
-  ["fg-emph", "fg-emph"],
-  ["fg-body", "fg-body"],
-  ["fg-meta", "fg-meta"],
-  ["interactive", "interactive"],
-  ["ok", "ok"],
+  ["page", "page"],
+  ["surface", "surface"],
+  ["surface-2", "surface-2"],
+  ["raised", "raised"],
+  ["line-strong", "line-strong"],
+  ["fg", "fg"],
+  ["fg-2", "fg-2"],
+  ["fg-3", "fg-3"],
+  ["accent", "accent"],
+  ["accent-wash", "accent-wash"],
+  ["accent-line", "accent-line"],
+  ["ink", "ink"],
+  ["success", "success"],
   ["warn", "warn"],
-  ["err", "err"],
-  ["brand", "brand"],
+  ["danger", "danger"],
 ] as const;
 
 function Section({ title, children }: { readonly title: string; readonly children: ReactNode }) {
   return (
     <section>
-      <h2 className="m-0 mb-2 text-meta font-medium tracking-[.06em] text-fg-meta uppercase">{title}</h2>
+      <h2 className="m-0 mb-2 text-lg font-semibold text-fg">{title}</h2>
       <div className="grid gap-2">{children}</div>
     </section>
   );
@@ -87,43 +89,37 @@ function Line({ children }: { readonly children: ReactNode }) {
 }
 
 function Caption({ children }: { readonly children: ReactNode }) {
-  return <p className="m-0 font-mono text-meta text-fg-meta">{children}</p>;
+  return <p className="m-0 font-mono text-xs text-fg-3">{children}</p>;
 }
 
 function Swatches() {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(66px,1fr))] gap-1">
       {swatches.map(([role, label]) => (
-        <div key={role} className="overflow-hidden rounded-md border border-edge bg-surface-card text-meta text-fg-meta">
+        <div key={role} className="overflow-hidden rounded-md border border-line bg-surface text-xs text-fg-3">
           <i className="block h-6.5" style={{ background: `var(--${role})` }} />
           <span className="block truncate px-1 py-0.5 font-mono">{label}</span>
         </div>
       ))}
-      <div className="overflow-hidden rounded-md border border-edge bg-surface-card text-meta text-fg-meta">
-        <i className="flex h-6.5">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <span key={n} className="flex-1" style={{ background: `var(--cat-${n})` }} />
-          ))}
-        </i>
-        <span className="block truncate px-1 py-0.5 font-mono">cat-1…6</span>
-      </div>
     </div>
   );
 }
 
 function TypeScale() {
   const rows: readonly (readonly [string, ReactNode])[] = [
-    ["kpi 22", <span className="font-mono text-kpi font-semibold text-fg-emph tabular-nums">₹7,450</span>],
-    ["title 19", <span className="text-title font-semibold text-fg-emph">What errand should I handle?</span>],
-    ["panel 14", <span className="text-panel text-fg-emph">Approve booking</span>],
-    ["body 12", <span className="text-body text-fg-emph">Plumber for kitchen tap, this week</span>],
-    ["mono 10", <span className="font-mono text-meta text-fg-meta">Thu 6 Nov · 09:00 · ₹899 · BK-7Q2M</span>],
+    ["3xl 36", <span className="text-3xl font-semibold tracking-tight text-fg tabular-nums">₹7,450</span>],
+    ["xl 22", <span className="text-xl font-semibold tracking-tight text-fg">What errand should I handle?</span>],
+    ["lg 18", <span className="text-lg font-semibold text-fg">Approve booking</span>],
+    ["base 16", <span className="text-base text-fg">Three plumbers can come this week within your budget.</span>],
+    ["sm 14", <span className="text-sm text-fg">Plumber for kitchen tap, this week</span>],
+    ["xs 12", <span className="text-xs text-fg-3 tabular-nums">Thu 6 Nov · 09:00 · ₹899</span>],
+    ["mono", <span className="font-mono text-xs text-fg-3">BK-7Q2M</span>],
   ];
   return (
     <div className="grid gap-2">
       {rows.map(([label, sample]) => (
         <div key={label} className="flex min-w-0 items-baseline gap-3">
-          <span className="w-14 flex-none font-mono text-meta text-fg-meta">{label}</span>
+          <span className="w-14 flex-none font-mono text-xs text-fg-3">{label}</span>
           {sample}
         </div>
       ))}
@@ -136,10 +132,10 @@ function Panel({ theme }: { readonly theme: Theme }) {
   const [range, setRange] = useState<"14d" | "month">("14d");
 
   return (
-    <div data-theme={theme} className="grid min-w-0 content-start gap-5 rounded-lg border border-edge bg-surface-canvas p-4 text-body text-fg-body">
-      <div className="flex items-center justify-between text-panel font-semibold text-fg-emph">
+    <div data-theme={theme} className="grid min-w-0 content-start gap-5 rounded-panel border border-line bg-page p-4 text-sm text-fg-2">
+      <div className="flex items-center justify-between text-sm font-semibold text-fg">
         <span>{theme === "dark" ? "Dark" : "Light"}</span>
-        <span className="font-mono text-meta font-normal text-fg-meta">data-theme=&quot;{theme}&quot;</span>
+        <span className="font-mono text-xs font-normal text-fg-3">data-theme=&quot;{theme}&quot;</span>
       </div>
 
       <Section title="Surfaces · text · tones">
@@ -242,8 +238,8 @@ function Panel({ theme }: { readonly theme: Theme }) {
         </Widget>
         <Widget icon="▥" title="Bookings" action={<SegmentedControl label="Range" value={range} onValueChange={setRange} items={ranges} />}>
           <Line>
-            <span className="font-mono text-kpi font-semibold text-fg-emph tabular-nums">6</span>
-            <span className="font-mono text-meta text-fg-meta">bookings · ₹7,450 spent</span>
+            <span className="text-xl font-semibold text-fg tabular-nums">6</span>
+            <span className="text-xs text-fg-3 tabular-nums">bookings · ₹7,450 spent</span>
           </Line>
           <MiniBarChart values={bookingsPerDay} label="Bookings per day over the last 14 days" />
         </Widget>
@@ -289,11 +285,11 @@ function Panel({ theme }: { readonly theme: Theme }) {
 
 export function DesignGallery() {
   return (
-    <main className="min-h-dvh bg-surface-well">
-      <header className="flex items-start justify-between gap-4 px-4 pt-4 text-fg-emph">
+    <main className="min-h-dvh bg-surface-2">
+      <header className="flex items-start justify-between gap-4 px-4 pt-4 text-fg">
         <div>
-          <h1 className="m-0 text-title font-semibold">Errand design system</h1>
-          <p className="m-0 mt-1 text-fg-meta">
+          <h1 className="m-0 text-xl font-semibold">Errand design system</h1>
+          <p className="m-0 mt-1 text-fg-3">
             Every component, dark and light, reading only from <span className="font-mono">@errand/design-tokens</span>. The page
             follows your theme; the two panels are fixed.
           </p>

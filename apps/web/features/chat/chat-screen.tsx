@@ -88,11 +88,11 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
         <div className="flex h-dvh">
           <div className="relative min-w-0 flex-1">
             {error !== undefined && (
-              <p className="bg-destructive/10 px-4 py-2 text-center text-sm" role="alert">
+              <p className="bg-danger/10 px-4 py-2 text-center text-sm" role="alert">
                 {error.message}
               </p>
             )}
-            <div className="absolute top-3 left-3 z-10 rounded-md bg-background">
+            <div className="absolute top-3 left-3 z-10 rounded-md bg-page">
               <Button asChild size="sm" variant="ghost">
                 <Link href="/">
                   <House />
@@ -100,7 +100,7 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
                 </Link>
               </Button>
             </div>
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md bg-background">
+            <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md bg-page">
               <ThemeToggle />
               <MemoryToggle rail={rail} onChange={setRail} />
             </div>
@@ -119,7 +119,7 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
 
 function Unreachable({ failure }: { readonly failure: string }) {
   return (
-    <p className="p-8 text-center text-muted-foreground" role="alert">
+    <p className="p-8 text-center text-fg-3" role="alert">
       {failure}
     </p>
   );
@@ -127,7 +127,7 @@ function Unreachable({ failure }: { readonly failure: string }) {
 
 function Loading() {
   return (
-    <div className="flex h-dvh items-center justify-center text-muted-foreground">
+    <div className="flex h-dvh items-center justify-center text-fg-3">
       <Spinner />
     </div>
   );

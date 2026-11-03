@@ -37,32 +37,32 @@ function ChoiceCard({ choice, onDetails, detailsOpen }: { readonly choice: Bound
       aria-label={choice.name}
       data-testid="provider-choice-card"
       data-provider-id={choice.providerId}
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-edge bg-surface-card"
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-panel border border-line bg-surface"
     >
-      <div className="relative aspect-[3/2] bg-surface-well">
+      <div className="relative aspect-[3/2] bg-surface-2">
         {choice.photo === undefined ? (
-          <div className="grid h-full place-items-center text-label text-fg-meta">No photo</div>
+          <div className="grid h-full place-items-center text-xs text-fg-3">No photo</div>
         ) : (
           <img src={api.photoUrl(choice.photo.src)} alt={choice.photo.alt} className="size-full object-cover" loading="lazy" />
         )}
         {choice.highlight !== undefined && (
           // The tag's tint is translucent; a solid card surface under it keeps it readable on a light photo.
-          <div className="absolute top-2 left-2 rounded-md bg-surface-card">
+          <div className="absolute top-2 left-2 rounded-md bg-surface">
             <Tag text={choice.highlight} size="sm" variant="info" />
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <h3 className="m-0 text-panel font-medium text-fg-emph">{choice.name}</h3>
-        <div className="flex items-center justify-between gap-2 text-label text-fg-meta">
-          <span className="inline-flex items-center gap-1 font-mono tabular-nums" aria-label={`Rated ${choice.rating} from ${choice.reviewCount} reviews`}>
+        <h3 className="m-0 text-sm font-medium text-fg">{choice.name}</h3>
+        <div className="flex items-center justify-between gap-2 text-xs text-fg-3">
+          <span className="inline-flex items-center gap-1 tabular-nums" aria-label={`Rated ${choice.rating} from ${choice.reviewCount} reviews`}>
             <Star aria-hidden className="size-3" />
-            {choice.rating} <span className="text-fg-meta">({choice.reviewCount})</span>
+            {choice.rating} <span className="text-fg-3">({choice.reviewCount})</span>
           </span>
-          <Money amount={choice.priceInr} className="text-body text-fg-emph" />
+          <Money amount={choice.priceInr} className="text-sm text-fg" />
         </div>
-        <p className="m-0 text-label text-fg-body">{slot === undefined ? "No free slot this week" : `Earliest: ${slot}`}</p>
-        {choice.reason !== undefined && <p className="m-0 text-label text-fg-meta">{choice.reason}</p>}
+        <p className="m-0 text-xs text-fg-2">{slot === undefined ? "No free slot this week" : `Earliest: ${slot}`}</p>
+        {choice.reason !== undefined && <p className="m-0 text-xs text-fg-3">{choice.reason}</p>}
         <div className="mt-auto flex gap-1.5 pt-1.5">
           <Button
             size="sm"
@@ -88,7 +88,7 @@ function CardsSkeleton({ count }: { readonly count: number }) {
   return (
     <div aria-busy className="grid grid-cols-1 gap-2 sm:grid-cols-3">
       {Array.from({ length: Math.min(count, ROW) }, (_, index) => (
-        <div key={index} className="flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
+        <div key={index} className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
           <Skeleton className="aspect-[3/2] h-auto" />
           <Skeleton className="w-2/3" />
           <Skeleton className="w-1/2" />
@@ -117,7 +117,7 @@ export function ProviderChoiceCards({
   const [details, setDetails] = useState<string>();
 
   if (providers.status === "loading") return <CardsSkeleton count={choices.length} />;
-  if (providers.status === "failed") return <p className="my-2 text-label text-fg-meta">Can't load these providers right now.</p>;
+  if (providers.status === "failed") return <p className="my-2 text-xs text-fg-3">Can't load these providers right now.</p>;
 
   const byId = new Map(providers.data.map((provider) => [provider.id, provider]));
   const bind = (inputs: readonly ChoiceInput[]) =>
@@ -149,7 +149,7 @@ export function ProviderChoiceCards({
   return (
     <section aria-label={label} data-testid="provider-choices" className="my-3 flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="m-0 text-label text-fg-meta">{title ?? "Options"}</p>
+        <p className="m-0 text-xs text-fg-3">{title ?? "Options"}</p>
         {all.length > row.length && (
           <Button size="sm" variant="ghost" aria-expanded={showAll} onClick={() => setShowAll((open) => !open)}>
             {showAll ? "Show fewer" : `See all ${all.length}`}
@@ -169,7 +169,7 @@ export function ProviderChoiceCards({
       )}
       {showAll && (
         <section aria-label={everyoneLabel === undefined ? "All options" : `Search results for ${everyoneLabel}`} className="flex flex-col gap-1.5">
-          <p className="m-0 text-label text-fg-meta">{everyoneLabel === undefined ? `All ${all.length}` : `All ${all.length} ${everyoneLabel}`}</p>
+          <p className="m-0 text-xs text-fg-3">{everyoneLabel === undefined ? `All ${all.length}` : `All ${all.length} ${everyoneLabel}`}</p>
           {carousel(all, "All options")}
         </section>
       )}

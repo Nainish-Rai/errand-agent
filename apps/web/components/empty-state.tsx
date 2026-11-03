@@ -13,7 +13,7 @@ type EmptyStateProps = {
 /** One line plus one action. */
 export function EmptyState({ message, actionLabel, onAction, className }: EmptyStateProps) {
   return (
-    <div className={cn("grid justify-items-center gap-2 rounded-lg border border-dashed border-edge-strong p-4 text-center text-fg-meta", className)}>
+    <div className={cn("grid justify-items-center gap-2 rounded-panel border border-dashed border-line-strong p-4 text-center text-fg-3", className)}>
       <p className="m-0">{message}</p>
       {actionLabel !== undefined && (
         <Button size="sm" variant="secondary" onClick={onAction}>
