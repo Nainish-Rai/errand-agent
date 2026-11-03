@@ -26,6 +26,19 @@
           "command": "api",
           "args": [
             "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
             "/api/v1/dev/model-script"
           ],
           "options": {
@@ -465,6 +478,19 @@
           "command": "api",
           "args": [
             "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
             "/api/v1/dev/model-script"
           ],
           "options": {
@@ -675,6 +701,19 @@
           "command": "api",
           "args": [
             "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
             "/api/v1/dev/model-script"
           ],
           "options": {
@@ -857,6 +896,19 @@
             }
           },
           "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
         },
         {
           "command": "api",
@@ -1155,6 +1207,19 @@
             }
           },
           "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
         },
         {
           "command": "api",
