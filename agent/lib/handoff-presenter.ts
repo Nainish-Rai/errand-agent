@@ -1,5 +1,6 @@
 import type { ErrandHandoffView, GetErrandHandoffsResponse, HandoffOriginView } from "@errand/contracts";
 
+import type { Errand } from "../../src/core/errand/errand";
 import type { ErrandHandoff, MovedHandoff } from "../../src/core/errand/errand-handoff";
 import type { ErrandHandoffs } from "../../src/core/use-cases/list-errand-handoffs";
 import type { StartNewErrandOutcome } from "../../src/core/use-cases/start-new-errand";
@@ -49,4 +50,25 @@ export function presentStartRefusal(
     case "errand_exists":
       return { status: 409, code: "errand_exists", message: "That chat already has an errand. Start the new errand in a new chat." };
   }
+}
+
+/**
+ * For a chat started from a New errand card, while its errand is still being gathered: what the
+ * errand already holds, so the first turn asks for none of it. Built from the errand, never from
+ * the old chat's text.
+ */
+export function presentMovedErrandInstructions(errand: Errand): string | undefined {
+  if (errand.state !== "gathering") return undefined;
+  const { service, area, timeWindow } = errand.details;
+  const known = [
+    service === undefined ? undefined : `service "${service}"`,
+    area === undefined ? undefined : `area "${area}"`,
+    timeWindow === undefined ? undefined : `dates ${timeWindow.dates.from} to ${timeWindow.dates.to}`,
+  ].filter((part): part is string => part !== undefined);
+  if (known.length === 0) return undefined;
+  return (
+    "This chat was started from the person's earlier chat to take a new errand; their message is the request they made there. " +
+    `The errand already holds ${known.join(", ")}. Never ask for these. Call update_errand only with what their message adds or changes, ` +
+    "and when nothing is missing, search_providers straight away."
+  );
 }

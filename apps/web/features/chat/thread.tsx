@@ -16,6 +16,7 @@ import { MemoryUpdatedPart } from "@/features/memory-panel/memory-updated-line";
 import { ProviderUpdateNotice } from "@/features/trust";
 
 import { ExecutionPart, ProposalCardPart, useHasPendingApproval } from "./approval-card-part";
+import { StartedFromLine } from "./errand-handoffs";
 import { ProviderInsight } from "./provider-insight";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
@@ -138,6 +139,7 @@ export function Thread() {
               <p className="text-fg-3">Ask for a plumber, an electrician, AC servicing and more.</p>
             </div>
           </ThreadPrimitive.Empty>
+          <StartedFromLine />
           <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
         </div>
         <div className="sticky bottom-0 mx-auto w-full max-w-2xl bg-page pt-2 pb-4">

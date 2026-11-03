@@ -1,10 +1,12 @@
 "use client";
 
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { ErrandSearchOutputSchema, type ErrandOption, type ErrandSearchOutput, type OptionTag } from "@errand/contracts";
+import { ErrandSearchOutputSchema, SearchProvidersInputSchema, type ErrandOption, type ErrandSearchOutput, type OptionTag } from "@errand/contracts";
 
 import { Spinner } from "@/components/ui/spinner";
 import { ProviderChoiceCards, type ChoiceInput } from "@/features/generated-ui";
+
+import { NewErrandCard } from "./new-errand-card";
 
 // search_providers as provider choice cards: the two or three tagged options as photo cards, and
 // "See all N" for everything else that fits the errand, in a carousel. Core already dropped every
@@ -54,7 +56,7 @@ function notSearchedLine(kind: NotSearched, label: string): string {
   }
 }
 
-export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, status, isError }) => {
+export const ProviderResults: ToolCallMessagePartComponent = ({ toolCallId, args, result, status, isError }) => {
   const query = args as { service?: string; area?: string };
   const label = `${(query.service ?? "providers").replaceAll("_", " ")} in ${query.area ?? "your area"}`;
 
@@ -78,6 +80,9 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
       </p>
     );
   }
+  // A booked errand refused a different job: the card carries it to a new chat (ticket 24).
+  const search = SearchProvidersInputSchema.safeParse(args);
+  if (output.kind === "not_editable" && search.success) return <NewErrandCard toolCallId={toolCallId} search={search.data} errand={output.errand} />;
   if (output.kind !== "found") return <p className="my-2 text-xs text-fg-3">{notSearchedLine(output.kind, label)}</p>;
 
   const optionIds = new Set(output.options.map((option) => option.providerId));

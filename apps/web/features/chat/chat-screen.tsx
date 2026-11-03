@@ -15,6 +15,7 @@ import { GeneratedUiHostProvider, GeneratedUiTheme } from "@/features/generated-
 
 import { appApi, backendUrl } from "./backend";
 import { BookingSessionProvider } from "./booking-progress";
+import { ErrandHandoffsProvider } from "./errand-handoffs";
 import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
 import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
@@ -106,7 +107,9 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
               <MemoryToggle rail={rail} onChange={setRail} />
             </div>
             <BookingSessionProvider sessionId={sessionId}>
-              <Thread />
+              <ErrandHandoffsProvider sessionId={sessionId}>
+                <Thread />
+              </ErrandHandoffsProvider>
             </BookingSessionProvider>
           </div>
           {/* The panel collapses as it closes, so it stays mounted until its exit motion ends. */}
