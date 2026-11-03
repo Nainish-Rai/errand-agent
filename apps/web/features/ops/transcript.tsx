@@ -50,16 +50,18 @@ export function Transcript({ transcript }: { readonly transcript: OperatorRead<G
                       {message.text}
                     </p>
                   )}
+                  {/* Plain lines, not a nested list: a message is one item of "Messages", its tools are part of it. */}
                   {message.tools.length > 0 && (
-                    <ul aria-label="Tools called" className="m-0 flex list-none flex-col gap-1 p-0">
+                    <div className="flex flex-col gap-1">
                       {message.tools.map((tool, call) => (
                         // eslint-disable-next-line react/no-array-index-key -- the same tool can be called twice in one reply
-                        <li key={call} className="flex items-center gap-2 text-sm text-fg-2">
+                        <p key={call} className="m-0 flex items-center gap-2 text-sm text-fg-2">
                           <Check aria-hidden className="size-4 text-success-text" />
+                          <span className="sr-only">Tool called:</span>
                           <code className="font-mono text-xs text-fg">{tool}</code>
-                        </li>
+                        </p>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </Reveal>
               );

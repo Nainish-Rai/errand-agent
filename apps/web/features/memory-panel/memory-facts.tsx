@@ -163,6 +163,7 @@ function CorrectionForm({
         </label>
         <Input
           id={inputId}
+          data-correct={fact.key}
           // The panel opens on Correct, so the field takes focus at once, with its value selected.
           autoFocus
           onFocus={(event) => event.currentTarget.select()}
@@ -201,7 +202,11 @@ function RowMenu({ fact, onCorrect, onForget }: { readonly fact: MemoryFactView;
         align="end"
         className="w-40"
         onCloseAutoFocus={(event) => {
-          if (correcting.current) event.preventDefault();
+          // The menu's own focus return runs after the field mounted, so it hands focus to the field itself.
+          if (correcting.current) {
+            event.preventDefault();
+            document.querySelector<HTMLInputElement>(`[data-correct="${fact.key}"]`)?.focus();
+          }
           correcting.current = false;
         }}
       >

@@ -64,7 +64,7 @@
         },
         {
           "command": "assert",
-          "args": ["role=list[name=\"Remembered facts\"s] >> role=button[name=\"More for\"]"],
+          "args": ["role=list[name=\"Remembered facts\"s] >> role=button[name=/^More for /]"],
           "options": { "count": 3 },
           "note": "every fact has its row menu with Correct and Forget"
         },
