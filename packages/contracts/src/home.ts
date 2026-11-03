@@ -64,6 +64,10 @@ export const HomeAlertViewSchema = z.discriminatedUnion("kind", [
     service: ServiceKindSchema,
     slot: SlotSchema,
     replacementsReady: z.number().int().nonnegative(),
+    /** The newest replacement card waiting for approval, so the alert opens the chat at it. */
+    proposalId: z.string().nullable(),
+    /** A replacement was booked; the alert no longer counts on the bell. */
+    rebooked: z.boolean(),
     sessionId: z.string().nullable(),
     at: z.string(),
   }),

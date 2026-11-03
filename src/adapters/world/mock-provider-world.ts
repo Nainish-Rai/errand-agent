@@ -9,6 +9,7 @@ import type {
   GetProviderOutcome,
   Hold,
   HoldOutcome,
+  ProviderCancelledEvent,
   ProviderDetails,
   ProviderSummary,
   ProviderWorld,
@@ -31,6 +32,11 @@ const MAX_SLOTS_PER_PROVIDER = 6;
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const HOUR_MS = 60 * 60 * 1_000;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1_000;
+
+/** What simulating a provider's cancellation did: the event the world emitted, or why there was none. */
+export type ProviderCancellationOutcome =
+  | { readonly kind: "emitted"; readonly event: ProviderCancelledEvent }
+  | { readonly kind: "booking_not_found" };
 
 export interface MockWorldOptions {
   readonly seed: number;
@@ -87,6 +93,7 @@ export class MockProviderWorld implements ProviderWorld {
   /** Slots someone else booked first (a `slot_taken`): no longer free for anyone. */
   readonly #takenSlots = new Set<string>();
   readonly #store: WorldStateStore | undefined;
+  readonly #providerEvents = new Map<string, ProviderCancelledEvent>();
   #nextId = 1;
   #holdLapsed = false;
 
@@ -117,6 +124,7 @@ export class MockProviderWorld implements ProviderWorld {
       cancelAttempts: [...this.#cancelAttempts],
       takenSlots: [...this.#takenSlots],
       holdLapsed: this.#holdLapsed,
+      providerEvents: [...this.#providerEvents.values()],
     };
   }
 
@@ -129,6 +137,7 @@ export class MockProviderWorld implements ProviderWorld {
     for (const [key, count] of state.cancelAttempts) this.#cancelAttempts.set(key, count);
     for (const slot of state.takenSlots) this.#takenSlots.add(slot);
     this.#holdLapsed = state.holdLapsed ?? false;
+    for (const event of state.providerEvents ?? []) this.#providerEvents.set(event.eventId, event);
   }
 
   /** Commits the world's state, so the change survives a crash of the process that asked for it. */
@@ -312,6 +321,37 @@ export class MockProviderWorld implements ProviderWorld {
     const outcome: RescheduleOutcome = { kind: "rescheduled", booking: moved };
     this.#keys.set(idempotencyKey, { operation: "reschedule", bookingId, slotStart: newSlot.start, outcome });
     return outcome;
+  }
+
+  /**
+   * Dev only, never one of the eight tools: the provider cancels a booking and the network sends us
+   * an event about it. An upcoming booking becomes cancelled by the provider; a booking that is past
+   * or already cancelled is left as it is, but the event is still sent, as real networks do, and the
+   * receiver decides whether it matters. Naming an event id the world already sent redelivers that
+   * same event without changing anything, which is how a duplicate delivery is simulated.
+   */
+  simulateProviderCancellation(request: {
+    readonly bookingId: string;
+    readonly eventId?: string;
+    readonly note?: string;
+  }): ProviderCancellationOutcome {
+    const sent = request.eventId === undefined ? undefined : this.#providerEvents.get(request.eventId);
+    if (sent !== undefined) return { kind: "emitted", event: sent };
+    const booking = this.#bookings.get(request.bookingId);
+    if (booking === undefined) return { kind: "booking_not_found" };
+    const now = this.#clock.now();
+    if (booking.status === "upcoming" && Date.parse(booking.slot.start) > now.getTime()) {
+      this.#bookings.set(booking.bookingId, { ...booking, status: "cancelled", cancelledBy: "provider" });
+    }
+    const event: ProviderCancelledEvent = {
+      eventId: request.eventId ?? this.#newId("evt"),
+      bookingId: booking.bookingId,
+      providerId: booking.providerId,
+      occurredAt: now.toISOString(),
+      ...(request.note === undefined ? {} : { note: request.note }),
+    };
+    this.#providerEvents.set(event.eventId, event);
+    return this.#saved({ kind: "emitted", event });
   }
 
   #replayBook(recorded: KeyRecord, holdId: string): BookOutcome {

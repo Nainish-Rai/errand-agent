@@ -33,7 +33,8 @@ export interface TraceSpan {
  * transitions (ticket 04), how each run ended (ticket 08), the context sent to the model (tickets 11
  * and 12), a remembered fact filling in the errand (ticket 11), the home composer's chips filling
  * it in before the first model turn (ticket 13), every change of an action intent in the ledger
- * (ticket 07), and how a generated-UI program was judged, parse errors included (ticket 17).
+ * (ticket 07), how a generated-UI program was judged, parse errors included (ticket 17), and a
+ * provider event the backend received (ticket 14).
  */
 export type TraceEventKind =
   | "state_transition"
@@ -42,7 +43,8 @@ export type TraceEventKind =
   | "memory_used"
   | "errand_drafted"
   | "ledger_transition"
-  | "generated_ui";
+  | "generated_ui"
+  | "provider_event";
 
 export interface TraceEvent {
   readonly type: "event";

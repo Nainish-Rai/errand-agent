@@ -98,6 +98,8 @@ export const HoldSlotOutputSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("held"), hold: HeldSlotSchema, errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("slot_unavailable"), errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("provider_not_found"), errand: ErrandViewSchema, message: z.string() }),
+  /** The errand replaces a booking that provider cancelled (ticket 14), so it can't be held again. */
+  z.object({ kind: z.literal("provider_excluded"), errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("not_choosing"), state: z.string().nullable(), message: z.string() }),
 ]);
 

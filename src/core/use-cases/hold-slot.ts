@@ -12,6 +12,8 @@ export type HoldSlotOutcome =
   | { readonly kind: "held"; readonly errand: Errand; readonly hold: Hold }
   | { readonly kind: "slot_unavailable"; readonly errand: Errand }
   | { readonly kind: "provider_not_found"; readonly errand: Errand }
+  /** The errand replaces a booking this provider cancelled; it can't be offered again. */
+  | { readonly kind: "provider_excluded"; readonly errand: Errand; readonly providerName: string }
   /** Only an errand whose options are on screen can hold a slot. */
   | { readonly kind: "not_choosing"; readonly state: ErrandState | null; readonly errand?: Errand };
 
@@ -21,6 +23,9 @@ async function held(
   deps: ProposalDependencies,
 ): Promise<HoldSlotOutcome> {
   if (errand.state !== "choosing") return { kind: "not_choosing", state: errand.state, errand };
+  if (errand.replacing?.providerId === choice.providerId) {
+    return { kind: "provider_excluded", errand, providerName: errand.replacing.providerName };
+  }
   const outcome = await deps.world.holdSlot(choice.providerId, choice.slot);
   if (outcome.kind !== "held") return { kind: outcome.kind, errand };
   const holding = moved(errand, "holding", "slot_held", deps.errand.clock);

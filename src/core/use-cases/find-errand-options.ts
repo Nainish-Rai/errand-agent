@@ -65,7 +65,9 @@ async function searched(
     return { ...found, errand: mover.errand };
   }
 
-  const selection = selectOptions(found.providers, { ...details, timeWindow });
+  // A replacement never offers the provider who cancelled the booking it replaces.
+  const providers = found.providers.filter((provider) => provider.id !== start.replacing?.providerId);
+  const selection = selectOptions(providers, { ...details, timeWindow });
   if (selection.options.length === 0) {
     move(mover, "gathering", "no_options");
     return { kind: "no_options", errand: mover.errand, excluded: selection.excluded, searched: found.providers.length };

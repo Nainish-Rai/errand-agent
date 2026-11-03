@@ -148,6 +148,12 @@ export function presentHoldOutcome(outcome: HoldSlotOutcome, catalog: ServiceCat
       };
     case "provider_not_found":
       return { kind: "provider_not_found", errand: presentErrand(outcome.errand, catalog), message: "No provider has that id." };
+    case "provider_excluded":
+      return {
+        kind: "provider_excluded",
+        errand: presentErrand(outcome.errand, catalog),
+        message: `${outcome.providerName} cancelled the booking this replaces, so it can't be offered again. Pick another option.`,
+      };
     case "not_choosing":
       return {
         kind: "not_choosing",

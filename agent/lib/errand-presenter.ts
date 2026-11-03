@@ -70,6 +70,7 @@ export function presentErrand(errand: Errand, catalog: ServiceCatalog): ErrandVi
       reason: transition.reason,
       atMs: transition.atMs,
     })),
+    replacing: errand.replacing === undefined ? null : { ...errand.replacing },
   };
 }
 

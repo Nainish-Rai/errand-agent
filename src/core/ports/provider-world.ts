@@ -68,6 +68,21 @@ export interface Booking {
   readonly slot: Slot;
   readonly priceInr: number;
   readonly status: BookingStatus;
+  /** Who cancelled a cancelled booking, when the world knows: the provider (ticket 14) or the person. */
+  readonly cancelledBy?: "provider" | "person";
+}
+
+/**
+ * The provider network telling us a provider cancelled a booking. Only the two ids are used as
+ * keys; everything else about the booking is read back from the world, never taken from the event.
+ * `note` is the provider's own free text: untrusted, kept out of every prompt.
+ */
+export interface ProviderCancelledEvent {
+  readonly eventId: string;
+  readonly bookingId: string;
+  readonly providerId: string;
+  readonly occurredAt: string;
+  readonly note?: string;
 }
 
 export interface SearchQuery {
