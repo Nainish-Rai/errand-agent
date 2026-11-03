@@ -33,6 +33,7 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | POST | `/memory/:id/confirm` | ConfirmInferredFact |
   | GET | `/alerts` | ListAlerts |
   | GET | `/events` | Server-sent events: `proposal.created`, `booking.updated`, `errand.state_changed`, `alert.created` |
+  | GET | `/sessions/:id/errand` | GetErrand: the session's errand, its workflow state and what is still missing |
   | GET | `/sessions/:id/trace`, `/sessions/:id/context` | Trace and context log for the trace panel |
   | GET | `/assets/providers/:file` | Provider photos, served by the backend so every client gets the same images |
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
