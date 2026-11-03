@@ -292,6 +292,12 @@ async function play(sessionId: string, reply: Reply): Promise<void> {
             if (proposal !== undefined) proposal.phase = "executed";
           });
         }
+        // The errand changes as the tools run (update_errand, the search, the hold), so a form drawn
+        // later in the turn reads what is still missing, as it does from the real backend.
+        if (reply.errand !== undefined) {
+          const errand = reply.errand;
+          updateChat(sessionId, (chat) => ({ ...chat, errand }));
+        }
         parts = [...parts.slice(0, -1), part];
         show("streaming");
         continue;
