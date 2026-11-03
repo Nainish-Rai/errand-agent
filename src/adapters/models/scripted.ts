@@ -107,7 +107,9 @@ export class ModelScriptPlayer {
   respond(request: MockModelRequest): MockModelResponse | string {
     if (this.#script === undefined) return respondToSearchErrand(request);
     const { turn, step } = positionIn(request);
-    const scripted = this.#script.turns[turn]?.steps[step];
+    const scriptedTurn = this.#script.turns[turn];
+    const steps = scriptedTurn?.steps ?? [];
+    const scripted = scriptedTurn?.loop === true ? steps[step % steps.length] : steps[step];
     if (scripted === undefined) throw new ModelScriptExhaustedError(`user message ${turn + 1}, step ${step + 1}`);
     return { text: scripted.text, toolCalls: scripted.toolCalls };
   }

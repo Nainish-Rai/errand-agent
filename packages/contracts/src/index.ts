@@ -3,3 +3,4 @@ export * from "./world";
 export * from "./trace";
 export * from "./model-script";
 export * from "./errand";
+export * from "./run-budget";

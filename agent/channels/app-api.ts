@@ -1,15 +1,19 @@
 import {
   API_PREFIX,
   ApproveProposalRequestSchema,
+  InjectWorldFaultRequestSchema,
   LoadModelScriptRequestSchema,
   NOT_IMPLEMENTED_ERROR_CODE,
   SessionIdSchema,
+  SetRunLimitsRequestSchema,
   SwitchScenarioRequestSchema,
   type ApiError,
   type GetErrandResponse,
   type GetProviderResponse,
   type GetProvidersResponse,
+  type InjectWorldFaultResponse,
   type LoadModelScriptResponse,
+  type SetRunLimitsResponse,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
 import { defineChannel, GET, POST, PUT } from "eve/channels";
@@ -111,6 +115,24 @@ export default defineChannel({
       if (parsed.data.script === null) modelScript.unload();
       else modelScript.load(parsed.data.script);
       const body: LoadModelScriptResponse = { loaded: parsed.data.script !== null, turns: modelScript.loadedTurns };
+      return Response.json(body);
+    }),
+
+    // Evals and browser checks tighten the run budget here, for runs that start afterwards.
+    PUT(`${API_PREFIX}/dev/run-limits`, async (request) => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const parsed = SetRunLimitsRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const body: SetRunLimitsResponse = { limits: container().setRunLimits(parsed.data.limits) };
+      return Response.json(body);
+    }),
+
+    // A slow or throwing world operation, so a scenario can prove the run stops on time and fails cleanly.
+    PUT(`${API_PREFIX}/dev/world-fault`, async (request) => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const parsed = InjectWorldFaultRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const body: InjectWorldFaultResponse = { fault: container().injectWorldFault(parsed.data.fault) };
       return Response.json(body);
     }),
   ],

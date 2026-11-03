@@ -6,6 +6,7 @@ import type { TraceEvent } from "../ports/trace-sink";
 //
 //   gathering → searching → choosing → holding → awaiting_approval → executing → verifying → done
 //
+// A run that fails moves its errand to `failed` from any state that isn't finished (ticket 08).
 // Ticket 04 drives gathering, searching and choosing. The later states are declared now so the
 // booking tickets add behaviour, not states, and so the table already says what they may reach.
 
@@ -41,14 +42,16 @@ export type TransitionReason =
   | "awaiting_verification"
   | "booking_verified"
   | "booking_failed"
-  | "cancelled_by_user";
+  | "cancelled_by_user"
+  /** The run ended `failed` (an unexpected tool error, an exhausted retry), so the errand did too. */
+  | "run_failed";
 
 const ALLOWED: Readonly<Record<ErrandState, readonly ErrandState[]>> = {
-  gathering: ["searching", "cancelled"],
+  gathering: ["searching", "cancelled", "failed"],
   searching: ["choosing", "gathering", "failed"],
-  choosing: ["searching", "gathering", "holding", "cancelled"],
+  choosing: ["searching", "gathering", "holding", "cancelled", "failed"],
   holding: ["awaiting_approval", "choosing", "failed", "cancelled"],
-  awaiting_approval: ["executing", "choosing", "holding", "cancelled"],
+  awaiting_approval: ["executing", "choosing", "holding", "cancelled", "failed"],
   executing: ["verifying", "done", "failed"],
   verifying: ["done", "failed"],
   done: [],

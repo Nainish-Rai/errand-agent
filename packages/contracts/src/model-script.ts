@@ -19,6 +19,8 @@ export const ModelStepSchema = z
 
 export const ModelScriptTurnSchema = z.object({
   steps: z.array(ModelStepSchema).min(1),
+  /** After the last step, start again from the first: a model that never stops (run budget evals). */
+  loop: z.boolean().optional(),
 });
 
 export const ModelScriptSchema = z.object({

@@ -6,15 +6,21 @@ import {
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
   GetSessionTraceResponseSchema,
+  InjectWorldFaultResponseSchema,
   LoadModelScriptResponseSchema,
+  SetRunLimitsResponseSchema,
   SwitchScenarioResponseSchema,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
   type ErrandView,
   type GetSessionTraceResponse,
+  type InjectWorldFaultRequest,
+  type InjectWorldFaultResponse,
   type LoadModelScriptRequest,
   type LoadModelScriptResponse,
   type ProviderDetails,
+  type SetRunLimitsRequest,
+  type SetRunLimitsResponse,
   type SwitchScenarioRequest,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
@@ -97,6 +103,24 @@ export class ApiClient {
       "/dev/model-script",
       { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
       LoadModelScriptResponseSchema,
+    );
+  }
+
+  /** Dev only: the run budget's limits for runs that start afterwards; `null` restores the defaults. */
+  async setRunLimits(request: SetRunLimitsRequest): Promise<SetRunLimitsResponse> {
+    return await this.#request(
+      "/dev/run-limits",
+      { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      SetRunLimitsResponseSchema,
+    );
+  }
+
+  /** Dev only: make one world operation slow or throw until the next scenario switch; `null` clears it. */
+  async injectWorldFault(request: InjectWorldFaultRequest): Promise<InjectWorldFaultResponse> {
+    return await this.#request(
+      "/dev/world-fault",
+      { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      InjectWorldFaultResponseSchema,
     );
   }
 
