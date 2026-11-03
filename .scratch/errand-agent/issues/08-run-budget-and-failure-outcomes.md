@@ -4,10 +4,10 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done (PR #9)
 
-- [ ] Eval "turn limit": a scripted model that loops forever stops at the cap, and the user sees a budget-exhausted message
-- [ ] Eval "tool-call limit": same pattern
-- [ ] Eval "wall-clock timeout": a slow fake tool stops the run within the deadline, and the user sees a message
-- [ ] Eval "unexpected tool error": a tool throws something unknown; the run ends `failed` with a user message, and no side effect is made
-- [ ] The global invariant "every run ends with a typed outcome" is now real
+- [x] Eval "turn limit": a scripted model that loops forever stops at the cap, and the user sees a budget-exhausted message
+- [x] Eval "tool-call limit": same pattern
+- [x] Eval "wall-clock timeout": a slow fake tool stops the run within the deadline, and the user sees a message
+- [x] Eval "unexpected tool error": a tool throws something unknown; the run ends `failed` with a user message, and no side effect is made
+- [x] The global invariant "every run ends with a typed outcome" is now real
