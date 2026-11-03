@@ -69,7 +69,9 @@ export default defineChannel({
       const sessionId = SessionIdSchema.safeParse(params.sessionId);
       if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
       const trace = await getSessionTrace(container().traceSink, sessionId.data);
-      return Response.json(presentSessionTrace(trace, container().clock.now().getTime()));
+      // The spans are stamped with the wall clock, so "now" must be too: a pinned clock here made
+      // running spans look as long as the pin's offset from today.
+      return Response.json(presentSessionTrace(trace, container().wallClock.now().getTime()));
     }),
 
     // The session's errand: its details, workflow state and what is still missing. Null before

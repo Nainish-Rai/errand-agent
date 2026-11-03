@@ -24,6 +24,11 @@ type StoredState = Parameters<InstrumentationContext["state"]["set"]>[0];
 
 const AGENT_NAME_FALLBACK = "errand-agent";
 
+/** Every span time comes from the container's wall clock, the one the trace route reads "now" from. */
+function wallNow(): number {
+  return container().wallClock.now().getTime();
+}
+
 function turnSpanId(sessionId: string, turnId: string): string {
   return `turn:${sessionId}:${turnId}`;
 }
@@ -93,7 +98,7 @@ function close(ctx: InstrumentationContext, ending: SpanEnding): Promise<void> {
   const span = opened(ctx);
   ctx.state.set(undefined);
   if (span === undefined) return Promise.resolve();
-  const endTimeMs = Math.max(span.startTimeMs, ending.endTimeMs ?? Date.now());
+  const endTimeMs = Math.max(span.startTimeMs, ending.endTimeMs ?? wallNow());
   return container().traceSink.record({
     ...span,
     status: ending.status,
@@ -158,7 +163,7 @@ export default defineInstrumentation({
           kind: "agent",
           name: `invoke_agent ${agentName}`,
           status: "running",
-          startTimeMs: Date.now(),
+          startTimeMs: wallNow(),
           attributes: defined({
             "gen_ai.operation.name": "invoke_agent",
             "gen_ai.agent.name": agentName,
@@ -194,7 +199,7 @@ export default defineInstrumentation({
           kind: "step",
           name: "agent.step",
           status: "running",
-          startTimeMs: Date.now(),
+          startTimeMs: wallNow(),
           attributes: defined({
             "gen_ai.request.model": event.operation.modelId,
             "gen_ai.provider.name": event.operation.provider,
@@ -234,7 +239,7 @@ export default defineInstrumentation({
           kind: "model",
           name: `chat ${event.model.modelId}`,
           status: "running",
-          startTimeMs: Date.now(),
+          startTimeMs: wallNow(),
           attributes: defined({
             "gen_ai.operation.name": "chat",
             "gen_ai.provider.name": event.model.provider,
@@ -261,7 +266,7 @@ export default defineInstrumentation({
           kind: "tool",
           name: `execute_tool ${event.toolName}`,
           status: "running",
-          startTimeMs: event.startedAtMs ?? Date.now(),
+          startTimeMs: event.startedAtMs ?? wallNow(),
           attributes: defined({
             "gen_ai.operation.name": "execute_tool",
             "gen_ai.tool.name": event.toolName,

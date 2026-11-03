@@ -10,16 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 
+import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
 import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
 
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? DEFAULT_BACKEND_URL;
 
 function BoundThread({ session }: { readonly session: ClientSession }) {
-  const { runtime, error } = useEveAssistantRuntime(session);
+  const { runtime, error, sendText, sessionId, activity } = useEveAssistantRuntime(session);
   const [traceOpen, setTraceOpen] = useState(true);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <SendTextProvider value={sendText}>
       <div className="flex h-dvh">
         <div className="relative min-w-0 flex-1">
           {error !== undefined && (
@@ -41,8 +43,11 @@ function BoundThread({ session }: { readonly session: ClientSession }) {
           </div>
           <Thread />
         </div>
-        {traceOpen && <TracePanel backendUrl={backendUrl} session={session} onClose={() => setTraceOpen(false)} />}
+        {traceOpen && (
+          <TracePanel backendUrl={backendUrl} sessionId={sessionId} activity={activity} onClose={() => setTraceOpen(false)} />
+        )}
       </div>
+      </SendTextProvider>
     </AssistantRuntimeProvider>
   );
 }

@@ -51,6 +51,11 @@ function runtimeSecrets(): (string | undefined)[] {
 
 class Container {
   readonly clock: Clock;
+  /**
+   * The real time, never pinned. Trace spans and events are stamped with it, so everything on the
+   * trace's timeline (and the trace route's "now") uses one clock even when evals pin `clock`.
+   */
+  readonly wallClock: Clock = systemClock;
   /** True when ERRAND_CLOCK_START set the clock, so sessions read it instead of their own time. */
   readonly isClockPinned: boolean;
   /** The offline model's script, loaded per scenario through the dev-only model-script route. */
@@ -86,12 +91,9 @@ class Container {
     return settings;
   }
 
-  /**
-   * What the errand use cases need. Transitions are stamped with the system clock, the one the
-   * trace's spans use, so a pinned eval clock can't put them hours away from the spans around them.
-   */
+  /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
   get errandDependencies(): ErrandDependencies & { readonly world: ProviderWorld } {
-    return { errands: this.errands, catalog: this.catalog, traceSink: this.traceSink, clock: systemClock, world: this.world };
+    return { errands: this.errands, catalog: this.catalog, traceSink: this.traceSink, clock: this.wallClock, world: this.world };
   }
 
   modelFor(role: ModelRole): LanguageModel {

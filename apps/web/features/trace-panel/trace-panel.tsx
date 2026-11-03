@@ -1,13 +1,14 @@
 "use client";
 
-import { ApiClient, type ClientSession } from "@errand/client";
+import { ApiClient } from "@errand/client";
 import type { GetSessionTraceResponse } from "@errand/contracts";
 import { X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TraceWaterfall } from "@/components/agents/trace-waterfall";
 import { Button } from "@/components/ui/button";
 
+import { ErrandStates } from "./errand-states";
 import { toWaterfallTrace, type WaterfallTrace } from "./waterfall-spans";
 
 // The session's run trace beside the chat, as a live waterfall. It polls the backend's trace route
@@ -22,14 +23,27 @@ interface FetchedTrace {
   readonly clockOffsetMs: number;
 }
 
-function useSessionTrace(api: ApiClient, sessionId: string): { fetched?: FetchedTrace; error?: string } {
+/**
+ * Polls the session's trace while the panel is open, and fetches at once whenever the chat
+ * reports new activity, so a turn shows up as soon as it starts rather than on the next tick.
+ */
+function useSessionTrace(api: ApiClient, sessionId: string, activity: number): { fetched?: FetchedTrace; error?: string } {
   const [fetched, setFetched] = useState<FetchedTrace>();
   const [error, setError] = useState<string>();
+  const pollNow = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let inFlight = false;
+    let again = false;
     const poll = async () => {
+      clearTimeout(timer);
+      if (inFlight) {
+        again = true;
+        return;
+      }
+      inFlight = true;
       try {
         const trace = await api.getSessionTrace(sessionId, { signal: controller.signal });
         setFetched({ trace, clockOffsetMs: trace.generatedAtMs - Date.now() });
@@ -37,15 +51,30 @@ function useSessionTrace(api: ApiClient, sessionId: string): { fetched?: Fetched
       } catch (failure) {
         if (controller.signal.aborted) return;
         setError(failure instanceof Error ? failure.message : String(failure));
+      } finally {
+        inFlight = false;
       }
-      if (!controller.signal.aborted) timer = setTimeout(poll, POLL_MS);
+      if (controller.signal.aborted) return;
+      if (again) {
+        again = false;
+        void poll();
+      } else {
+        timer = setTimeout(poll, POLL_MS);
+      }
     };
+    pollNow.current = () => void poll();
+    setFetched(undefined);
     void poll();
     return () => {
       controller.abort();
       clearTimeout(timer);
+      pollNow.current = () => undefined;
     };
   }, [api, sessionId]);
+
+  useEffect(() => {
+    pollNow.current();
+  }, [activity]);
 
   return { fetched, error };
 }
@@ -106,16 +135,20 @@ function summaryOf(trace: GetSessionTraceResponse | undefined): string {
 }
 
 export function TracePanel({
-  session,
+  sessionId,
+  activity,
   backendUrl,
   onClose,
 }: {
-  readonly session: ClientSession;
+  /** The session the chat is streaming; the panel follows it from the first message. */
+  readonly sessionId: string;
+  /** Changes whenever the chat sees new session events. */
+  readonly activity: number;
   readonly backendUrl: string;
   readonly onClose: () => void;
 }) {
   const api = useMemo(() => new ApiClient({ baseUrl: backendUrl }), [backendUrl]);
-  const { fetched, error } = useSessionTrace(api, session.id);
+  const { fetched, error } = useSessionTrace(api, sessionId, activity);
   const waterfall = useMemo(() => (fetched === undefined ? undefined : toWaterfallTrace(fetched.trace)), [fetched]);
   const clock = useTraceClock(waterfall, fetched?.clockOffsetMs ?? 0);
 
@@ -135,6 +168,7 @@ export function TracePanel({
           Can&apos;t read the trace: {error}
         </p>
       )}
+      {fetched !== undefined && <ErrandStates trace={fetched.trace} />}
       {waterfall !== undefined && waterfall.spans.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Send a message and the run shows up here.</p>
       ) : (

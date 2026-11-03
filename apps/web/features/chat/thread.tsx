@@ -13,6 +13,7 @@ import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
 
 import { ProviderResults } from "./provider-results";
+import { QuickReplies } from "./quick-replies";
 
 const AssistantText: TextMessagePartComponent = ({ text, status }) => (
   <Markdown isAnimating={status.type === "running"}>{text}</Markdown>
@@ -37,11 +38,11 @@ function UserMessage() {
 
 function AssistantMessage() {
   return (
-    <MessagePrimitive.Root className="py-2">
+    <MessagePrimitive.Root className="flex flex-col py-2">
       <MessagePrimitive.Parts
         components={{
           Text: AssistantText,
-          tools: { by_name: { search_providers: ProviderResults }, Fallback: ToolActivity },
+          tools: { by_name: { search_providers: ProviderResults, update_errand: QuickReplies }, Fallback: ToolActivity },
         }}
       />
     </MessagePrimitive.Root>
