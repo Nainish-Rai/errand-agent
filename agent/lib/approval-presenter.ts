@@ -1,23 +1,27 @@
-import type {
-  BookingView,
-  ExecuteProposalOutput,
-  HoldSlotOutput,
-  ProposalCard,
-  ProposalView,
-  ProposeActionOutput,
-  TermChangeView,
+import {
+  VERIFYING_PROMISE,
+  type ActionIntentView,
+  type BookingView,
+  type ExecuteProposalOutput,
+  type HoldSlotOutput,
+  type ProposalCard,
+  type ProposalView,
+  type ProposeActionOutput,
+  type TermChangeView,
 } from "@errand/contracts";
 
 import type { Grant } from "../../src/core/approval/grant";
 import type { TermChange } from "../../src/core/approval/invalidation";
 import type { Proposal } from "../../src/core/approval/proposal";
 import type { ServiceCatalog } from "../../src/core/ports/service-catalog";
+import type { BookingOutcome } from "../../src/core/use-cases/book-approved-proposal";
 import type { ExecuteProposalOutcome } from "../../src/core/use-cases/execute-proposal";
 import type { HoldSlotOutcome } from "../../src/core/use-cases/hold-slot";
 import type { ApprovedBooking } from "../../src/core/use-cases/list-bookings";
 import type { ProposalStanding } from "../../src/core/use-cases/list-proposals";
 import type { ProposeBookingOutcome } from "../../src/core/use-cases/propose-booking";
-import { presentErrand } from "./errand-presenter";
+import type { ActionIntentStanding } from "../../src/core/use-cases/reconcile-pending-actions";
+import { presentErrand, presentOptions } from "./errand-presenter";
 
 // Core's hold, proposal and booking outcomes to wire shapes, and the one place their user-facing
 // words live. The agent relays `message`; it never writes its own "booked".
@@ -211,16 +215,17 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
       return "The approval ran out before the booking was made, so nothing was booked. I can hold the slot again.";
     case "fingerprint_mismatch":
       return "The approval doesn't match this booking's details, so nothing was booked. I'll show a new card.";
-    case "grant_used":
-      return "This approval was already used. I'm checking the booking's status with the provider.";
     case "out_of_step":
       return "That approval is no longer current, so nothing was booked. Let's look at the options again.";
     case "slot_taken":
-      return "Someone else took that slot before it could be booked, so nothing was booked. Pick another option.";
+      return outcome.alternatives.length === 0
+        ? "Someone else booked that slot just before us, so nothing was booked. Let's look at the options again."
+        : "Someone else booked that slot just before us, so nothing was booked. " +
+            "Here are the next options; choosing one shows a new approval card to approve.";
     case "verifying":
-      return "The provider didn't answer in time, so I'm verifying whether the booking went through. I'll tell you as soon as I know.";
+      return VERIFYING_MESSAGE;
     case "booking_failed":
-      return "The provider couldn't take the booking, so nothing was booked.";
+      return failureMessage(outcome.reason);
     case "approval_invalidated": {
       const price = rupees(outcome.freshProposal.terms.priceInr);
       return (
@@ -249,6 +254,61 @@ function changesOf(outcome: ExecuteProposalOutcome): readonly TermChange[] {
   return outcome.kind === "approval_invalidated" || outcome.kind === "hold_reproposed" ? outcome.changes : [];
 }
 
+const VERIFYING_MESSAGE =
+  "The provider didn't confirm in time, so I'm checking with them whether the booking went through. " + VERIFYING_PROMISE;
+
+function failureMessage(reason: string): string {
+  if (reason === "hold_expired" || reason === "hold_not_found") {
+    return "The hold on that slot ran out before the provider confirmed, so nothing was booked.";
+  }
+  return "The provider couldn't take the booking, so nothing was booked.";
+}
+
+/** A settlement the reconciler reached outside the person's turn, as the booking update they are owed. */
+export function presentBookingNotice(outcome: BookingOutcome): string {
+  switch (outcome.kind) {
+    case "booked": {
+      const { terms } = outcome.proposal;
+      return (
+        `Update on your booking: the provider confirmed it. Booked: ${terms.providerName}, ${when(terms.slot.start)}, ` +
+        `${rupees(terms.priceInr)}. Booking ID ${outcome.bookingId}.`
+      );
+    }
+    case "slot_taken":
+      return "Update on your booking: someone else got that slot first, so nothing was booked. Pick another option.";
+    case "booking_failed":
+      return `Update on your booking: ${failureMessage(outcome.reason)}`;
+    case "verifying":
+      return VERIFYING_MESSAGE;
+  }
+}
+
+function isoOrNull(ms: number | undefined): string | null {
+  return ms === undefined ? null : new Date(ms).toISOString();
+}
+
+export function presentActionIntent({ intent, notice }: ActionIntentStanding): ActionIntentView {
+  return {
+    idempotencyKey: intent.idempotencyKey,
+    action: intent.action,
+    proposalId: intent.proposalId,
+    grantId: intent.grantId,
+    sessionId: intent.sessionId,
+    holdId: intent.holdId,
+    state: intent.state,
+    attempts: intent.attempts,
+    createdAt: new Date(intent.createdAtMs).toISOString(),
+    updatedAt: new Date(intent.updatedAtMs).toISOString(),
+    lastAttemptAt: isoOrNull(intent.lastAttemptAtMs),
+    bookingId: intent.bookingId ?? null,
+    failureReason: intent.failureReason ?? null,
+    resolvedAt: isoOrNull(intent.resolvedAtMs),
+    resolvedBy: intent.resolvedBy ?? null,
+    notice: notice === undefined ? null : presentBookingNotice(notice),
+    noticeDeliveredAt: isoOrNull(intent.noticeDeliveredAtMs),
+  };
+}
+
 export function presentExecuteOutcome(outcome: ExecuteProposalOutcome): ExecuteProposalOutput {
   const fresh = freshProposalOf(outcome);
   return {
@@ -257,6 +317,7 @@ export function presentExecuteOutcome(outcome: ExecuteProposalOutcome): ExecuteP
     changes: changesOf(outcome).map(presentTermChange),
     freshProposal: fresh === undefined ? null : presentProposalCard(fresh),
     bookingId: outcome.kind === "booked" || outcome.kind === "already_booked" ? outcome.bookingId : null,
+    ...(outcome.kind === "slot_taken" ? { options: presentOptions(outcome.alternatives) } : {}),
     message: executeMessage(outcome),
   };
 }

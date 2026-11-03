@@ -1,5 +1,5 @@
 import type { ChatTurn, ToolCallView } from "@errand/client";
-import type { BookingView, ExecuteProposalOutput, MemoryFactView, ModelCallContext } from "@errand/contracts";
+import type { ActionIntentView, BookingView, ExecuteProposalOutput, MemoryFactView, ModelCallContext } from "@errand/contracts";
 import { describe, expect, it } from "vitest";
 
 import { expectedFingerprint } from "./approval-checks";
@@ -48,6 +48,29 @@ function turn(reply: string, executions: readonly ExecuteProposalOutput[] = []):
   return { sessionId: "ses", events: [], messages: [], toolCalls, reply };
 }
 
+function intent(bookingId: string | null, overrides: Partial<ActionIntentView> = {}): ActionIntentView {
+  return {
+    idempotencyKey: "book:grt_1",
+    action: "book",
+    proposalId: "prp_1",
+    grantId: "grt_1",
+    sessionId: "ses",
+    holdId: "hold_0001",
+    state: bookingId === null ? "unknown" : "confirmed",
+    attempts: 1,
+    createdAt: "2026-11-04T09:00:00.000Z",
+    updatedAt: "2026-11-04T09:00:01.000Z",
+    lastAttemptAt: "2026-11-04T09:00:00.500Z",
+    bookingId,
+    failureReason: null,
+    resolvedAt: bookingId === null ? null : "2026-11-04T09:00:01.000Z",
+    resolvedBy: bookingId === null ? null : "execution",
+    notice: null,
+    noticeDeliveredAt: null,
+    ...overrides,
+  };
+}
+
 const BOOKED_OUTPUT: ExecuteProposalOutput = {
   kind: "booked",
   proposal: null,
@@ -57,7 +80,12 @@ const BOOKED_OUTPUT: ExecuteProposalOutput = {
   message: "Booked.",
 };
 
-function runWith(after: readonly BookingView[], turns: readonly ChatTurn[] = [], before: readonly BookingView[] = [SEEDED]): ScenarioRun {
+function runWith(
+  after: readonly BookingView[],
+  turns: readonly ChatTurn[] = [],
+  before: readonly BookingView[] = [SEEDED],
+  intents: readonly ActionIntentView[] = after.flatMap((booking) => (booking.approval === null ? [] : [intent(booking.bookingId)])),
+): ScenarioRun {
   return {
     sessionId: "ses",
     sessionIds: ["ses"],
@@ -68,7 +96,7 @@ function runWith(after: readonly BookingView[], turns: readonly ChatTurn[] = [],
     mode: "offline",
     toolCalls: [],
     bookingsBefore: before,
-    api: { listBookings: async () => after } as unknown as ScenarioRun["api"],
+    api: { listBookings: async () => after, listActionIntents: async () => intents } as unknown as ScenarioRun["api"],
   };
 }
 
@@ -110,6 +138,18 @@ describe("one-booking-per-grant", () => {
   it("fails when one grant made two bookings", async () => {
     expect((await verdict("one-booking-per-grant", runWith([booked("bkg_0002"), booked("bkg_0003")]))).holds).toBe(false);
   });
+
+  it("fails for a booking the ledger has no confirmed intent for", async () => {
+    expect((await verdict("one-booking-per-grant", runWith([booked("bkg_0002")], [], [SEEDED], [intent(null)]))).holds).toBe(false);
+  });
+
+  it("fails when the ledger confirmed another booking than the one the grant made", async () => {
+    expect((await verdict("one-booking-per-grant", runWith([booked("bkg_0002")], [], [SEEDED], [intent("bkg_0003")]))).holds).toBe(false);
+  });
+
+  it("holds for an intent still being verified when nothing was booked", async () => {
+    expect(await verdict("one-booking-per-grant", runWith([], [], [SEEDED], [intent(null)]))).toEqual({ holds: true });
+  });
 });
 
 describe("no-unverified-booked-claim", () => {
@@ -124,6 +164,23 @@ describe("no-unverified-booked-claim", () => {
 
   it("fails when the agent names a booking ID the world doesn't have", async () => {
     const run = runWith([booked("bkg_0002")], [turn("Booked. Booking ID bkg_9999.", [BOOKED_OUTPUT])]);
+    expect((await verdict("no-unverified-booked-claim", run)).holds).toBe(false);
+  });
+
+  it("fails when the execution said booked but the ledger never confirmed it", async () => {
+    const run = runWith([booked("bkg_0002")], [turn("Booked. Booking ID bkg_0002.", [BOOKED_OUTPUT])], [SEEDED], [intent(null)]);
+    expect((await verdict("no-unverified-booked-claim", run)).holds).toBe(false);
+  });
+
+  it("holds for a booking update the reconciler wrote for a confirmed intent", async () => {
+    const notice = "Update on your booking: the provider confirmed it. Booked: Shiva Sanitary Solutions. Booking ID bkg_0002.";
+    const run = runWith([booked("bkg_0002")], [], [SEEDED], [intent("bkg_0002", { resolvedBy: "reconciler", notice })]);
+    expect(await verdict("no-unverified-booked-claim", run)).toEqual({ holds: true });
+  });
+
+  it("fails for a booking update that claims a booking the ledger hasn't confirmed", async () => {
+    const notice = "Update on your booking: Booked. Booking ID bkg_0002.";
+    const run = runWith([], [], [SEEDED], [intent(null, { notice })]);
     expect((await verdict("no-unverified-booked-claim", run)).holds).toBe(false);
   });
 

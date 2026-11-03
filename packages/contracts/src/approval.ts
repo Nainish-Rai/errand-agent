@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ErrandViewSchema } from "./errand";
+import { ErrandOptionSchema, ErrandViewSchema } from "./errand";
 import { ServiceKindSchema, SlotSchema } from "./world";
 
 // Holding a slot, proposals, grants and bookings on the wire: the hold_slot, propose_action and
@@ -122,7 +122,6 @@ export const ExecuteOutcomeKindSchema = z.enum([
   "declined",
   "approval_expired",
   "fingerprint_mismatch",
-  "grant_used",
   "out_of_step",
   "slot_taken",
   "verifying",
@@ -142,6 +141,8 @@ export const ExecuteProposalOutputSchema = z.object({
   freshProposal: ProposalCardSchema.nullable(),
   /** Only on booked and already_booked: the ID get_booking_status confirmed. */
   bookingId: z.string().nullable(),
+  /** Only on slot_taken: the next options. Picking one shows a new approval card. */
+  options: z.array(ErrandOptionSchema).optional(),
   /** What to tell the person, from the one outcome presenter. */
   message: z.string(),
 });
@@ -185,6 +186,45 @@ export const BookingViewSchema = z.object({
 /** GET /bookings: the person's bookings as the world has them, oldest slot first. */
 export const ListBookingsResponseSchema = z.object({ bookings: z.array(BookingViewSchema) });
 
+/** The action ledger's record of one booking attempt: written before `book`, settled by `get_booking_status`. */
+export const ActionIntentStateSchema = z.enum(["pending", "confirmed", "failed", "unknown"]);
+
+export const ActionIntentViewSchema = z.object({
+  idempotencyKey: z.string(),
+  action: z.literal("book"),
+  proposalId: z.string(),
+  grantId: z.string(),
+  sessionId: z.string(),
+  holdId: z.string(),
+  state: ActionIntentStateSchema,
+  /** How many times `book` was sent, always with `idempotencyKey`. */
+  attempts: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  lastAttemptAt: z.string().nullable(),
+  bookingId: z.string().nullable(),
+  failureReason: z.string().nullable(),
+  resolvedAt: z.string().nullable(),
+  /** `execution` when the run that booked settled it; `reconciler` when it was settled later (a timeout, a restart). */
+  resolvedBy: z.enum(["execution", "reconciler"]).nullable(),
+  /**
+   * A settlement the reconciler reached outside the person's turn, in the one presenter's words.
+   * The chat shows it as a booking update; null until there is one.
+   */
+  notice: z.string().nullable(),
+  noticeDeliveredAt: z.string().nullable(),
+});
+
+/** GET /action-intents (every intent of the caller) and GET /sessions/:sessionId/action-intents, oldest first. */
+export const ListActionIntentsResponseSchema = z.object({ intents: z.array(ActionIntentViewSchema) });
+
+/**
+ * What the person is promised while a booking's outcome is unknown: the verifying message ends
+ * with it, and the chat's verification banner repeats it. Nothing books twice, and the update
+ * comes in the chat.
+ */
+export const VERIFYING_PROMISE = "I'll update you here as soon as the provider confirms, and I won't book it twice.";
+
 /**
  * What the chat sends as the person right after a click on the card, so the agent takes its next
  * step. The words carry no authority: execute_proposal checks for the grant the click minted.
@@ -213,3 +253,6 @@ export type ListProposalsResponse = z.infer<typeof ListProposalsResponseSchema>;
 export type BookingApprovalView = z.infer<typeof BookingApprovalViewSchema>;
 export type BookingView = z.infer<typeof BookingViewSchema>;
 export type ListBookingsResponse = z.infer<typeof ListBookingsResponseSchema>;
+export type ActionIntentState = z.infer<typeof ActionIntentStateSchema>;
+export type ActionIntentView = z.infer<typeof ActionIntentViewSchema>;
+export type ListActionIntentsResponse = z.infer<typeof ListActionIntentsResponseSchema>;

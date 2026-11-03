@@ -4,11 +4,11 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done (PR #16)
 
-- [ ] Eval "timeout after success (booked)": no retry happens, `get_booking_status` confirms the booking, and exactly one booking exists
-- [ ] Eval "timeout after success (not booked)": the retry uses the same key and exactly one booking exists
-- [ ] Eval "slot taken": no booking, alternatives are offered, and a new approval is needed for the alternative
-- [ ] Eval "repeated confirmation": two clicks and two "yes" messages still give one booking
-- [ ] Eval "restart mid-booking": the process is really killed between sending `book` and recording its response. After restart, reconciliation leaves exactly one booking and the user gets the right message
-- [ ] The global invariants "at most one booking per grant" and "no booked claim without verification" are now real
+- [x] Eval "timeout after success (booked)": no retry happens, `get_booking_status` confirms the booking, and exactly one booking exists
+- [x] Eval "timeout after success (not booked)": the retry uses the same key and exactly one booking exists
+- [x] Eval "slot taken": no booking, alternatives are offered, and a new approval is needed for the alternative
+- [x] Eval "repeated confirmation": two clicks and two "yes" messages still give one booking
+- [x] Eval "restart mid-booking": the process is really killed between sending `book` and recording its response. After restart, reconciliation leaves exactly one booking and the user gets the right message
+- [x] The global invariants "at most one booking per grant" and "no booked claim without verification" are now real

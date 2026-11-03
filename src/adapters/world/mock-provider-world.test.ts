@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { Clock } from "../../core/ports/clock";
 import type { ProviderSummary, SearchOutcome } from "../../core/ports/provider-world";
-import { HOLD_LIFETIME_MS, MockProviderWorld } from "./mock-provider-world";
+import { faultyWorld, WorldPause } from "./faulty-world";
+import { DEV_USER_ID, HOLD_LIFETIME_MS, MockProviderWorld } from "./mock-provider-world";
 import { INJECTION_CAMPAIGN, PROMPT_INJECTION_REVIEW } from "./seed/catalog";
 import { scenarioNamed, type ScenarioName } from "./scenarios/scenarios";
+import type { WorldState, WorldStateStore } from "./world-state";
 
 // Tuesday 2026-11-03, 08:30 IST.
 const START = new Date("2026-11-03T03:00:00Z");
@@ -357,5 +359,75 @@ describe("list_bookings", () => {
 
   it("a new user starts with no bookings at all", async () => {
     expect(await worldFor("new_user").listBookings("dev-user")).toEqual([]);
+  });
+});
+
+describe("the world survives a restart of the backend", () => {
+  class MemoryStateStore implements WorldStateStore {
+    saved: WorldState | undefined;
+    save(state: WorldState) {
+      this.saved = JSON.parse(JSON.stringify(state)) as WorldState;
+    }
+    load() {
+      return this.saved;
+    }
+  }
+
+  it("keeps every booking and idempotency key, so a repeated key after the restart still books nothing new", async () => {
+    const store = new MemoryStateStore();
+    const clock = new FixedClock(START);
+    const before = new MockProviderWorld({ seed: 42, scenario: scenarioNamed("timeout_after_success"), clock, store });
+    const { hold } = await heldSlot(before);
+    expect(await before.book(hold.holdId, "book:grt_1")).toEqual({ kind: "timeout" });
+
+    const state = store.load();
+    if (state === undefined) throw new Error("nothing saved");
+    const after = new MockProviderWorld({ seed: 42, scenario: scenarioNamed("timeout_after_success"), clock, store, state });
+    const status = await after.getBookingStatus("book:grt_1");
+    expect(status.kind).toBe("booked");
+    expect(await after.book(hold.holdId, "book:grt_1")).toEqual(status);
+    expect(await after.listBookings(DEV_USER_ID)).toEqual(await before.listBookings(DEV_USER_ID));
+    // New ids carry on from where the old process stopped.
+    const next = await heldSlot(after);
+    expect(next.hold.holdId).not.toBe(hold.holdId);
+  });
+});
+
+describe("book's idempotency", () => {
+  it("returns the original result for the same key and request, and a conflict for the same key with another hold", async () => {
+    const world = worldFor("happy_path");
+    const { hold } = await heldSlot(world);
+    const first = await world.book(hold.holdId, "book:grt_1");
+    expect(await world.book(hold.holdId, "book:grt_1")).toEqual(first);
+    expect(await world.book("hold_other", "book:grt_1")).toEqual({ kind: "idempotency_conflict" });
+  });
+
+  it("keeps a slot someone else took out of every later search", async () => {
+    const world = worldFor("slot_taken");
+    const { provider, hold } = await heldSlot(world);
+    expect(await world.book(hold.holdId, "book:grt_1")).toEqual({ kind: "slot_taken" });
+    const again = providersOf(await world.searchProviders({ service: "plumber", area: "Koramangala", dateRange: THIS_WEEK }));
+    const slots = again.find((candidate) => candidate.id === provider.id)?.freeSlots ?? [];
+    expect(slots.some((slot) => slot.start === hold.slot.start)).toBe(false);
+  });
+});
+
+describe("the dev pause_after fault", () => {
+  it("lets book take effect in the world and holds its reply until the fault is cleared", async () => {
+    const world = worldFor("happy_path");
+    const { hold } = await heldSlot(world);
+    const pause = new WorldPause();
+    const faulted = faultyWorld(world, { kind: "pause_after", operation: "book" }, pause);
+    let replied = false;
+    const reply = faulted.book(hold.holdId, "book:grt_1").then((outcome) => {
+      replied = true;
+      return outcome;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(pause.paused).toBe(1);
+    expect(replied).toBe(false);
+    expect((await world.getBookingStatus("book:grt_1")).kind).toBe("booked");
+    pause.releaseAll();
+    expect((await reply).kind).toBe("booked");
   });
 });

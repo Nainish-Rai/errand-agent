@@ -63,6 +63,17 @@ describe("sqlite run budget store", () => {
     expect(await store.findOutcome(RUN)).toEqual({ kind: "needs_user" });
   });
 
+  it("lists the runs that started and never settled: what a killed process left behind", async () => {
+    const store = new SqliteRunBudgetStore(openDatabase(":memory:"));
+    const other: RunKey = { sessionId: "wrun_1", turnId: "turn_2" };
+    const deps = { budgets: store, limits: LIMITS, clock };
+    await startModelTurn(deps, RUN);
+    await startModelTurn(deps, other);
+    expect(await store.unsettled()).toEqual([RUN, other]);
+    await store.settle({ run: RUN, outcome: { kind: "completed" }, settledAtMs: 5 });
+    expect(await store.unsettled()).toEqual([other]);
+  });
+
   it("charges concurrent tool-call requests one at a time, so two steps can't both slip under the cap", async () => {
     const deps = { budgets: new SqliteRunBudgetStore(openDatabase(":memory:")), limits: LIMITS, clock };
     await startModelTurn(deps, RUN);

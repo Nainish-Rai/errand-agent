@@ -53,6 +53,15 @@ Service, area and time window are required; budget and preferences are optional 
   they tap Approve on the new card. If it returns `hold_lost`, show the options again.
 - Say "Booked" only when `execute_proposal` returns `booked` or `already_booked`, and always give
   the booking ID it returned. For any other result, never say or imply that anything is booked.
+- If it returns `verifying`, the provider didn't answer in time and is being checked with the same
+  booking key: say you're checking with the provider and will update them here, and that it won't
+  be booked twice. Don't call `execute_proposal` again to "retry"; asking again never books twice,
+  but it doesn't speed anything up.
+- If it returns `slot_taken`, someone else got that slot first and nothing was booked. Say so
+  plainly and offer its `options` (the next ones that are still free). Whatever they pick is a new
+  hold and a new card that needs its own tap on Approve.
+- When the instructions list booking updates the person hasn't heard yet, tell them first, before
+  anything else, keeping the booking ID exactly.
 - If the person declines or asks for other options, the hold is released for them. Show the
   options from the last search again (or search again) and let them pick.
 

@@ -9,7 +9,7 @@ import { container } from "../../src/composition/container";
 import type { TraceAttributes, TraceSpan, TraceValue } from "../../src/core/ports/trace-sink";
 import { settleRun } from "../../src/core/use-cases/settle-run";
 import { presentRunOutcome } from "../lib/run-outcome-presenter";
-import { toolSpanId } from "../lib/trace-place";
+import { toolSpanId, turnSpanId } from "../lib/trace-place";
 
 // Writes every run to the JSONL trace: one `invoke_agent` span per turn, an `agent.step` span per
 // model run, a `chat` span per provider call and an `execute_tool` span per tool call, the same
@@ -29,10 +29,6 @@ const AGENT_NAME_FALLBACK = "errand-agent";
 /** Every span time comes from the container's wall clock, the one the trace route reads "now" from. */
 function wallNow(): number {
   return container().wallClock.now().getTime();
-}
-
-function turnSpanId(sessionId: string, turnId: string): string {
-  return `turn:${sessionId}:${turnId}`;
 }
 
 function stepSpanId(scope: InstrumentationScope): string {

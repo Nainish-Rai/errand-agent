@@ -16,12 +16,13 @@ export default withRunBudget(
       "It books only if they tapped Approve on the card; otherwise it books nothing and the card is shown again. " +
       "If the provider changed the price, time or provider since the tap, or the hold ran out, it books nothing " +
       "and shows a new card that needs a new tap; tell the person what changed, old and new values. " +
-      "Relay its message: say Booked only when it returns booked, with the booking ID.",
+      "Relay its message: say Booked only when it returns booked or already_booked, with the booking ID. " +
+      "On slot_taken, show the next options it returns; on verifying, say you are checking with the provider.",
     label: { start: () => "Booking with the provider" },
     inputSchema: ExecuteProposalInputSchema,
     outputSchema: ExecuteProposalOutputSchema,
     async execute(_input, ctx) {
-      const outcome = await executeProposal(container().proposalDependencies, { place: tracePlaceOf(ctx) });
+      const outcome = await executeProposal(container().bookingDependencies, { place: tracePlaceOf(ctx) });
       return presentExecuteOutcome(outcome);
     },
   }),

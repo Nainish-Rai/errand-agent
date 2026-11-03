@@ -4,6 +4,8 @@ import { openErrand, type Errand } from "../errand/errand";
 import { transitionTo } from "../errand/errand-workflow";
 import type { Clock } from "../ports/clock";
 import type { ErrandChange, ErrandStore } from "../ports/errand-store";
+import type { ProposalStore } from "../ports/proposal-store";
+import type { ProviderWorld } from "../ports/provider-world";
 import type { BudgetChange, RunBudgetStore, SettledRun } from "../ports/run-budget-store";
 import type { TraceRecord, TraceSink } from "../ports/trace-sink";
 import { admitToolCalls } from "../use-cases/admit-tool-calls";
@@ -42,6 +44,10 @@ class MemoryBudgets implements RunBudgetStore {
 
   async findOutcome(run: RunKey): Promise<RunOutcome | undefined> {
     return this.outcomes.get(`${run.sessionId}/${run.turnId}`);
+  }
+
+  async unsettled(): Promise<readonly RunKey[]> {
+    return [...this.budgets.values()].map((budget) => budget.run).filter((run) => !this.outcomes.has(`${run.sessionId}/${run.turnId}`));
   }
 }
 
@@ -210,7 +216,8 @@ describe("run outcome", () => {
     await recordToolFailure(deps, { run: RUN, failure: { toolName: "search_providers", errorName: "TypeError" } });
     await startModelTurn(deps, RUN);
 
-    const settle = { budgets, errands, traceSink, clock };
+    // The errand holds no slot, so settling never reaches the world or the proposals.
+    const settle = { budgets, errands, traceSink, clock, world: {} as ProviderWorld, proposals: {} as ProposalStore };
     const request = { run: RUN, place: { traceId: "s1", sessionId: "s1" }, ending: "completed", describe: () => "stopped" } as const;
     const outcome = await settleRun(settle, request);
     expect(outcome).toEqual({ kind: "failed", reason: "tool_error", toolName: "search_providers" });

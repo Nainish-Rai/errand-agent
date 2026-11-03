@@ -129,6 +129,11 @@ function presentOption(option: ErrandOption): WireErrandOption {
   };
 }
 
+/** Options as the model and the chat see them; also the next options after a slot was taken. */
+export function presentOptions(options: readonly ErrandOption[]): WireErrandOption[] {
+  return options.map(presentOption);
+}
+
 export function presentFindOutcome(outcome: FindErrandOptionsOutcome, catalog: ServiceCatalog): ErrandSearchOutput {
   const errand = presentErrand(outcome.errand, catalog);
   switch (outcome.kind) {

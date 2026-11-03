@@ -3,6 +3,10 @@ import type { TracePlace } from "../../src/core/errand/errand-workflow";
 // The ids the run trace gives its spans. The instrumentation writes the spans; tools use the same
 // ids to hang their own trace events (errand state transitions) on the tool call that made them.
 
+export function turnSpanId(sessionId: string, turnId: string): string {
+  return `turn:${sessionId}:${turnId}`;
+}
+
 export function toolSpanId(sessionId: string, callId: string): string {
   return `tool:${sessionId}:${callId}`;
 }

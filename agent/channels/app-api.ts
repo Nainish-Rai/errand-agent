@@ -24,7 +24,9 @@ import {
   type GetErrandResponse,
   type GetProviderResponse,
   type GetProvidersResponse,
+  type GetWorldFaultResponse,
   type InjectWorldFaultResponse,
+  type ListActionIntentsResponse,
   type LoadModelScriptResponse,
   type SetRunLimitsResponse,
   type SwitchScenarioResponse,
@@ -48,7 +50,8 @@ import { getSessionContext } from "../../src/core/use-cases/get-session-context"
 import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
 import { listBookings } from "../../src/core/use-cases/list-bookings";
 import { getProposal, listProposals } from "../../src/core/use-cases/list-proposals";
-import { presentBooking, presentProposalView } from "../lib/approval-presenter";
+import { listActionIntents } from "../../src/core/use-cases/reconcile-pending-actions";
+import { presentActionIntent, presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
 import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
@@ -322,6 +325,26 @@ export default defineChannel({
       return Response.json(body);
     }),
 
+    // The action ledger: every booking intent, how often `book` was sent and how it was settled.
+    // The evals' exactly-once invariants read it, and the chat shows a reconciler's booking update from it.
+    GET(`${API_PREFIX}/action-intents`, async (request) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const standings = await listActionIntents(container().bookingDependencies, { userId });
+      const body: ListActionIntentsResponse = { intents: standings.map(presentActionIntent) };
+      return Response.json(body);
+    }),
+
+    GET(`${API_PREFIX}/sessions/:sessionId/action-intents`, async (request, { params }) => {
+      const userId = await callerOf(request);
+      if (userId instanceof Response) return userId;
+      const sessionId = SessionIdSchema.safeParse(params.sessionId);
+      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      const standings = await listActionIntents(container().bookingDependencies, { userId, sessionId: sessionId.data });
+      const body: ListActionIntentsResponse = { intents: standings.map(presentActionIntent) };
+      return Response.json(body);
+    }),
+
     POST(`${API_PREFIX}/dev/scenario`, async (request) => {
       if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
       const parsed = SwitchScenarioRequestSchema.safeParse(await request.json().catch(() => undefined));
@@ -369,6 +392,14 @@ export default defineChannel({
       const parsed = InjectWorldFaultRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
       const body: InjectWorldFaultResponse = { fault: container().injectWorldFault(parsed.data.fault) };
+      return Response.json(body);
+    }),
+
+    // The restart eval polls this until a `pause_after` fault holds a call, then kills the backend.
+    GET(`${API_PREFIX}/dev/world-fault`, async () => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const { worldFault, pausedWorldCalls } = container();
+      const body: GetWorldFaultResponse = { fault: worldFault, pausedCalls: pausedWorldCalls };
       return Response.json(body);
     }),
   ],

@@ -27,7 +27,7 @@ const TAG_LABELS: Readonly<Record<OptionTag, string>> = {
   runner_up: "Runner-up",
 };
 
-function OptionCard({ option, provider }: { readonly option: ErrandOption; readonly provider: ProviderSummary | undefined }) {
+export function OptionCard({ option, provider }: { readonly option: ErrandOption; readonly provider: Pick<ProviderSummary, "name" | "priceInr"> | undefined }) {
   return (
     <li className="flex flex-col gap-1.5 rounded-lg border border-interactive/50 bg-card px-3 py-2.5">
       <div className="flex flex-wrap gap-1">

@@ -33,7 +33,7 @@ Run lifecycle
                    daemonExited, processesRemaining and portsListening.
 
 Driving (the root page; targets: SELECTOR, or --role ROLE --name NAME | --label L | --testid ID | --text T, [--nth N])
-  goto /ROUTE · reload · click TARGET · hover TARGET · fill TARGET --value TEXT
+  goto /ROUTE · reload · click TARGET [--clicks 2] · hover TARGET · fill TARGET --value TEXT
   type TEXT (into the focused element) · key Enter|Escape|ControlOrMeta+A
   wait TARGET [--state visible|hidden|attached|detached] [--timeout-ms MS]
   text TARGET · count TARGET

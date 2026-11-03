@@ -124,6 +124,18 @@ const ROUTES: readonly Route[] = [
   },
   {
     method: "GET",
+    pattern: /^\/action-intents$/,
+    route: "GET /api/v1/action-intents",
+    handle: async (client) => ({ intents: await client.listActionIntents() }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/sessions\/([^/]+)\/action-intents$/,
+    route: "GET /api/v1/sessions/:id/action-intents",
+    handle: async (client, match) => ({ intents: await client.listSessionActionIntents(decodeURIComponent(match[1] ?? "")) }),
+  },
+  {
+    method: "GET",
     pattern: /^\/memory$/,
     route: "GET /api/v1/memory",
     handle: async (client) => await client.listMemory(),

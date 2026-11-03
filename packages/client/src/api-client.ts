@@ -13,13 +13,16 @@ import {
   GetProvidersResponseSchema,
   GetSessionContextResponseSchema,
   GetSessionTraceResponseSchema,
+  GetWorldFaultResponseSchema,
   InjectWorldFaultResponseSchema,
+  ListActionIntentsResponseSchema,
   LoadModelScriptResponseSchema,
   SetRunLimitsResponseSchema,
   ListMemoryResponseSchema,
   MemoryFactResponseSchema,
   SeedMemoryResponseSchema,
   SwitchScenarioResponseSchema,
+  type ActionIntentView,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
   type BookingView,
@@ -33,6 +36,7 @@ import {
   type ForgetMemoryFactResponse,
   type GetSessionContextResponse,
   type GetSessionTraceResponse,
+  type GetWorldFaultResponse,
   type InjectWorldFaultRequest,
   type InjectWorldFaultResponse,
   type ListMemoryResponse,
@@ -228,6 +232,22 @@ export class ApiClient {
     );
   }
 
+  /** The action ledger: every booking intent of the caller, oldest first. */
+  async listActionIntents(): Promise<readonly ActionIntentView[]> {
+    const body = await this.#request("/action-intents", { method: "GET" }, ListActionIntentsResponseSchema);
+    return body.intents;
+  }
+
+  /** The session's booking intents, oldest first; a settled one may carry a booking update (`notice`). */
+  async listSessionActionIntents(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<readonly ActionIntentView[]> {
+    const body = await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/action-intents`,
+      { method: "GET", ...(options.signal === undefined ? {} : { signal: options.signal }) },
+      ListActionIntentsResponseSchema,
+    );
+    return body.intents;
+  }
+
   /** Dev only: load a scenario's model turns into the offline model, or unload them with `null`. */
   async loadModelScript(request: LoadModelScriptRequest): Promise<LoadModelScriptResponse> {
     return await this.#request(
@@ -246,7 +266,12 @@ export class ApiClient {
     );
   }
 
-  /** Dev only: make one world operation slow or throw until the next scenario switch; `null` clears it. */
+  /** Dev only: the world fault in force, and how many calls a `pause_after` fault is holding. */
+  async getWorldFault(): Promise<GetWorldFaultResponse> {
+    return await this.#request("/dev/world-fault", { method: "GET" }, GetWorldFaultResponseSchema);
+  }
+
+  /** Dev only: make one world operation slow, throw or pause after it took effect, until the next scenario switch; `null` clears it. */
   async injectWorldFault(request: InjectWorldFaultRequest): Promise<InjectWorldFaultResponse> {
     return await this.#request(
       "/dev/world-fault",

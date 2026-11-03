@@ -24,6 +24,7 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | POST | `/proposals/:id/approve` `{fingerprint}` | ApproveProposal. **The only way to create a grant.** Idempotent |
   | POST | `/proposals/:id/decline` | DeclineProposal |
   | GET | `/bookings`, `/bookings/:id` | ListBookings, GetBooking |
+  | GET | `/action-intents`, `/sessions/:id/action-intents` | ListActionIntents: the action ledger's booking intents (state, attempts, booking ID, who settled it) and the booking update the reconciler owes the person |
   | GET | `/providers?ids=`, `/providers/:id` | GetProviders (fills generated cards with real data) |
   | GET | `/availability?providerIds=&week=` | GetAvailability (slots-per-day chart) |
   | GET | `/spend?from=&to=` | GetSpend (spend chart) |
@@ -39,7 +40,8 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
   | PUT | `/dev/model-script` `{script}` | Dev only. Load a scenario's model turns into the offline model (`null` unloads) |
   | PUT | `/dev/run-limits` `{limits}` | Dev only. Run-budget limits for runs that start afterwards (`null` restores the defaults) |
-  | PUT | `/dev/world-fault` `{fault}` | Dev only. Make one world operation slow or throw until the next scenario switch (`null` clears it) |
+  | PUT | `/dev/world-fault` `{fault}` | Dev only. Make one world operation slow, throw, or `pause_after` (do the call, then hold its reply) until the next scenario switch (`null` clears it and lets held calls go) |
+  | GET | `/dev/world-fault` | Dev only. The fault in force and how many calls a `pause_after` is holding (the restart eval kills the backend then) |
 
   Every request and response body is a schema from **contracts**. The user comes from the channel's
   auth context, never from the body. Locally that is a fixed dev user; real auth later means swapping the

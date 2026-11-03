@@ -5,6 +5,7 @@ import type { LanguageModel } from "ai";
 import { CONTEXT_BUDGET } from "../core/context/context-budget";
 import { DEFAULT_RUN_LIMITS, type RunExit, type RunKey, type RunLimits } from "../core/budget/run-budget";
 import type { RunOutcome } from "../core/budget/outcome";
+import type { ActionLedger } from "../core/ports/action-ledger";
 import type { Clock } from "../core/ports/clock";
 import type { ErrandStore } from "../core/ports/errand-store";
 import type { ProposalStore } from "../core/ports/proposal-store";
@@ -24,6 +25,7 @@ import type { TraceSink } from "../core/ports/trace-sink";
 import { admitToolCalls } from "../core/use-cases/admit-tool-calls";
 import { recordModelContext } from "../core/use-cases/record-model-context";
 import { recordModelFailure } from "../core/use-cases/record-model-failure";
+import type { BookingDependencies } from "../core/use-cases/book-approved-proposal";
 import type { RunBudgetDependencies } from "../core/use-cases/run-budget-session";
 import type { SettleRunDependencies } from "../core/use-cases/settle-run";
 import { startModelTurn } from "../core/use-cases/start-model-turn";
@@ -35,8 +37,10 @@ import { databasePath, openDatabase, type Database } from "../adapters/sqlite/da
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
 import { EmptyAlertFeed } from "../adapters/alerts/empty-alert-feed";
 import { gatedModel } from "../adapters/models/run-budget-gate";
+import { SqliteActionLedger } from "../adapters/sqlite/sqlite-action-ledger";
 import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
+import { SqliteWorldStateStore } from "../adapters/sqlite/sqlite-world-state-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
@@ -46,9 +50,9 @@ import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
 import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
 import { SqliteRunBudgetStore } from "../adapters/sqlite/run-budget-store";
-import { faultyWorld, type WorldFault } from "../adapters/world/faulty-world";
+import { faultyWorld, WorldPause, type WorldFault } from "../adapters/world/faulty-world";
 import { DEV_USER_ID, MockProviderWorld } from "../adapters/world/mock-provider-world";
-import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
+import { isScenarioName, scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
 
 // Main: the only place that constructs adapters. The agent and its channels ask this module for
@@ -112,18 +116,22 @@ class Container {
   /** Dev only: limits a scenario set for the runs that start after it, and a fault in the world. */
   #runLimits: RunLimits = DEFAULT_RUN_LIMITS;
   #worldFault: WorldFault | undefined;
+  readonly #worldPause = new WorldPause();
   #proposals: ProposalStore | undefined;
   #memory: MemoryStore | undefined;
   #reviewReaders: readonly ReviewReader[] | undefined;
+  #ledger: ActionLedger | undefined;
+  #worldStates: SqliteWorldStateStore | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
-    this.#settings = settings;
-    this.#world = this.#buildWorld(settings);
+    const restored = this.#restoredWorld();
+    this.#settings = restored?.settings ?? settings;
+    this.#world = restored?.world ?? this.#buildWorld(settings);
   }
 
   get world(): ProviderWorld {
-    return this.#worldFault === undefined ? this.#world : faultyWorld(this.#world, this.#worldFault);
+    return this.#worldFault === undefined ? this.#world : faultyWorld(this.#world, this.#worldFault, this.#worldPause);
   }
 
   /**
@@ -133,6 +141,12 @@ class Container {
   get database(): Database {
     this.#database ??= openDatabase(databasePath());
     return this.#database;
+  }
+
+  /** The action ledger: every booking intent, recorded before `book` is sent (see src/core/booking). */
+  get ledger(): ActionLedger {
+    this.#ledger ??= new SqliteActionLedger(this.database);
+    return this.#ledger;
   }
 
   /** Proposals and grants, in the SQLite database so an approval survives a restart. */
@@ -160,9 +174,10 @@ class Container {
     this.#settings = settings;
     this.#world = this.#buildWorld(settings);
     this.#runLimits = DEFAULT_RUN_LIMITS;
-    this.#worldFault = undefined;
+    this.injectWorldFault(null);
     await this.proposals.discardAll();
     this.#errandRecords.discardAll();
+    await this.ledger.discardAll();
     return settings;
   }
 
@@ -186,9 +201,18 @@ class Container {
     return this.#worldFault ?? null;
   }
 
-  /** Dev only: make one world operation slow or throw, until a scenario switch or `null` clears it. */
+  /** How many world calls a `pause_after` fault has held since the process started. */
+  get pausedWorldCalls(): number {
+    return this.#worldPause.paused;
+  }
+
+  /**
+   * Dev only: make one world operation slow, throw, or pause after it took effect, until a
+   * scenario switch or `null` clears it. Clearing lets any paused reply through.
+   */
   injectWorldFault(fault: WorldFault | null): WorldFault | null {
     this.#worldFault = fault ?? undefined;
+    if (fault === null) this.#worldPause.releaseAll();
     return this.worldFault;
   }
 
@@ -198,7 +222,14 @@ class Container {
   }
 
   get settleRunDependencies(): SettleRunDependencies {
-    return { budgets: this.runBudgets, errands: this.errands, traceSink: this.traceSink, clock: this.wallClock };
+    return {
+      budgets: this.runBudgets,
+      errands: this.errands,
+      traceSink: this.traceSink,
+      clock: this.wallClock,
+      world: this.world,
+      proposals: this.proposals,
+    };
   }
 
   /**
@@ -299,13 +330,43 @@ class Container {
     return provider === "minimax" ? { provider, modelId: MINIMAX_MODEL_ID } : { provider: "scripted", modelId: "scripted" };
   }
 
+  /** What executing a proposal and reconciling the ledger need: the proposal use cases plus the ledger. */
+  get bookingDependencies(): BookingDependencies {
+    return { ...this.proposalDependencies, ledger: this.ledger };
+  }
+
   modelFor(role: ModelRole): LanguageModel {
     const selection = parseModelSelection(process.env.ERRAND_MODELS);
     return createModel(selection[role], { minimaxApiKey: process.env.MINIMAX_API_KEY, scriptPlayer: this.modelScript });
   }
 
+  get #worldStateStore(): SqliteWorldStateStore {
+    this.#worldStates ??= new SqliteWorldStateStore(this.database);
+    return this.#worldStates;
+  }
+
   #buildWorld(settings: WorldSettings): MockProviderWorld {
-    return new MockProviderWorld({ seed: settings.seed, scenario: scenarioNamed(settings.scenario), clock: this.clock });
+    return new MockProviderWorld({
+      seed: settings.seed,
+      scenario: scenarioNamed(settings.scenario),
+      clock: this.clock,
+      store: this.#worldStateStore,
+    });
+  }
+
+  /** The world as the last process left it, so a restart doesn't make the provider forget its bookings. */
+  #restoredWorld(): { readonly world: MockProviderWorld; readonly settings: WorldSettings } | undefined {
+    const state = this.#worldStateStore.load();
+    if (state === undefined || !isScenarioName(state.scenario)) return undefined;
+    const settings: WorldSettings = { scenario: state.scenario, seed: state.seed };
+    const world = new MockProviderWorld({
+      seed: state.seed,
+      scenario: scenarioNamed(state.scenario),
+      clock: this.clock,
+      store: this.#worldStateStore,
+      state,
+    });
+    return { world, settings };
   }
 }
 

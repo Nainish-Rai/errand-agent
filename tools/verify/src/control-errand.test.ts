@@ -114,6 +114,7 @@ describe("suite manifests", () => {
       "clarify-errand.json",
       "context-budget.json",
       "design-system.json",
+      "exactly-once.json",
       "home.json",
       "memory.json",
       "review-insight.json",

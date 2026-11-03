@@ -3,12 +3,16 @@ import { describe, expect, it } from "vitest";
 import { fingerprintOf, type FingerprintedTerms } from "../approval/fingerprint";
 import { GRANT_LIFETIME_MS, type Grant } from "../approval/grant";
 import type { Proposal } from "../approval/proposal";
+import { bookingIntentFor, type ActionIntent } from "../booking/action-intent";
+import type { RunOutcome } from "../budget/outcome";
 import { openErrand, type Errand } from "../errand/errand";
 import { transitionTo, type ErrandState } from "../errand/errand-workflow";
+import type { ActionIntentQuery, ActionLedger } from "../ports/action-ledger";
 import type { Clock } from "../ports/clock";
 import type { ErrandChange, ErrandStore } from "../ports/errand-store";
 import type { Hasher } from "../ports/hasher";
 import type { ProposalQuery, ProposalStore } from "../ports/proposal-store";
+import type { RunBudgetStore } from "../ports/run-budget-store";
 import type {
   BookingStatusOutcome,
   BookOutcome,
@@ -16,17 +20,20 @@ import type {
   Hold,
   ProviderDetails,
   ProviderWorld,
+  SearchOutcome,
   Slot,
 } from "../ports/provider-world";
 import type { ServiceCatalog } from "../ports/service-catalog";
 import type { TraceRecord, TraceSink } from "../ports/trace-sink";
 import { approveProposal } from "./approve-proposal";
+import type { BookingDependencies } from "./book-approved-proposal";
 import { declineProposal } from "./decline-proposal";
 import { executeProposal } from "./execute-proposal";
 import { holdSlot } from "./hold-slot";
 import { listBookings } from "./list-bookings";
-import type { ProposalDependencies } from "./proposal-session";
 import { proposeBooking } from "./propose-booking";
+import { reconcilePendingActions, takeBookingNotices } from "./reconcile-pending-actions";
+import { settleInterruptedRuns, settleRun } from "./settle-run";
 
 // The approval guarantee, driven through the use cases with in-memory ports: a proposal is made
 // from the world's hold, only an approval of its exact fingerprint mints a grant, the grant is
@@ -116,6 +123,41 @@ class MemoryProposals implements ProposalStore {
   }
 }
 
+class MemoryLedger implements ActionLedger {
+  readonly intents = new Map<string, ActionIntent>();
+  async record(intent: ActionIntent) {
+    const existing = this.intents.get(intent.idempotencyKey);
+    if (existing !== undefined) return existing;
+    this.intents.set(intent.idempotencyKey, intent);
+    return intent;
+  }
+  async find(key: string) {
+    return this.intents.get(key);
+  }
+  async advance(next: ActionIntent) {
+    if (this.intents.get(next.idempotencyKey)?.version !== next.version - 1) return false;
+    this.intents.set(next.idempotencyKey, next);
+    return true;
+  }
+  #matching(query: ActionIntentQuery) {
+    return [...this.intents.values()].filter(
+      (intent) =>
+        (query.sessionId === undefined || intent.sessionId === query.sessionId) &&
+        (query.userId === undefined || intent.userId === query.userId) &&
+        (query.grantId === undefined || intent.grantId === query.grantId),
+    );
+  }
+  async unresolved(query: ActionIntentQuery = {}) {
+    return this.#matching(query).filter((intent) => intent.state === "pending" || intent.state === "unknown");
+  }
+  async list(query: ActionIntentQuery) {
+    return this.#matching(query);
+  }
+  async discardAll() {
+    this.intents.clear();
+  }
+}
+
 const PROVIDER: ProviderDetails = {
   id: "prv_1",
   name: "Ravi Plumbing",
@@ -137,7 +179,15 @@ const OTHER_PROVIDER: ProviderDetails = { ...PROVIDER, id: "prv_2", name: "Kumar
 class FakeWorld implements Partial<ProviderWorld> {
   holdPriceInr = 499;
   holdLifetimeMs = HOLD_LIFETIME_MS;
-  bookReply: "booked" | "slot_taken" | "timeout_after_success" | "timeout_without_booking" = "booked";
+  bookReply: BookReply = "booked";
+  /** Replies for the next `book` calls, in order, before `bookReply` applies. */
+  readonly nextReplies: BookReply[] = [];
+  /** The next `book` calls that land in the world but never answer: the process died waiting. */
+  crashesAfterBooking = 0;
+  /** `get_booking_status` answers not_found for this many calls even when the key booked (a lagging provider). */
+  statusLag = 0;
+  readonly statusCalls: string[] = [];
+  readonly takenSlots = new Set<string>();
   /** Applied to the hold the next time it is re-read: the provider changing held terms. */
   reviseHold: ((hold: Hold) => Hold) | undefined;
   /** The next book call finds its hold lapsed. */
@@ -196,20 +246,38 @@ class FakeWorld implements Partial<ProviderWorld> {
       return { kind: "hold_expired" };
     }
     const recorded = this.#keys.get(key);
-    if (recorded?.kind === "booked") return recorded;
-    if (this.holds.get(holdId)?.released !== false) return { kind: "hold_not_found" };
-    if (this.bookReply === "slot_taken") {
+    // The world's idempotency: a repeated key replays the first result and never books again.
+    if (recorded !== undefined) return recorded.kind === "booked" ? recorded : { kind: "slot_taken" };
+    const hold = this.holds.get(holdId);
+    if (hold === undefined || hold.released) return { kind: "hold_not_found" };
+    if (this.#clock.now().getTime() > Date.parse(hold.expiresAt)) return { kind: "hold_expired" };
+    const reply = this.nextReplies.shift() ?? this.bookReply;
+    if (reply === "slot_taken") {
       this.#keys.set(key, { kind: "failed", reason: "slot_taken" });
+      this.takenSlots.add(hold.slot.start);
       return { kind: "slot_taken" };
     }
-    if (this.bookReply === "timeout_without_booking") return { kind: "timeout" };
+    if (reply === "timeout_without_booking") return { kind: "timeout" };
     const bookingId = `bkg_${this.bookings.length + 1}`;
     this.bookings.push({ bookingId, holdId, key });
     this.#keys.set(key, { kind: "booked", bookingId });
-    return this.bookReply === "timeout_after_success" ? { kind: "timeout" } : { kind: "booked", bookingId };
+    if (this.crashesAfterBooking > 0) {
+      this.crashesAfterBooking -= 1;
+      throw new ProcessKilled();
+    }
+    return reply === "timeout_after_success" ? { kind: "timeout" } : { kind: "booked", bookingId };
   }
   async getBookingStatus(key: string): Promise<BookingStatusOutcome> {
+    this.statusCalls.push(key);
+    if (this.statusLag > 0) {
+      this.statusLag -= 1;
+      return { kind: "not_found" };
+    }
     return this.#keys.get(key) ?? { kind: "not_found" };
+  }
+  async searchProviders(): Promise<SearchOutcome> {
+    const freeSlots = [SLOT, LATER_SLOT].filter((slot) => !this.takenSlots.has(slot.start));
+    return { kind: "found", providers: [{ ...PROVIDER, freeSlots }] };
   }
   async listBookings() {
     return this.bookings.map(({ bookingId }) => ({
@@ -224,6 +292,18 @@ class FakeWorld implements Partial<ProviderWorld> {
     }));
   }
 }
+
+type BookReply = "booked" | "slot_taken" | "timeout_after_success" | "timeout_without_booking";
+
+/** What a crash looks like from inside the process: the call never returns a reply to record. */
+class ProcessKilled extends Error {
+  constructor() {
+    super("the backend was killed before it recorded book's reply");
+    this.name = "ProcessKilled";
+  }
+}
+
+const LATER_SLOT: Slot = { start: "2026-11-05T11:00:00+05:30", end: "2026-11-05T12:00:00+05:30" };
 
 const catalog: ServiceCatalog = {
   services: () => ["plumber"],
@@ -251,16 +331,19 @@ function setUp() {
   errands.errands.set(SESSION, choosingErrand(clock.ms));
   const world = new FakeWorld(clock);
   const proposals = new MemoryProposals();
+  const ledger = new MemoryLedger();
+  const sink = new MemorySink();
   let id = 0;
-  const deps: ProposalDependencies = {
-    errand: { errands, catalog, traceSink: new MemorySink(), clock },
+  const deps: BookingDependencies = {
+    errand: { errands, catalog, traceSink: sink, clock },
     world: world as unknown as ProviderWorld,
     proposals,
     hasher,
     ids: { next: (prefix) => `${prefix}_${(id += 1)}` },
     worldClock: clock,
+    ledger,
   };
-  return { clock, errands, world, proposals, deps };
+  return { clock, errands, world, proposals, ledger, sink, deps };
 }
 
 type Setup = ReturnType<typeof setUp>;
@@ -445,10 +528,14 @@ describe("execute a proposal", () => {
     expect(await errandState(setup)).toBe("verifying");
   });
 
-  it("reports a lost slot as slot_taken", async () => {
+  it("reports a lost slot as slot_taken, with the next options, and goes back to choosing", async () => {
     const setup = await approvedSetup("slot_taken");
-    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("slot_taken");
-    expect(await errandState(setup)).toBe("failed");
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    expect(outcome.kind).toBe("slot_taken");
+    expect(await errandState(setup)).toBe("choosing");
+    if (outcome.kind !== "slot_taken") return;
+    // The taken slot is gone; the next option is the same provider's later slot.
+    expect(outcome.alternatives.map((option) => option.slots.map((slot) => slot.start))).toEqual([[LATER_SLOT.start]]);
   });
 });
 
@@ -654,5 +741,214 @@ describe("approval invalidation: core re-reads the live hold before the grant is
     expect(outcome).toMatchObject({ kind: "hold_lost", proposal: { status: "expired" } });
     expect(setup.world.bookings).toHaveLength(0);
     expect(await errandState(setup)).toBe("choosing");
+  });
+});
+
+describe("exactly once: the action ledger", () => {
+  async function approved(setup: Setup) {
+    const proposal = await proposedBooking(setup);
+    const outcome = await approveProposal(setup.deps, click(proposal));
+    if (outcome.kind !== "approved") throw new Error(outcome.kind);
+    return { proposal, grant: outcome.grant, key: `book:${outcome.grant.grantId}` };
+  }
+
+  function ledgerTransitions(setup: Setup) {
+    return setup.sink.records.flatMap((record) => (record.type === "event" && record.kind === "ledger_transition" ? [record.name] : []));
+  }
+
+  it("records the intent before book is sent, so a crash right after book leaves it on the ledger", async () => {
+    const setup = setUp();
+    const { key } = await approved(setup);
+    setup.world.crashesAfterBooking = 1;
+    await expect(executeProposal(setup.deps, { place: PLACE })).rejects.toThrow(ProcessKilled);
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "pending", attempts: 1 });
+  });
+
+  it("after a crash between book and recording its reply, the reconciler finds the one booking through the status", async () => {
+    const setup = setUp();
+    const { key } = await approved(setup);
+    setup.world.crashesAfterBooking = 1;
+    await executeProposal(setup.deps, { place: PLACE }).catch(() => undefined);
+    setup.errands.errands.clear(); // a restart forgets the errand; the ledger and the world remember
+
+    const { resolved, unsettled } = await reconcilePendingActions(setup.deps, {});
+    expect(resolved.map((intent) => intent.state)).toEqual(["confirmed"]);
+    expect(unsettled).toEqual([]);
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.world.bookCalls).toEqual([key]);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "confirmed", bookingId: "bkg_1", attempts: 1, resolvedBy: "reconciler" });
+    expect([...setup.proposals.proposals.values()][0]).toMatchObject({ status: "executed", bookingId: "bkg_1" });
+
+    // The person is told once.
+    const notices = await takeBookingNotices(setup.deps, { sessionId: SESSION });
+    expect(notices.map((notice) => notice.kind)).toEqual(["booked"]);
+    expect(await takeBookingNotices(setup.deps, { sessionId: SESSION })).toEqual([]);
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("already_booked");
+  });
+
+  it("timeout after success: the status shows the booking, so it is reported booked with no retry", async () => {
+    const setup = setUp();
+    setup.world.bookReply = "timeout_after_success";
+    const { key } = await approved(setup);
+    expect(await executeProposal(setup.deps, { place: PLACE })).toMatchObject({ kind: "booked", bookingId: "bkg_1" });
+    expect(setup.world.bookCalls).toEqual([key]);
+    expect(setup.world.statusCalls).toEqual([key]);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "confirmed", attempts: 1, resolvedBy: "execution" });
+    expect(ledgerTransitions(setup)).toEqual(["ledger recorded → pending", "ledger pending → pending", "ledger pending → unknown", "ledger unknown → confirmed"]);
+  });
+
+  it("timeout without a booking: the status is checked first, then book is retried with the same key, once booked", async () => {
+    const setup = setUp();
+    setup.world.nextReplies.push("timeout_without_booking");
+    const { key } = await approved(setup);
+    expect(await executeProposal(setup.deps, { place: PLACE })).toMatchObject({ kind: "booked", bookingId: "bkg_1" });
+    expect(setup.world.bookCalls).toEqual([key, key]);
+    expect(setup.world.statusCalls).toEqual([key, key]);
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "confirmed", attempts: 2 });
+    expect(ledgerTransitions(setup)).toEqual([
+      "ledger recorded → pending",
+      "ledger pending → pending",
+      "ledger pending → unknown",
+      "ledger unknown → pending",
+      "ledger pending → confirmed",
+    ]);
+    // The retry is an execute_tool span the observatory marks as a retry: same tool, same key.
+    const books = setup.sink.records.filter((record) => record.type === "span" && record.name === "execute_tool book" && record.status !== "running");
+    expect(books.map((span) => (span.type === "span" ? [span.status, span.attributes["errand.retry"]] : []))).toEqual([
+      ["error", false],
+      ["ok", true],
+    ]);
+  });
+
+  it("stops after the attempt limit and says verifying; it never books twice, and the reconciler confirms it later", async () => {
+    const setup = setUp();
+    setup.world.bookReply = "timeout_after_success";
+    setup.world.statusLag = 3; // the provider's status page lags behind its bookings
+    const { key } = await approved(setup);
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("verifying");
+    expect(setup.world.bookCalls).toEqual([key, key, key]);
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "unknown", attempts: 3 });
+    expect(await errandState(setup)).toBe("verifying");
+
+    const { resolved } = await reconcilePendingActions(setup.deps, { sessionId: SESSION });
+    expect(resolved.map((intent) => intent.state)).toEqual(["confirmed"]);
+    expect(setup.world.bookCalls).toHaveLength(3);
+    expect(await errandState(setup)).toBe("done");
+  });
+
+  it("a go-ahead repeated while the outcome is unknown settles the same intent and books nothing new", async () => {
+    const setup = setUp();
+    setup.world.bookReply = "timeout_after_success";
+    setup.world.statusLag = 3;
+    const { key } = await approved(setup);
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("verifying");
+    expect(await executeProposal(setup.deps, { place: PLACE })).toMatchObject({ kind: "booked", bookingId: "bkg_1" });
+    expect(await executeProposal(setup.deps, { place: PLACE })).toMatchObject({ kind: "already_booked", bookingId: "bkg_1" });
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.ledger.intents.size).toBe(1);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "confirmed", resolvedBy: "execution" });
+  });
+
+  it("two go-aheads racing (a double click) record one intent and make one booking; the second sees it in flight", async () => {
+    const setup = setUp();
+    await approved(setup);
+    const outcomes = await Promise.all([executeProposal(setup.deps, { place: PLACE }), executeProposal(setup.deps, { place: PLACE })]);
+    // ACP's 409: the loser finds the booking in flight and says verifying, never booked on its own word.
+    expect(outcomes.map((outcome) => outcome.kind).sort()).toEqual(["booked", "verifying"]);
+    expect(setup.world.bookings).toHaveLength(1);
+    expect(setup.world.bookCalls).toHaveLength(1);
+    expect(setup.ledger.intents.size).toBe(1);
+  });
+
+  it("a crash after recording the intent and before using the grant: the reconciler uses the grant and books once", async () => {
+    const setup = setUp();
+    const { proposal, grant, key } = await approved(setup);
+    await setup.ledger.record(bookingIntentFor(proposal, grant, setup.clock.ms));
+    const { resolved } = await reconcilePendingActions(setup.deps, {});
+    expect(resolved.map((intent) => intent.state)).toEqual(["confirmed"]);
+    expect(setup.proposals.grants.get(proposal.proposalId)?.consumedAtMs).toBeDefined();
+    expect(setup.world.bookCalls).toEqual([key]);
+  });
+
+  it("a used grant the ledger never heard of is settled through get_booking_status with its key", async () => {
+    const setup = setUp();
+    const { grant, key } = await approved(setup);
+    await setup.proposals.consumeGrant(grant.grantId, setup.clock.ms);
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    expect(outcome).toMatchObject({ kind: "booked", bookingId: "bkg_1" });
+    // The status came first, and only its not_found let book go out, once.
+    expect(setup.world.statusCalls[0]).toBe(key);
+    expect(setup.world.bookCalls).toEqual([key]);
+  });
+
+  it("an intent whose hold ran out with nothing booked is settled as failed, never left verifying", async () => {
+    const setup = setUp();
+    setup.world.bookReply = "timeout_without_booking";
+    const { key } = await approved(setup);
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("verifying");
+    setup.clock.ms += HOLD_LIFETIME_MS + 1;
+    const { resolved } = await reconcilePendingActions(setup.deps, { sessionId: SESSION });
+    expect(resolved.map((intent) => intent.state)).toEqual(["failed"]);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "failed", failureReason: "hold_expired" });
+    expect(setup.world.bookings).toHaveLength(0);
+    expect(await errandState(setup)).toBe("failed");
+  });
+
+  it("a run that fails while the card waits for approval gives the hold back and voids the card", async () => {
+    const setup = setUp();
+    const proposal = await proposedBooking(setup);
+    const budgets = {
+      find: async () => undefined,
+      findOutcome: async () => undefined,
+      settle: async (settled: { outcome: RunOutcome }) => ({ outcome: settled.outcome, recorded: true }),
+    } as unknown as RunBudgetStore;
+    await settleRun(
+      { budgets, errands: setup.errands, traceSink: setup.sink, clock: setup.clock, world: setup.deps.world, proposals: setup.proposals },
+      { run: { sessionId: SESSION, turnId: "t1" }, place: PLACE, ending: "failed", describe: () => "stopped" },
+    );
+    expect(await errandState(setup)).toBe("failed");
+    expect(setup.world.holds.get(proposal.terms.holdId)?.released).toBe(true);
+    expect(setup.proposals.proposals.get(proposal.proposalId)?.status).toBe("expired");
+    expect((await approveProposal(setup.deps, click(proposal))).kind).toBe("not_pending");
+  });
+
+  it("book finding the hold run out is recorded as failed hold_expired, never retried, and the slot is proposed again", async () => {
+    const setup = setUp();
+    const { key } = await approved(setup);
+    setup.world.lapseHoldOnBook = true;
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("hold_reproposed");
+    expect(setup.world.bookCalls).toEqual([key]);
+    expect(setup.ledger.intents.get(key)).toMatchObject({ state: "failed", failureReason: "hold_expired", attempts: 1 });
+    expect(await reconcilePendingActions(setup.deps, {})).toEqual({ resolved: [], unsettled: [] });
+    expect(setup.world.bookCalls).toEqual([key]);
+  });
+
+  it("at startup, a run killed mid-booking settles as failed and leaves the reconciled booking done", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.crashesAfterBooking = 1;
+    await executeProposal(setup.deps, { place: PLACE }).catch(() => undefined);
+    await reconcilePendingActions(setup.deps, {});
+    expect(await errandState(setup)).toBe("done");
+
+    const outcomes = new Map<string, RunOutcome>();
+    const budgets = {
+      find: async () => undefined,
+      findOutcome: async () => undefined,
+      unsettled: async () => [{ sessionId: SESSION, turnId: "killed" }].filter((run) => !outcomes.has(run.turnId)),
+      settle: async (settled: { run: { turnId: string }; outcome: RunOutcome }) => {
+        outcomes.set(settled.run.turnId, settled.outcome);
+        return { outcome: settled.outcome, recorded: true };
+      },
+    } as unknown as RunBudgetStore;
+    const deps = { budgets, errands: setup.errands, traceSink: setup.sink, clock: setup.clock, world: setup.deps.world, proposals: setup.proposals };
+    const settled = await settleInterruptedRuns(deps, { placeOf: () => PLACE, describe: () => "stopped" });
+    expect(settled).toEqual([{ sessionId: SESSION, turnId: "killed" }]);
+    expect(outcomes.get("killed")).toEqual({ kind: "failed", reason: "run_error" });
+    expect(await errandState(setup)).toBe("done");
+    expect(await settleInterruptedRuns(deps, { placeOf: () => PLACE, describe: () => "stopped" })).toEqual([]);
   });
 });
