@@ -15,6 +15,9 @@ import {
   GetProvidersResponseSchema,
   GetSessionContextResponseSchema,
   GetSessionTraceResponseSchema,
+  GetSessionTranscriptResponseSchema,
+  ListOperatorReadsResponseSchema,
+  ListOperatorSessionsResponseSchema,
   GetWorldFaultResponseSchema,
   InjectWorldFaultResponseSchema,
   ListActionIntentsResponseSchema,
@@ -41,6 +44,9 @@ import {
   type GetAvailabilityResponse,
   type GetSpendResponse,
   type GetSessionTraceResponse,
+  type GetSessionTranscriptResponse,
+  type ListOperatorReadsResponse,
+  type OperatorSession,
   type GetWorldFaultResponse,
   type InjectWorldFaultRequest,
   type InjectWorldFaultResponse,
@@ -64,6 +70,12 @@ import type { z } from "zod";
 export interface ApiClientOptions {
   /** Backend origin, e.g. `http://localhost:3100`. */
   readonly baseUrl: string;
+  /**
+   * An access token, sent as `Authorization: Bearer`. Without one the caller is whoever the backend's
+   * auth walk makes of an unsigned request (locally, the dev person). The operator console sends the
+   * operator's token; the person's own chat never sends one.
+   */
+  readonly accessToken?: string;
 }
 
 export class ApiRequestError extends Error {
@@ -81,9 +93,11 @@ export class ApiRequestError extends Error {
 /** Typed client for the app API at /api/v1. Every body is parsed against its contract. */
 export class ApiClient {
   readonly #baseUrl: string;
+  readonly #accessToken: string | undefined;
 
   constructor(options: ApiClientOptions) {
     this.#baseUrl = options.baseUrl.replace(/\/$/, "");
+    this.#accessToken = options.accessToken;
   }
 
   async getProviders(providerIds: readonly string[]): Promise<readonly ProviderDetails[]> {
@@ -147,7 +161,10 @@ export class ApiClient {
     return body.errand;
   }
 
-  /** The run trace of a chat session: its spans so far (running ones included), events and totals. */
+  /**
+   * The run trace of a chat session: its spans so far (running ones included), events and totals.
+   * Operators only: anyone else gets a 404 ApiRequestError, and every read is audited.
+   */
   async getSessionTrace(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetSessionTraceResponse> {
     return await this.#request(
       `/sessions/${encodeURIComponent(sessionId)}/trace`,
@@ -156,12 +173,36 @@ export class ApiClient {
     );
   }
 
-  /** Every model call's context in the session: what was sent against the context budget, and what was left out and why. */
+  /** Every model call's context in the session: what was sent against the context budget, and what was left out and why. Operators only. */
   async getSessionContext(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetSessionContextResponse> {
     return await this.#request(
       `/sessions/${encodeURIComponent(sessionId)}/context`,
       { method: "GET", signal: options.signal },
       GetSessionContextResponseSchema,
+    );
+  }
+
+  /** The operator console's list: every session, newest first, with its owner and errand. Operators only. */
+  async listOperatorSessions(options: { readonly signal?: AbortSignal } = {}): Promise<readonly OperatorSession[]> {
+    const body = await this.#request("/ops/sessions", { method: "GET", signal: options.signal }, ListOperatorSessionsResponseSchema);
+    return body.sessions;
+  }
+
+  /** What was said in a session and which tools each message called. Operators only; audited. */
+  async getSessionTranscript(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetSessionTranscriptResponse> {
+    return await this.#request(
+      `/ops/sessions/${encodeURIComponent(sessionId)}/transcript`,
+      { method: "GET", signal: options.signal },
+      GetSessionTranscriptResponseSchema,
+    );
+  }
+
+  /** Who has read the session's trace, context log and transcript, and when. Operators only. */
+  async listOperatorReads(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<ListOperatorReadsResponse> {
+    return await this.#request(
+      `/ops/sessions/${encodeURIComponent(sessionId)}/reads`,
+      { method: "GET", signal: options.signal },
+      ListOperatorReadsResponseSchema,
     );
   }
 
@@ -326,7 +367,9 @@ export class ApiClient {
   }
 
   async #request<TSchema extends z.ZodType>(path: string, init: RequestInit, schema: TSchema): Promise<z.infer<TSchema>> {
-    const response = await fetch(`${this.#baseUrl}${API_PREFIX}${path}`, init);
+    const headers = new Headers(init.headers);
+    if (this.#accessToken !== undefined) headers.set("authorization", `Bearer ${this.#accessToken}`);
+    const response = await fetch(`${this.#baseUrl}${API_PREFIX}${path}`, { ...init, headers });
     const payload: unknown = await response.json().catch(() => undefined);
     if (!response.ok) {
       const failure = ApiErrorSchema.safeParse(payload);

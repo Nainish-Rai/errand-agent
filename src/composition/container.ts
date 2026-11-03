@@ -24,6 +24,9 @@ import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { RunBudgetStore } from "../core/ports/run-budget-store";
 import type { TraceSink } from "../core/ports/trace-sink";
+import type { OperatorReadLog } from "../core/ports/operator-read-log";
+import type { SessionOwnerStore } from "../core/ports/session-owner-store";
+import type { OperatorReadDependencies } from "../core/use-cases/record-operator-read";
 import { admitToolCalls } from "../core/use-cases/admit-tool-calls";
 import { recordModelContext } from "../core/use-cases/record-model-context";
 import { recordModelFailure } from "../core/use-cases/record-model-failure";
@@ -46,6 +49,8 @@ import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
 import { SqliteProviderEventLog } from "../adapters/sqlite/sqlite-provider-event-log";
 import { SqliteWorldStateStore } from "../adapters/sqlite/sqlite-world-state-store";
+import { SqliteOperatorReadLog } from "../adapters/sqlite/sqlite-operator-read-log";
+import { SqliteSessionOwnerStore } from "../adapters/sqlite/sqlite-session-owner-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
@@ -90,7 +95,7 @@ function traceDirectory(): string {
 
 /** Every secret the process holds, so the sanitiser removes them from traces by value. */
 function runtimeSecrets(): (string | undefined)[] {
-  return [process.env.MINIMAX_API_KEY, process.env.ANTHROPIC_API_KEY];
+  return [process.env.MINIMAX_API_KEY, process.env.ANTHROPIC_API_KEY, process.env.ERRAND_AUTH_SECRET];
 }
 
 class Container {
@@ -128,6 +133,8 @@ class Container {
   #ledger: ActionLedger | undefined;
   #worldStates: SqliteWorldStateStore | undefined;
   #providerEvents: SqliteProviderEventLog | undefined;
+  #sessionOwners: SessionOwnerStore | undefined;
+  #operatorReads: OperatorReadLog | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -153,6 +160,18 @@ class Container {
   get ledger(): ActionLedger {
     this.#ledger ??= new SqliteActionLedger(this.database);
     return this.#ledger;
+  }
+
+  /** Who each chat session belongs to, so no caller reads another person's session (ticket 19). */
+  get sessionOwners(): SessionOwnerStore {
+    this.#sessionOwners ??= new SqliteSessionOwnerStore(this.database);
+    return this.#sessionOwners;
+  }
+
+  /** The audit of operator reads of traces, context logs and transcripts, stamped with the real time. */
+  get operatorReadDependencies(): OperatorReadDependencies {
+    this.#operatorReads ??= new SqliteOperatorReadLog(this.database);
+    return { reads: this.#operatorReads, clock: this.wallClock };
   }
 
   /** Proposals and grants, in the SQLite database so an approval survives a restart. */
