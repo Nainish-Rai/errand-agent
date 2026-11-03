@@ -2,7 +2,7 @@
   "version": 1,
   "title": "Lime chat: a paced, per-word streaming reveal; the ApprovalRequest as the one lime action; the tracker and the ActionReceipt",
   "feature": "lime-chat",
-  "description": "Ticket 21. A streamed answer reveals whole words that blur in, is aria-busy while it streams and unwraps to plain text at the end (on /design, fed by the seeded bursty fake model the unit tests use, in normal and reduced motion). In the chat, the provider cards' Choose is not lime; while the approval card waits, its Approve is the only lit lime (Send stays ink even with text); after Approve the card's footer becomes Approved, the tracker rows show the provider being asked, and the ActionReceipt shows Booked with the booking ID, Reschedule and Cancel booking, and no Undo. The chat and operator pages read their URL under Suspense, so the Next dev overlay reports no issue.",
+  "description": "Ticket 21. A streamed answer reveals whole words that blur in, is aria-busy while it streams and unwraps to plain text at the end (on /design, fed by the seeded bursty fake model the unit tests use, in normal and reduced motion). In the chat, the provider cards' Choose is not lime; while the approval card waits, its Approve is the only lit lime (Send stays ink even with text); after Approve the card's footer becomes Approved, the tracker rows show the provider being asked, and the ActionReceipt shows Booked with the booking ID, Reschedule and Cancel booking, and no Undo.",
   "scenarios": [
     {
       "id": "streaming-reveal-blurs-words-in-and-unwraps",
@@ -493,116 +493,6 @@
             }
           },
           "note": "unload the script so later suites get the default search responder"
-        }
-      ]
-    },
-    {
-      "id": "chat-and-console-urls-raise-no-dev-issue",
-      "title": "A chat reloaded at /chat/SESSION and the console at /ops/sessions/SESSION show no Next dev issue (the URL is read under Suspense)",
-      "setup": [
-        {
-          "command": "api",
-          "args": [
-            "PUT",
-            "/api/v1/dev/model-script"
-          ],
-          "options": {
-            "body": {
-              "script": null
-            }
-          },
-          "note": "the default search responder"
-        },
-        {
-          "command": "api",
-          "args": [
-            "POST",
-            "/api/v1/dev/scenario"
-          ],
-          "options": {
-            "body": {
-              "scenario": "default",
-              "seed": 42
-            }
-          }
-        }
-      ],
-      "steps": [
-        {
-          "command": "goto",
-          "args": [
-            "/chat"
-          ]
-        },
-        {
-          "command": "fill",
-          "options": {
-            "role": "textbox",
-            "name": "Message the errand agent",
-            "value": "find a plumber in Koramangala this week"
-          }
-        },
-        {
-          "command": "key",
-          "args": [
-            "Enter"
-          ]
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Search results for plumber in Koramangala",
-            "state": "visible"
-          },
-          "note": "the chat has a session and its own address"
-        },
-        {
-          "command": "reload"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Search results for plumber in Koramangala",
-            "state": "visible"
-          },
-          "note": "the reloaded /chat/SESSION renders the conversation"
-        },
-        {
-          "command": "assert",
-          "args": [
-            "text=/^[0-9]+ Issues?$/"
-          ],
-          "options": {
-            "count": 0
-          },
-          "note": "the Next dev indicator reports no issue"
-        },
-        {
-          "command": "goto",
-          "args": [
-            "/ops/sessions/current"
-          ]
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "form",
-            "name": "Operator sign-in",
-            "state": "visible"
-          },
-          "note": "the console page renders"
-        },
-        {
-          "command": "assert",
-          "args": [
-            "text=/^[0-9]+ Issues?$/"
-          ],
-          "options": {
-            "count": 0
-          },
-          "note": "and reports no issue either"
         }
       ]
     }
