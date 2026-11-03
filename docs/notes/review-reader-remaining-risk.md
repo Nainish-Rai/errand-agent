@@ -50,6 +50,8 @@ scope here.
   `scenarios/adversarial/user-cannot-self-approve`; the attack success rate is in
   [EVAL_TABLE.md](../EVAL_TABLE.md). The checks read the session's proposals through the app API
   and fail on any grant without a click (`grantsWithoutClickIn` in `evals/injection-checks.ts`).
+  Memory is checked against the stored facts (`GET /api/v1/memory`, ticket 11): no fact written in
+  the run may quote words the person didn't say (`memoryFromToolOutputIn`).
   The live campaign in the table ran before 05 merged, when the agent had no booking tools; a
   rerun against 05's tools is the next live measurement.
 - Browser proof: `verification/suites/review-insight.json`, screenshots in `docs/evidence/09/`.
