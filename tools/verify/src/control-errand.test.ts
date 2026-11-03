@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { parseApiCaller } from "./browser-session";
+import { parseApiCaller, parseMotion } from "./browser-session";
 import { parseArguments } from "./cli-arguments";
 import { writeHtmlReport } from "./html-report";
 import { cleanUrl, isAllowed, runOrigins } from "./network-guard";
@@ -172,6 +172,9 @@ describe("suite manifests", () => {
     expect(() => validateSuite(scenario(steps))).not.toThrow();
     expect(stepOptions(steps[2] as never)).toEqual({ animations: "allow" });
     expect(() => validateSuite(scenario([{ command: "motion", args: ["slow"] }, ...steps.slice(1)]))).toThrow(/reduce or no-preference/);
+    // The browser gets exactly the preference the step asked for.
+    expect(parseMotion("reduce")).toBe("reduce");
+    expect(parseMotion("no-preference")).toBe("no-preference");
   });
 
   it("turns JSON options into command options", () => {
