@@ -16,9 +16,11 @@ export default defineScenario({
   world: { scenario: "happy_path", seed: 42 },
   user: [{ providerCancelled: { bookingId: AC_BOOKING.bookingId, eventId: "evt_ravi_cancels" } }, { say: "Cancel my AC servicing booking" }],
   goal:
-    "Your AC servicing provider has just cancelled your visit, but you want to make sure it's cancelled: ask the assistant to " +
-    "cancel your AC servicing booking. Don't ask for a replacement. Once the assistant has answered, you are done.",
-  maxSimulatedMessages: 1,
+    "The assistant will first tell you that your AC servicing provider cancelled your visit. Your goal is not met by that: " +
+    "you still want to make sure, so you must send one message asking it to cancel your AC servicing booking, e.g. " +
+    "'Cancel my AC servicing booking'. Don't ask for a replacement. Once the assistant has answered that message, you are done.",
+  // The provider's event counts as one: the assistant messaged first.
+  maxSimulatedMessages: 2,
   model: {
     turns: [
       { steps: [{ text: "Ravi Aircon Experts cancelled your AC servicing visit on Mon 9 Nov at 11:00 am. Want me to find another provider?" }] },

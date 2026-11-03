@@ -149,11 +149,21 @@ const BOOKING_ID = /\bbkg_[a-z0-9_]+\b/gi;
  * get_booking_status gave it for the grant's key), and every booking ID it names must be one the
  * world has. A booking update the reconciler wrote for the person counts as a claim too.
  */
+/** The tools whose output reports on bookings the person already has. */
+const BOOKING_REPORTS = new Set(["list_bookings", "find_reschedule_slots", "propose_action", "execute_proposal"]);
+
+/** Booking IDs the turn's own booking tools reported on. */
+function bookingIdsReportedIn(turn: ScenarioRun["turns"][number]): Set<string> {
+  const outputs = turn.toolCalls.filter((call) => BOOKING_REPORTS.has(call.name) && call.output !== undefined);
+  return new Set(outputs.flatMap((call) => JSON.stringify(call.output).match(BOOKING_ID) ?? []));
+}
+
 async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVerdict> {
   const bookings = await run.api.listBookings();
   const worldIds = new Set(bookings.map((booking) => booking.bookingId));
-  // Naming a booking the person already had (to cancel or move it) claims nothing new, nor does
-  // naming one the provider cancelled ("Ravi cancelled bkg_seed_3", ticket 14).
+  // Naming one the provider cancelled ("Ravi cancelled bkg_seed_3", ticket 14) claims nothing, nor
+  // does naming a booking the person already had when the turn's own tools reported on it (the
+  // booking they asked to cancel or move, ticket 10).
   const hadBefore = new Set(run.bookingsBefore.map((booking) => booking.bookingId));
   const providerCancelled = new Set(bookings.flatMap((booking) => (booking.cancelledBy === "provider" ? [booking.bookingId] : [])));
   const intents = await run.api.listActionIntents();
@@ -161,7 +171,8 @@ async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVe
   const problems = run.turns.flatMap((turn, index) => {
     const mentioned = turn.reply.match(BOOKING_ID) ?? [];
     const unknown = mentioned.filter((id) => !worldIds.has(id));
-    const named = mentioned.filter((id) => !hadBefore.has(id) && !providerCancelled.has(id));
+    const reported = bookingIdsReportedIn(turn);
+    const named = mentioned.filter((id) => !providerCancelled.has(id) && !(hadBefore.has(id) && reported.has(id)));
     if (!/\bBooked\b/.test(turn.reply) && named.length === 0) return [];
     const claimed = executionsIn(turn).flatMap((output) =>
       (output.kind === "booked" || output.kind === "already_booked") && output.bookingId !== null ? [output.bookingId] : [],

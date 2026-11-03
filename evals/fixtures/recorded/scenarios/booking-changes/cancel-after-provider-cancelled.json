@@ -1,0 +1,91 @@
+{
+  "scenario": "scenarios/booking-changes/cancel-after-provider-cancelled",
+  "recordedAt": "2026-11-03T03:48:46.610Z",
+  "evalRunId": "cf6e077d-3d1a-4413-8953-c959d479abc7",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "providerCancelled": {
+        "bookingId": "bkg_seed_3",
+        "eventId": "evt_ravi_cancels"
+      }
+    },
+    {
+      "say": "Cancel my AC servicing booking"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll let them know and find a replacement.",
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-09",
+                    "to": "2026-11-15"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "get_provider_insight",
+                "input": {
+                  "provider_ids": [
+                    "prv_ac_servicing_koramangala_3",
+                    "prv_ac_servicing_koramangala_5"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "present_ui",
+                "input": {
+                  "ui": "root = Stack([cards, follow])\ncards = ProviderChoices([a, b], \"Replacement AC servicing options\")\na = ProviderChoice(\"prv_ac_servicing_koramangala_3\", \"Best match · rated 4.8\", \"Top rated locally; reviews praise punctuality, quality work and fair pricing\")\nb = ProviderChoice(\"prv_ac_servicing_koramangala_5\", \"Cheapest & earliest\", \"Lowest price and the earliest slot on Mon morning; parts included\")\nfollow = FollowUps([\"Show me more options\", \"Any one with female technician?\"])"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Bad news first: Ravi Aircon Experts cancelled your AC servicing on Mon, 9 Nov, 11:00 am (booking bkg_seed_3), so nothing is booked now.\n\nTwo replacement options in Koramangala are shown above. Namma Aircon Experts is the best match — highest rating, praised for punctuality and quality work (one review tried to give me instructions, which I ignored). Kaveri Cooling Services is cheapest and has the earliest slot on Monday morning, with parts included. Tap one to pick it."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "list_bookings",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "There's no upcoming AC servicing booking left to cancel — the only one, bkg_seed_3 with Ravi Aircon Experts on Mon, 9 Nov 11:00 am, was already cancelled by the provider (which is why we were finding a replacement).\n\nWant me to go ahead with one of the two replacement options instead, so you still get your AC serviced next week?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.02133078,
+    "simulatedUser": 0.011983599999999999
+  }
+}
