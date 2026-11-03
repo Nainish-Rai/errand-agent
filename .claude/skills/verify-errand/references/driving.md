@@ -4,7 +4,7 @@ The daemon keeps one root page; every CLI call drives that same page, in order, 
 
 ```sh
 V="pnpm -s verify --run $RUN"
-$V goto /                                                   # or /design
+$V goto /chat                                               # or / (home), /design
 $V locate --role textbox --name "Message the errand agent" --operation fill
 $V fill --role textbox --name "Message the errand agent" --value "find a plumber in Koramangala this week"
 $V key Enter
