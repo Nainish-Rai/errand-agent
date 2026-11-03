@@ -128,7 +128,10 @@ function ExcludedFacts({ facts }: { readonly facts: readonly ContextFact[] }) {
     <div className="flex flex-col gap-2">
       {[...byReason].map(([reason, grouped]) => (
         <Collapsible key={reason}>
-          <CollapsibleTrigger className="group flex w-full items-center gap-1 text-left text-label text-fg-body">
+          <CollapsibleTrigger
+            aria-label={`${reasonOf(reason)} (${grouped.length})`}
+            className="group flex w-full items-center gap-1 text-left text-label text-fg-body"
+          >
             <ChevronRight className="size-3 transition-transform group-data-[state=open]:rotate-90" aria-hidden />
             {reasonOf(reason)} <span className="font-mono text-fg-meta tabular-nums">({grouped.length})</span>
           </CollapsibleTrigger>
@@ -187,7 +190,7 @@ function Turn({ turn, position, open }: { readonly turn: TurnContext; readonly p
   const name = `Turn ${position} context`;
   return (
     <Collapsible defaultOpen={open} className="rounded-md border border-edge bg-surface-card">
-      <CollapsibleTrigger className="group flex w-full items-center gap-2 px-2 py-1.5 text-left">
+      <CollapsibleTrigger aria-label={name} className="group flex w-full items-center gap-2 px-2 py-1.5 text-left">
         <ChevronRight className="size-3.5 shrink-0 text-fg-meta transition-transform group-data-[state=open]:rotate-90" aria-hidden />
         <span className="flex-1 text-sm font-medium text-fg-emph">{name}</span>
         <span className="font-mono text-meta text-fg-meta tabular-nums">
