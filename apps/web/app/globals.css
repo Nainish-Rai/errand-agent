@@ -183,6 +183,12 @@
   }
 }
 
+/* The chat input's field shows no ring of its own: the whole input's edge turns olive instead (v3 Chat input). This
+ * beats Lime's unlayered focus ring, which a layered outline-none utility cannot. */
+[data-slot="chat-input"] textarea:focus-visible {
+  outline: none;
+}
+
 /* A streamed answer's words (features/chat/streaming). Each word mounts whole and blurs in once, from opacity 0,
  * blur(4px) and a 2px drop to rest, over --dur-stream-word (v3 Streaming answers). Under reduced motion the token is
  * 0 and the keyframes are opacity only, so a word appears at once with no blur or rise. */
