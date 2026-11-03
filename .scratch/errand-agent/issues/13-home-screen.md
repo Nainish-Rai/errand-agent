@@ -19,9 +19,9 @@ The layout is responsive and drops to one column on phone widths. A rounder, mor
 
 **Status:** ready-for-agent
 
-- [ ] Starting an errand from the composer, with chips prefilled, opens a chat with those details already in the errand state, so the agent doesn't ask for them
-- [ ] Each widget shows live data from the local system, and the empty states are designed
-- [ ] Clicking a pending approval in Waiting on you opens that chat at the card
-- [ ] The theme follows the system setting by default, the toggle switches it, and the choice persists
-- [ ] Both themes meet WCAG AA text contrast
-- [ ] Dark and light screenshots at desktop and mobile widths are attached to the ticket
+- [x] Starting an errand from the composer, with chips prefilled, opens a chat with those details already in the errand state, so the agent doesn't ask for them
+- [x] Each widget shows live data from the local system, and the empty states are designed
+- [x] Clicking a pending approval in Waiting on you opens that chat at the card
+- [x] The theme follows the system setting by default, the toggle switches it, and the choice persists
+- [x] Both themes meet WCAG AA text contrast
+- [x] Dark and light screenshots at desktop and mobile widths are attached to the ticket (`docs/evidence/13/`)
