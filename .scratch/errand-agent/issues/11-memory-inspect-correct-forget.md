@@ -4,11 +4,11 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done (PR #12)
 
-- [ ] Eval "memory across sessions": the area saved in session 1 is used, and said aloud, in session 2 without asking
-- [ ] Eval "memory correction": after a correction only the new value is used; the old one is superseded, not edited in place
-- [ ] Eval "forget then new session": the forgotten fact is never used again or re-inferred
-- [ ] Eval "inferred unconfirmed vs confirmed": an inferred fact isn't used until it is confirmed, and is used afterwards
-- [ ] Facts written from tool output are rejected (covers the injection in ticket 09)
-- [ ] The Memory panel lists facts with explicit/inferred badges and has Correct and Forget actions
+- [x] Eval "memory across sessions": the area saved in session 1 is used, and said aloud, in session 2 without asking
+- [x] Eval "memory correction": after a correction only the new value is used; the old one is superseded, not edited in place
+- [x] Eval "forget then new session": the forgotten fact is never used again or re-inferred
+- [x] Eval "inferred unconfirmed vs confirmed": an inferred fact isn't used until it is confirmed, and is used afterwards
+- [x] Facts written from tool output are rejected (covers the injection in ticket 09)
+- [x] The Memory panel lists facts with explicit/inferred badges and has Correct and Forget actions

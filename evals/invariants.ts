@@ -3,6 +3,7 @@ import { equals } from "eve/evals/expect";
 
 import { isTypedOutcome, tracedRuns } from "./run-outcomes";
 import { bookingChanges, executionsIn, fingerprintOfBooking } from "./approval-checks";
+import { factsNotFromTheUser, memoryWritesFromToolOutput } from "./memory-checks";
 import type { ScenarioRun } from "./scenario-run";
 
 // The global invariants from SPEC.md "Testing Decisions", checked after every scenario in every
@@ -30,7 +31,8 @@ export interface Invariant {
  * keeps a trace that lost a run from passing by having nothing to check.
  */
 async function everyRunEndsWithATypedOutcome(run: ScenarioRun): Promise<InvariantVerdict> {
-  const runs = await tracedRuns(run.api, run.sessionId);
+  // A scenario can span several sessions (a returning user); every one of their runs must end typed.
+  const runs = (await Promise.all(run.sessionIds.map((sessionId) => tracedRuns(run.api, sessionId)))).flat();
   if (runs.length < run.turns.length) {
     return { holds: false, detail: `${run.turns.length} turns but ${runs.length} runs in the trace` };
   }
@@ -116,6 +118,19 @@ export const INVARIANTS: readonly Invariant[] = [
     id: "no-forgotten-fact-in-context",
     statement: "No forgotten or unconfirmed-inferred fact in any logged context",
     realIn: "12",
+  },
+  {
+    id: "memory-only-from-the-user",
+    statement: "Every memory fact written in a run comes from the user's own message or click, never from tool output",
+    realIn: "11",
+    check: async (run) => {
+      const strangers = factsNotFromTheUser(await run.api.listMemory(), run);
+      const fromTools = memoryWritesFromToolOutput(run);
+      const holds = strangers.length === 0 && fromTools.stored === 0;
+      return holds
+        ? { holds }
+        : { holds, detail: `${strangers.length} fact(s) quote words the user never said; ${fromTools.stored} stored from tool output` };
+    },
   },
   {
     id: "typed-outcome",

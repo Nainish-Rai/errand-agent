@@ -30,9 +30,10 @@ export interface TraceSpan {
 
 /**
  * A point in time worth explaining, attached to the trace rather than to one call: errand state
- * transitions (ticket 04), how each run ended (ticket 08) and the context sent to the model (ticket 12).
+ * transitions (ticket 04), how each run ended (ticket 08), the context sent to the model (tickets 11
+ * and 12), and a remembered fact filling in the errand (ticket 11).
  */
-export type TraceEventKind = "state_transition" | "context" | "run_outcome";
+export type TraceEventKind = "state_transition" | "context" | "run_outcome" | "memory_used";
 
 export interface TraceEvent {
   readonly type: "event";

@@ -1,9 +1,10 @@
-import { UpdateErrandInputSchema, UpdateErrandOutputSchema, type UpdateErrandInput } from "@errand/contracts";
+import { RememberedOutputSchema, UpdateErrandInputSchema, UpdateErrandOutputSchema, type UpdateErrandInput } from "@errand/contracts";
 import { defineTool } from "eve/tools";
 
 import { container } from "../../src/composition/container";
 import type { ErrandPatchRequest } from "../../src/core/use-cases/update-errand";
 import { updateErrand } from "../../src/core/use-cases/update-errand";
+import { startErrandFromMemory } from "../lib/errand-memory";
 import { presentUpdateOutcome } from "../lib/errand-presenter";
 import { tracePlaceOf } from "../lib/trace-place";
 import { withRunBudget } from "../lib/run-budget-tool";
@@ -34,14 +35,18 @@ export default withRunBudget(
       "Save what the person told you about their errand: service, area, time window, budget and " +
       "preferences. Send only the fields they gave or changed; every other field keeps its value. " +
       "Returns the errand, the fields still missing, and `question`: the only fields you may ask about " +
-      "next, with quick replies the chat shows as tap-to-answer chips.",
+      "next, with quick replies the chat shows as tap-to-answer chips. `remembered` lists details filled in " +
+      "from the person's memory; say each one's notice.",
     label: { start: () => "Noting your errand" },
     inputSchema: UpdateErrandInputSchema,
-    outputSchema: UpdateErrandOutputSchema,
+    outputSchema: UpdateErrandOutputSchema.and(RememberedOutputSchema),
     async execute(input, ctx) {
       const { errandDependencies, catalog } = container();
-      const outcome = await updateErrand(errandDependencies, { place: tracePlaceOf(ctx), patch: patchFrom(input) });
-      return presentUpdateOutcome(outcome, catalog);
+      const place = tracePlaceOf(ctx);
+      const patch = patchFrom(input);
+      const remembered = await startErrandFromMemory(ctx, place, patch);
+      const outcome = await updateErrand(errandDependencies, { place, patch });
+      return { ...presentUpdateOutcome(outcome, catalog), remembered };
     },
   }),
 );

@@ -6,6 +6,7 @@ import {
   GetProposalResponseSchema,
   ListBookingsResponseSchema,
   ListProposalsResponseSchema,
+  ForgetMemoryFactResponseSchema,
   GetErrandResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
@@ -13,6 +14,9 @@ import {
   InjectWorldFaultResponseSchema,
   LoadModelScriptResponseSchema,
   SetRunLimitsResponseSchema,
+  ListMemoryResponseSchema,
+  MemoryFactResponseSchema,
+  SeedMemoryResponseSchema,
   SwitchScenarioResponseSchema,
   type ApproveProposalRequest,
   type ApproveProposalResponse,
@@ -20,15 +24,22 @@ import {
   type DeclineProposalResponse,
   type ProposalStatus,
   type ProposalView,
+  type CorrectMemoryFactRequest,
   type ErrandView,
+  type ForgetMemoryFactResponse,
   type GetSessionTraceResponse,
   type InjectWorldFaultRequest,
   type InjectWorldFaultResponse,
+  type ListMemoryResponse,
   type LoadModelScriptRequest,
   type LoadModelScriptResponse,
+  type MemoryFactView,
+  type MemoryKey,
   type ProviderDetails,
   type SetRunLimitsRequest,
   type SetRunLimitsResponse,
+  type SeedMemoryRequest,
+  type SeedMemoryResponse,
   type SwitchScenarioRequest,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
@@ -147,6 +158,41 @@ export class ApiClient {
   async listBookings(): Promise<readonly BookingView[]> {
     const body = await this.#request("/bookings", { method: "GET" }, ListBookingsResponseSchema);
     return body.bookings;
+  }
+
+  /** Everything remembered about the signed-in person: facts in every status, and tombstones. */
+  async listMemory(options: { readonly signal?: AbortSignal } = {}): Promise<ListMemoryResponse> {
+    return await this.#request("/memory", { method: "GET", signal: options.signal }, ListMemoryResponseSchema);
+  }
+
+  /** The Memory panel's Correct: supersedes the key's fact with a new value. */
+  async correctMemoryFact(key: MemoryKey, request: CorrectMemoryFactRequest): Promise<MemoryFactView> {
+    const body = await this.#request(
+      `/memory/${encodeURIComponent(key)}`,
+      { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      MemoryFactResponseSchema,
+    );
+    return body.fact;
+  }
+
+  /** The Memory panel's Forget: writes a tombstone for the key. */
+  async forgetMemoryFact(key: MemoryKey): Promise<ForgetMemoryFactResponse> {
+    return await this.#request(`/memory/${encodeURIComponent(key)}`, { method: "DELETE" }, ForgetMemoryFactResponseSchema);
+  }
+
+  /** The Memory panel's Confirm on an inferred fact. */
+  async confirmMemoryFact(factId: string): Promise<MemoryFactView> {
+    const body = await this.#request(`/memory/${encodeURIComponent(factId)}/confirm`, { method: "POST" }, MemoryFactResponseSchema);
+    return body.fact;
+  }
+
+  /** Dev only: replace what is remembered about the signed-in person (evals start each scenario from it). */
+  async seedMemory(request: SeedMemoryRequest): Promise<SeedMemoryResponse> {
+    return await this.#request(
+      "/dev/memory",
+      { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(request) },
+      SeedMemoryResponseSchema,
+    );
   }
 
   /** Dev only: load a scenario's model turns into the offline model, or unload them with `null`. */

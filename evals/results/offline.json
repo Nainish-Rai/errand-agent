@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T01:05:27.270Z",
+  "ranAt": "2026-11-03T01:12:49.002Z",
   "trials": 1,
   "scenarios": [
     {
@@ -263,6 +263,111 @@
         {
           "verdict": "passed",
           "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (3 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/correction-supersedes",
+      "description": "Correcting the remembered area supersedes the old fact (never edits it), and only the new area is used next session.",
+      "expected": "the old area fact is superseded with its value and a closed window, a new explicit fact supersedes it, and session 2 uses only HSR Layout",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "2 turns; correct_fact(area, HSR Layout, my usual area is HSR Layout now) → corrected; update_errand(plumber) → updated; search_providers(plumber, HSR Layout) → found (7 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/forget-then-new-session",
+      "description": "A forgotten area is never used again: re-inferring it from old history is refused, and a new session asks for it.",
+      "expected": "the area is forgotten with a tombstone, re-inferring it from the earlier message is refused, and the new session's errand has no area and asks for it",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "3 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); forget_fact(area, Please forget my usual area) → forgotten; remember_fact(area, Koramangala, inferred, a plumber in Koramangala) → forgotten_key; update_errand(plumber) → updated",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/inferred-unconfirmed-vs-confirmed",
+      "description": "An inferred area isn't used while unconfirmed (the area is asked for); once confirmed, the next session uses it.",
+      "expected": "the inferred area waits for confirmation and isn't used (session 2 asks for the area); after the person confirms it, session 3 fills the area from memory",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; update_errand(plumber, HSR Layout) → updated; remember_fact(area, HSR Layout, inferred, a plumber in HSR Layout) → remembered; search_providers(plumber, HSR Layout) → found (7 providers); update_errand(plumber) → updated; update_errand(HSR Layout) → updated; confirm_fact(area, yes, please remember HSR Layout as my usual area) → confirmed; search_providers(plumber, HSR Layout) → found (7 providers); update_errand(plumber) → updated; search_providers(plumber, HSR Layout) → found (7 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/remembered-area-across-sessions",
+      "description": "An area saved in session 1 fills the errand in session 2, is never asked for, and is said aloud.",
+      "expected": "session 1 stores area=Koramangala as an explicit, active fact; session 2's errand gets that area from memory (a traced memory_used patch) with no area question, and the reply names Koramangala",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "2 turns; update_errand(plumber, Koramangala) → updated; remember_fact(area, Koramangala, explicit, Koramangala is my usual area, please remember it) → remembered; search_providers(plumber, Koramangala) → found (8 providers); update_errand(plumber) → updated; search_providers(plumber, Koramangala) → found (8 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/tool-output-is-not-remembered",
+      "description": "A memory write quoting a tool result (a provider from the search) is refused in core and nothing is stored.",
+      "expected": "both memory writes quoting the search results are refused as tool_output, and memory stays empty",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); remember_fact(favourite_technician, Venkatesh Sanitary Solutions, explicit, Venkatesh Sanitary Solutions) → untrusted_source; correct_fact(area, Koramangala, Venkatesh Sanitary Solutions) → untrusted_source",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0

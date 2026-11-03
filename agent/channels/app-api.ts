@@ -2,8 +2,12 @@ import {
   API_PREFIX,
   ApproveProposalRequestSchema,
   InjectWorldFaultRequestSchema,
+  CorrectMemoryFactRequestSchema,
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
+  MemoryKeySchema,
+  NOT_IMPLEMENTED_ERROR_CODE,
+  SeedMemoryRequestSchema,
   SessionIdSchema,
   SetRunLimitsRequestSchema,
   SwitchScenarioRequestSchema,
@@ -13,6 +17,9 @@ import {
   type GetProposalResponse,
   type ListBookingsResponse,
   type ListProposalsResponse,
+  type ForgetMemoryFactResponse,
+  type MemoryFactResponse,
+  type SeedMemoryResponse,
   type GetErrandResponse,
   type GetProviderResponse,
   type GetProvidersResponse,
@@ -21,13 +28,18 @@ import {
   type SetRunLimitsResponse,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
-import { defineChannel, GET, POST, PUT } from "eve/channels";
+import { defineChannel, DELETE, GET, PATCH, POST, PUT } from "eve/channels";
 import { localDev, routeAuth } from "eve/channels/auth";
 
 import { container } from "../../src/composition/container";
 import { approveProposal } from "../../src/core/use-cases/approve-proposal";
 import { declineProposal } from "../../src/core/use-cases/decline-proposal";
+import { confirmInferredFact } from "../../src/core/use-cases/confirm-inferred-fact";
+import { correctMemoryFact } from "../../src/core/use-cases/correct-memory-fact";
+import { forgetMemoryFact } from "../../src/core/use-cases/forget-memory-fact";
 import { getErrand } from "../../src/core/use-cases/get-errand";
+import { listMemoryFacts } from "../../src/core/use-cases/list-memory-facts";
+import { seedMemory } from "../../src/core/use-cases/seed-memory";
 import { getProviders } from "../../src/core/use-cases/get-providers";
 import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
 import { listBookings } from "../../src/core/use-cases/list-bookings";
@@ -35,6 +47,8 @@ import { getProposal, listProposals } from "../../src/core/use-cases/list-propos
 import { presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
+import { memoryOwnerOfRequest } from "../lib/memory-owner";
+import { presentConfirmOutcome, presentCorrectOutcome, presentFact, presentMemory, presentTombstone } from "../lib/memory-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
 import { presentProviderDetails } from "../lib/world-presenter";
 
@@ -109,6 +123,66 @@ export default defineChannel({
       const errand = await getErrand(errands, sessionId.data);
       const body: GetErrandResponse = { errand: errand === undefined ? null : presentErrand(errand, catalog) };
       return Response.json(body);
+    }),
+
+    // Memory: the person's own facts, read from the channel's auth context, never from the body.
+    // A click here is a user action, so it needs no quote; it is still refused if core says no.
+    GET(`${API_PREFIX}/memory`, async (request) => {
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      return Response.json(presentMemory(await listMemoryFacts(container().memory, ownerId)));
+    }),
+
+    PATCH(`${API_PREFIX}/memory/:key`, async (request, { params }) => {
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      const key = MemoryKeySchema.safeParse(params.key);
+      if (!key.success) return failure(404, "unknown_memory_key", "No memory key has that name.");
+      const parsed = CorrectMemoryFactRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const outcome = await correctMemoryFact(container().memoryDependencies, {
+        ownerId,
+        key: key.data,
+        value: parsed.data.value,
+        evidence: { kind: "user_action", action: "correct" },
+      });
+      if (outcome.kind === "corrected" || outcome.kind === "unchanged") {
+        const body: MemoryFactResponse = { fact: presentFact(outcome.fact) };
+        return Response.json(body);
+      }
+      const status = outcome.kind === "not_found" ? 404 : 422;
+      return failure(status, outcome.kind, presentCorrectOutcome(outcome).message);
+    }),
+
+    DELETE(`${API_PREFIX}/memory/:key`, async (request, { params }) => {
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      const key = MemoryKeySchema.safeParse(params.key);
+      if (!key.success) return failure(404, "unknown_memory_key", "No memory key has that name.");
+      const outcome = await forgetMemoryFact(container().memoryDependencies, {
+        ownerId,
+        key: key.data,
+        evidence: { kind: "user_action", action: "forget" },
+      });
+      if (outcome.kind === "untrusted_source") return failure(403, outcome.kind, "Only you can make the agent forget.");
+      const body: ForgetMemoryFactResponse = { tombstone: presentTombstone(outcome.tombstone) };
+      return Response.json(body);
+    }),
+
+    POST(`${API_PREFIX}/memory/:factId/confirm`, async (request, { params }) => {
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      const outcome = await confirmInferredFact(container().memoryDependencies, {
+        ownerId,
+        fact: { id: params.factId ?? "" },
+        evidence: { kind: "user_action", action: "confirm" },
+      });
+      if (outcome.kind === "confirmed") {
+        const body: MemoryFactResponse = { fact: presentFact(outcome.fact) };
+        return Response.json(body);
+      }
+      const status = outcome.kind === "not_found" ? 404 : 409;
+      return failure(status, outcome.kind, presentConfirmOutcome(outcome).message);
     }),
 
     // The approval card's button, and the only way a grant is ever created: ApproveProposal has no
@@ -206,6 +280,18 @@ export default defineChannel({
       const parsed = SwitchScenarioRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
       const body: SwitchScenarioResponse = await container().switchScenario(parsed.data);
+      return Response.json(body);
+    }),
+
+    // Evals start each scenario from the memory it declares (none by default), so one scenario's
+    // remembered area can't leak into the next.
+    PUT(`${API_PREFIX}/dev/memory`, async (request) => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const ownerId = await memoryOwnerOfRequest(request);
+      if (ownerId instanceof Response) return ownerId;
+      const parsed = SeedMemoryRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const body: SeedMemoryResponse = await seedMemory(container().memoryDependencies, { ownerId, facts: parsed.data.facts });
       return Response.json(body);
     }),
 

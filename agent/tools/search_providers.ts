@@ -1,8 +1,9 @@
-import { ErrandSearchOutputSchema, SearchProvidersInputSchema } from "@errand/contracts";
+import { ErrandSearchOutputSchema, RememberedOutputSchema, SearchProvidersInputSchema } from "@errand/contracts";
 import { defineTool } from "eve/tools";
 
 import { container } from "../../src/composition/container";
 import { findErrandOptions } from "../../src/core/use-cases/find-errand-options";
+import { startErrandFromMemory } from "../lib/errand-memory";
 import { presentFindOutcome } from "../lib/errand-presenter";
 import { tracePlaceOf } from "../lib/trace-place";
 import { withRunBudget } from "../lib/run-budget-tool";
@@ -18,14 +19,22 @@ export default withRunBudget(
       "and hours are applied in code, so every provider returned fits them. Show the options, not the full list.",
     label: { start: ({ service, area }) => `Searching ${service} in ${area}` },
     inputSchema: SearchProvidersInputSchema,
-    outputSchema: ErrandSearchOutputSchema,
+    outputSchema: ErrandSearchOutputSchema.and(RememberedOutputSchema),
     async execute(input, ctx) {
       const { errandDependencies, catalog } = container();
+      const place = tracePlaceOf(ctx);
+      // A search names the service, area and dates itself; memory can still bring the budget and
+      // preferences, and the area when the search passes on the remembered one.
+      const remembered = await startErrandFromMemory(ctx, place, {
+        service: input.service,
+        area: input.area,
+        timeWindow: { dates: input.date_range },
+      });
       const outcome = await findErrandOptions(errandDependencies, {
-        place: tracePlaceOf(ctx),
+        place,
         search: { service: input.service, area: input.area, dates: input.date_range },
       });
-      return presentFindOutcome(outcome, catalog);
+      return { ...presentFindOutcome(outcome, catalog), remembered };
     },
   }),
 );
