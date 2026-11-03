@@ -1,0 +1,1591 @@
+{
+  "version": 1,
+  "title": "Home screen: composer chips become the errand, Waiting on you opens the card, empty states, theme",
+  "feature": "home",
+  "description": "Ticket 13. The home screen at / draws every widget from GET /api/v1/home. The composer's chips start from memory and are saved as the new chat's errand (POST /api/v1/sessions/:id/errand) before the first model turn, so the agent asks nothing for them. A pending approval in Waiting on you opens its chat at the card, with keyboard focus on it. A new user sees every widget's empty state. The theme follows the system until toggled, and the choice survives a reload. The last four scenarios capture the populated home in dark and light at desktop and phone widths.",
+  "scenarios": [
+    {
+      "id": "composer-chips-become-the-errand",
+      "title": "Chips prefilled from memory, plus Mornings, start a chat whose errand already has area, budget and time; nothing is asked",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: default, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": [
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "budget",
+                  "value": "1500",
+                  "source": "explicit",
+                  "status": "active"
+                }
+              ]
+            }
+          },
+          "note": "the person's usual area and budget, both explicit"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "update_errand",
+                            "input": {
+                              "service": "plumber"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are plumbers in Koramangala for weekday mornings under ₹1,500. Which one should I book?"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the agent's turn: update_errand with the service only, then search, then the options"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Area: Koramangala (from memory)",
+            "state": "visible"
+          },
+          "note": "the area chip starts from memory"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Budget: Under ₹1,500 (from memory)",
+            "state": "visible"
+          },
+          "note": "so does the budget chip"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Time: This week"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "menuitemradio",
+            "name": "Mornings this week (08:00–12:00)"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Time: Mornings",
+            "state": "visible"
+          },
+          "note": "the time chip now says mornings"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Describe your errand",
+            "value": "Fix a leaking kitchen tap"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Start errand"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Options for plumber in Koramangala",
+            "text": "Cheapest"
+          },
+          "note": "the chat opened and the agent went straight to options"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "role=group[name*=\"Quick replies\"]"
+          ],
+          "note": "no clarifying question: no quick-reply chips for area, time or anything else"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/errand"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "errand.area",
+                "equals": "Koramangala"
+              },
+              {
+                "path": "errand.budgetInr",
+                "equals": 1500
+              },
+              {
+                "path": "errand.timeWindow",
+                "equals": {
+                  "from": "2026-11-04",
+                  "to": "2026-11-10",
+                  "earliestHour": 8,
+                  "latestHour": 12
+                }
+              },
+              {
+                "path": "errand.service",
+                "equals": "plumber"
+              },
+              {
+                "path": "errand.missing",
+                "length": 0
+              },
+              {
+                "path": "errand.state",
+                "equals": "choosing"
+              }
+            ]
+          },
+          "note": "world state: the errand holds the composer's area, budget and mornings this week, plus the service the agent added"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/trace"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "events[0].name",
+                "equals": "start → gathering"
+              },
+              {
+                "path": "events[1].name",
+                "equals": "composer → errand: area, timeWindow, budget"
+              },
+              {
+                "path": "events[2].name",
+                "equals": "memory context"
+              },
+              {
+                "path": "spans[*].name",
+                "includes": "execute_tool update_errand"
+              }
+            ]
+          },
+          "note": "the trace: the composer filled the errand before the turn's memory context, so before the first model call"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ]
+    },
+    {
+      "id": "waiting-on-you-opens-the-chat-at-the-card",
+      "title": "A pending approval shows in Waiting on you; Review opens its chat at the card with focus on it; Tab, Enter approves",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "no memory"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, Thu 5 Nov at 8:00 am IST, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "search, then hold and propose the cheapest, then execute after the approval"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the search turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the approval card is up and the turn finished"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Approve booking · Shiva Sanitary Solutions"
+          },
+          "note": "the pending card waits on the person, with its slot and price"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "approval card waiting for you"
+          },
+          "note": "the errand's current step"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Home, 1 waiting on you",
+            "state": "visible"
+          },
+          "note": "the home switcher counts it too"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/home"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "waiting.approvals[*].providerName",
+                "equals": [
+                  "Shiva Sanitary Solutions"
+                ]
+              },
+              {
+                "path": "counts.waitingOnYou",
+                "equals": 1
+              }
+            ]
+          },
+          "note": "world state: the home summary has the one pending approval"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "link",
+            "name": "Review approval: Shiva Sanitary Solutions"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "the chat opened on the same conversation, at the card"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Tab"
+          ]
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Booked",
+            "text": "bkg_0002"
+          },
+          "note": "focus was on the card: Tab reached its Approve button and Enter approved it"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "executed"
+                ]
+              },
+              {
+                "path": "proposals[*].grant.consumed",
+                "equals": [
+                  true
+                ]
+              }
+            ]
+          },
+          "note": "world state: that chat's proposal was approved and executed once"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "Shiva Sanitary Solutions"
+          },
+          "note": "the new booking is upcoming"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Nothing needs you"
+          },
+          "note": "and nothing waits on the person any more"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ]
+    },
+    {
+      "id": "empty-states-for-a-new-user",
+      "title": "A new user with no bookings, errands or memory sees every widget's designed empty state",
+      "viewport": "desktop",
+      "theme": "dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "new_user",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: new_user, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "Nothing in progress"
+          },
+          "note": "Working now is empty"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Nothing needs you"
+          },
+          "note": "Waiting on you is empty"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "No upcoming bookings"
+          },
+          "note": "Upcoming bookings is empty"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Alerts",
+            "text": "No alerts"
+          },
+          "note": "Alerts is empty"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Bookings · 14 days",
+            "text": "No visits booked"
+          },
+          "note": "the chart says so instead of drawing zero bars"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Start an errand",
+            "state": "visible"
+          },
+          "note": "with one action"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Memory",
+            "text": "Nothing remembered yet"
+          },
+          "note": "Memory is empty"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Area: not set",
+            "state": "visible"
+          },
+          "note": "no remembered area, so the area chip is unset"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Notifications",
+            "state": "visible"
+          },
+          "note": "the bell has no count"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/home"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "working",
+                "length": 0
+              },
+              {
+                "path": "upcoming",
+                "length": 0
+              },
+              {
+                "path": "alerts",
+                "length": 0
+              },
+              {
+                "path": "memory",
+                "length": 0
+              },
+              {
+                "path": "counts.alerts",
+                "equals": 0
+              }
+            ]
+          },
+          "note": "world state: the summary is empty too"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "empty-dark-desktop.png"
+          ],
+          "note": "every empty state"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Start an errand"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Describe your errand",
+            "state": "visible"
+          },
+          "note": "the chart's action takes the person to the composer"
+        }
+      ]
+    },
+    {
+      "id": "theme-follows-system-then-the-toggle-persists",
+      "title": "The theme follows the system (light) until toggled; dark then survives a reload, and so does light again",
+      "viewport": "desktop",
+      "theme": "light",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "no saved choice: the home follows the system's light setting"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "the toggle switches to dark"
+        },
+        {
+          "command": "reload"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "the choice persists over the light system setting"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Switch to light theme",
+            "state": "visible"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to light theme"
+          }
+        },
+        {
+          "command": "reload"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "and light persists too"
+        }
+      ]
+    },
+    {
+      "id": "populated-home-dark-desktop",
+      "title": "With a pending approval, an open search, a failed run, a booking and memory, every widget has live data (dark, 1440)",
+      "viewport": "desktop",
+      "theme": "dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": [
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "budget",
+                  "value": "1500",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Suresh K.",
+                  "source": "explicit",
+                  "status": "active"
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "9",
+                  "source": "inferred",
+                  "status": "pending_confirmation"
+                }
+              ]
+            }
+          },
+          "note": "explicit area, budget and technician, and one inferred guess"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, Thu 5 Nov at 8:00 am IST, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "search, then hold and propose the cheapest"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the search turn finished"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "one chat waits on its approval card"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/world-fault"
+          ],
+          "options": {
+            "body": {
+              "fault": {
+                "kind": "throw",
+                "operation": "searchProviders"
+              }
+            }
+          },
+          "note": "the next search throws"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Something went wrong on my side"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "that run failed, and its errand with it"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/world-fault"
+          ],
+          "options": {
+            "body": {
+              "fault": null
+            }
+          },
+          "note": "searches work again"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the search turn finished"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "Plumber · Koramangala"
+          },
+          "note": "Working now lists the open errands with their current step"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "approval card waiting for you"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Approve booking · Shiva Sanitary Solutions"
+          },
+          "note": "the pending approval card waits on the person"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Confirm earliest start"
+          },
+          "note": "and so does the inferred fact to confirm"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "AC servicing"
+          },
+          "note": "the world's upcoming booking with its status"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Alerts",
+            "text": "stopped"
+          },
+          "note": "the failed run shows as an alert"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Bookings · 14 days",
+            "text": "visits"
+          },
+          "note": "the 14-day chart has data"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Memory",
+            "text": "Earliest start · 09:00?"
+          },
+          "note": "memory, with the guess marked"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Notifications, 1",
+            "state": "visible"
+          },
+          "note": "the bell counts the alert that needs the person"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "home-dark-desktop.png"
+          ],
+          "note": "the populated home, dark, desktop"
+        }
+      ]
+    },
+    {
+      "id": "populated-home-light-desktop",
+      "title": "The same home in the light theme: the hero turns into a daytime skyline (light, 1440)",
+      "viewport": "desktop",
+      "theme": "light",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=light"
+          },
+          "args": [
+            "html"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "Plumber · Koramangala"
+          },
+          "note": "Working now lists the open errands with their current step"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "approval card waiting for you"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Approve booking · Shiva Sanitary Solutions"
+          },
+          "note": "the pending approval card waits on the person"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Confirm earliest start"
+          },
+          "note": "and so does the inferred fact to confirm"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "AC servicing"
+          },
+          "note": "the world's upcoming booking with its status"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Alerts",
+            "text": "stopped"
+          },
+          "note": "the failed run shows as an alert"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Bookings · 14 days",
+            "text": "visits"
+          },
+          "note": "the 14-day chart has data"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Memory",
+            "text": "Earliest start · 09:00?"
+          },
+          "note": "memory, with the guess marked"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "home-light-desktop.png"
+          ],
+          "note": "the populated home, light, desktop"
+        }
+      ]
+    },
+    {
+      "id": "populated-home-dark-phone",
+      "title": "One column at phone width (dark, 390)",
+      "viewport": "phone",
+      "theme": "dark",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "Plumber · Koramangala"
+          },
+          "note": "Working now lists the open errands with their current step"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "approval card waiting for you"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Approve booking · Shiva Sanitary Solutions"
+          },
+          "note": "the pending approval card waits on the person"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Confirm earliest start"
+          },
+          "note": "and so does the inferred fact to confirm"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "AC servicing"
+          },
+          "note": "the world's upcoming booking with its status"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Alerts",
+            "text": "stopped"
+          },
+          "note": "the failed run shows as an alert"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Bookings · 14 days",
+            "text": "visits"
+          },
+          "note": "the 14-day chart has data"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Memory",
+            "text": "Earliest start · 09:00?"
+          },
+          "note": "memory, with the guess marked"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "home-dark-mobile.png"
+          ],
+          "note": "the populated home, dark, phone"
+        }
+      ]
+    },
+    {
+      "id": "populated-home-light-phone",
+      "title": "One column at phone width (light, 390)",
+      "viewport": "phone",
+      "theme": "light",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "Plumber · Koramangala"
+          },
+          "note": "Working now lists the open errands with their current step"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Working now",
+            "text": "approval card waiting for you"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Approve booking · Shiva Sanitary Solutions"
+          },
+          "note": "the pending approval card waits on the person"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Waiting on you",
+            "text": "Confirm earliest start"
+          },
+          "note": "and so does the inferred fact to confirm"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Upcoming bookings",
+            "text": "AC servicing"
+          },
+          "note": "the world's upcoming booking with its status"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Alerts",
+            "text": "stopped"
+          },
+          "note": "the failed run shows as an alert"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Bookings · 14 days",
+            "text": "visits"
+          },
+          "note": "the 14-day chart has data"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Memory",
+            "text": "Earliest start · 09:00?"
+          },
+          "note": "memory, with the guess marked"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "home-light-mobile.png"
+          ],
+          "note": "the populated home, light, phone"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ]
+    }
+  ]
+}

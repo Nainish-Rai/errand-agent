@@ -40,7 +40,12 @@ export function UnderlineTabs<Value extends string>({ items, value, onValueChang
             )}
           >
             {item.label}
-            {item.count !== undefined && <span className="ml-1 font-mono text-fg-emph tabular-nums">{item.count}</span>}
+            {item.count !== undefined && (
+              <>
+                {" "}
+                <span className="ml-0.5 font-mono text-fg-emph tabular-nums">{item.count}</span>
+              </>
+            )}
           </TabsPrimitive.Trigger>
         ))}
       </TabsPrimitive.List>

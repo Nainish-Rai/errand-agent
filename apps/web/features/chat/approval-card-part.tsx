@@ -196,7 +196,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
       id={cardElementId(card.proposalId)}
       data-proposal-id={card.proposalId}
       tabIndex={-1}
-      className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+      className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-lg outline-none focus:outline-2 focus:outline-offset-4 focus:outline-ring"
     >
       {proposal === undefined ? (
         <div className="flex items-center gap-2 text-label text-fg-meta">

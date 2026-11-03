@@ -67,11 +67,13 @@ type MiniBarChartProps = {
   readonly values: readonly number[];
   /** Read out instead of the bars, e.g. "Bookings per day, last 14 days". */
   readonly label: string;
+  /** The bar for now (today), drawn at full strength; the others are slightly muted. */
+  readonly current?: number;
   readonly className?: string;
 };
 
 /** CSS bars for widgets. Missing data is the caller's to say ("not available"), never a zero bar. */
-export function MiniBarChart({ values, label, className }: MiniBarChartProps) {
+export function MiniBarChart({ values, label, current, className }: MiniBarChartProps) {
   const max = Math.max(...values, 1);
   return (
     <div role="img" aria-label={label} className={cn("mt-1.5 flex h-12 items-end gap-1", className)}>
@@ -79,7 +81,7 @@ export function MiniBarChart({ values, label, className }: MiniBarChartProps) {
         <div
           // Bars are positional: the index is the day.
           key={index}
-          className="flex-1 rounded-t-[2px] bg-chart-1"
+          className={cn("flex-1 rounded-t-[2px] bg-chart-1", current !== undefined && index !== current && "opacity-80")}
           style={{ height: `${Math.max((value / max) * 100, 2)}%` }}
         />
       ))}

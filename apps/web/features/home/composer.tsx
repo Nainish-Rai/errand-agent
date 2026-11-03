@@ -94,7 +94,7 @@ function ChipMenu<T>({ label, icon, choices, chosen, onChoose, unset, remembered
           icon={icon}
           value={shown}
           selected={current !== undefined}
-          aria-label={`${label}: ${shown}${remembered && current !== undefined ? " (from memory)" : ""}`}
+          aria-label={`${label}: ${current === undefined ? "not set" : current.short}${remembered && current !== undefined ? " (from memory)" : ""}`}
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 text-label">

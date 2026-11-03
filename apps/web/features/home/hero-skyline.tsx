@@ -75,14 +75,14 @@ export function HeroSkyline() {
         ))}
       </g>
       <rect x="0" y="196" width="728" height="34" className="fill-(--hero-road)" />
-      <g transform="translate(250 176)">
+      <g transform="translate(150 176)">
         <rect width="46" height="20" rx="3" className="fill-(--hero-van)" />
         <rect x="30" y="3" width="13" height="8" className="fill-(--hero-van-glass)" />
         <circle cx="10" cy="21" r="4" className="fill-(--hero-tyre)" />
         <circle cx="36" cy="21" r="4" className="fill-(--hero-tyre)" />
         <rect x="44" y="12" width="3" height="3" className="fill-(--hero-beam)" />
       </g>
-      <path d="M297 189 L420 176 L420 206 Z" fill="url(#hero-beam)" className={night} />
+      <path d="M197 189 L320 176 L320 206 Z" fill="url(#hero-beam)" className={night} />
       <rect width="728" height="230" fill="url(#hero-dither)" />
       <rect width="728" height="230" fill="url(#hero-fade)" />
     </svg>

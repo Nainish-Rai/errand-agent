@@ -294,12 +294,14 @@ export function BookingActivity({ summary, onStart }: { readonly summary?: Summa
           </div>
           <MiniBarChart
             values={days.map((day) => (measure === "visits" ? day.bookings : day.bookedInr))}
+            current={days.findIndex((day) => day.date === today)}
             label={`${measure === "visits" ? "Visits" : "Rupees booked"} per day, ${range}; today is ${today === undefined ? "" : dateLabel(today)}`}
           />
-          <div aria-hidden className="mt-1 flex justify-between font-mono text-meta text-fg-meta">
-            <span>{first === undefined ? "" : dateLabel(first)}</span>
-            <span>today {today === undefined ? "" : dateLabel(today)}</span>
-            <span>{last === undefined ? "" : dateLabel(last)}</span>
+          {/* Under the bars, one column per day: the first day, today (the seventh) and the last. */}
+          <div aria-hidden className="mt-1 grid grid-cols-14 gap-1 font-mono text-meta whitespace-nowrap text-fg-meta">
+            <span className="col-start-1 col-end-4">{first === undefined ? "" : dateLabel(first)}</span>
+            <span className="col-start-7 justify-self-center text-fg-emph">today</span>
+            <span className="col-start-12 col-end-15 justify-self-end">{last === undefined ? "" : dateLabel(last)}</span>
           </div>
         </>
       )}
