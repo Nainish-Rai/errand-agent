@@ -1,5 +1,5 @@
 import type { ChatTurn, ToolCallView } from "@errand/client";
-import type { BookingView, ExecuteProposalOutput } from "@errand/contracts";
+import type { BookingView, ExecuteProposalOutput, MemoryFactView, ModelCallContext } from "@errand/contracts";
 import { describe, expect, it } from "vitest";
 
 import { expectedFingerprint } from "./approval-checks";
@@ -129,5 +129,98 @@ describe("no-unverified-booked-claim", () => {
 
   it("ignores replies that say nothing was booked", async () => {
     expect(await verdict("no-unverified-booked-claim", runWith([], [turn("Nothing is booked yet; tap Approve.")]))).toEqual({ holds: true });
+  });
+});
+
+// The context invariant against hand-made memory and context logs.
+
+const NOW_MS = Date.parse("2026-11-04T09:00:00+05:30");
+const ISO = (ms: number) => new Date(ms).toISOString();
+
+function fact(overrides: Partial<MemoryFactView> & Pick<MemoryFactView, "id" | "key" | "display">): MemoryFactView {
+  return {
+    label: overrides.key,
+    value: overrides.display,
+    source: "explicit",
+    status: "active",
+    evidence: { kind: "user_action", action: "seed" },
+    validFrom: ISO(NOW_MS - 60_000),
+    validTo: null,
+    supersedes: null,
+    supersededBy: null,
+    confirmedAt: null,
+    ...overrides,
+  };
+}
+
+const AREA = fact({ id: "f_area", key: "area", display: "HSR Layout" });
+const FORGOTTEN = fact({ id: "f_tech", key: "favourite_technician", display: "Ravi", status: "forgotten", validTo: ISO(NOW_MS - 1_000) });
+const GUESS = fact({ id: "f_budget", key: "budget", display: "₹900", source: "inferred", status: "pending_confirmation" });
+// Forgotten after the call: usable when the call was made.
+const LATER = fact({ id: "f_hour", key: "earliest_hour", display: "10:00", status: "forgotten", validTo: ISO(NOW_MS + 60_000) });
+
+function logged(entry: MemoryFactView, reason: string) {
+  return { id: entry.id, key: entry.key, value: entry.value, source: entry.source, status: entry.status, reason };
+}
+
+function contextCall(included: readonly MemoryFactView[], text: string): ModelCallContext {
+  return {
+    eventId: "e1",
+    sessionId: "ses",
+    turnId: "turn_0",
+    spanId: "model:1",
+    timeMs: 0,
+    outcome: "sent",
+    overBudgetPart: null,
+    estimator: "utf8_bytes/2",
+    capTokens: 40_000,
+    split: { instructions: 24_000, memory: 1_000, history: 15_000 },
+    tokens: { instructions: 1, tools: 1, memory: 1, history: 1, summary: 0, total: 4 },
+    historyLimitTokens: 1,
+    instructions: [],
+    memory: { text, included: included.map((entry) => logged(entry, "fills_missing_detail")), excluded: [], nowMs: text === "" ? null : NOW_MS },
+    history: { kept: [], dropped: [], summary: null },
+    promptSha256: null,
+  };
+}
+
+function line(entry: MemoryFactView): string {
+  return `- ${entry.label}: ${entry.display} (the person said it)`;
+}
+
+function runWithContext(calls: readonly ModelCallContext[]): ScenarioRun {
+  const api = {
+    listMemory: async () => ({ facts: [AREA, FORGOTTEN, GUESS, LATER], tombstones: [] }),
+    getSessionTrace: async () => ({ sessionId: "ses", generatedAtMs: 0, spans: [{ status: "ok" }], events: [], totals: {} }),
+    getSessionContext: async () => ({ sessionId: "ses", calls }),
+  };
+  return { ...runWith([]), api: api as unknown as ScenarioRun["api"] };
+}
+
+describe("no-forgotten-fact-in-context", () => {
+  it("holds when every call carried only facts usable when it was made", async () => {
+    const run = runWithContext([contextCall([AREA, LATER], [line(AREA), line(LATER)].join("\n")), contextCall([], "")]);
+    expect(await verdict("no-forgotten-fact-in-context", run)).toEqual({ holds: true });
+  });
+
+  it("fails when a call included a forgotten fact", async () => {
+    const run = runWithContext([contextCall([AREA, FORGOTTEN], [line(AREA), line(FORGOTTEN)].join("\n"))]);
+    expect((await verdict("no-forgotten-fact-in-context", run)).holds).toBe(false);
+  });
+
+  it("fails when a call included an inferred fact nobody confirmed", async () => {
+    const run = runWithContext([contextCall([GUESS], line(GUESS))]);
+    expect((await verdict("no-forgotten-fact-in-context", run)).holds).toBe(false);
+  });
+
+  it("fails when the memory text sent carries a forgotten fact the log doesn't list", async () => {
+    const run = runWithContext([contextCall([AREA], [line(AREA), line(FORGOTTEN)].join("\n"))]);
+    expect((await verdict("no-forgotten-fact-in-context", run)).holds).toBe(false);
+  });
+
+  it("fails when memory text was sent with no logged selection behind it", async () => {
+    const call = contextCall([AREA], line(AREA));
+    const run = runWithContext([{ ...call, memory: { ...call.memory, nowMs: null } }]);
+    expect((await verdict("no-forgotten-fact-in-context", run)).holds).toBe(false);
   });
 });
