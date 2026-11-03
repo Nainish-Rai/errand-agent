@@ -189,8 +189,10 @@ function CorrectionForm({
 }
 
 function RowMenu({ fact, onCorrect, onForget }: { readonly fact: MemoryFactView; readonly onCorrect: () => void; readonly onForget: () => void }) {
-  // Choosing Correct moves focus into the field that opens, not back to this button.
-  const correcting = useRef(false);
+  // What was chosen, acted on once the menu has closed and given focus back. Correct moves focus into the
+  // field that opened; Forget starts only then, so the menu's focus return (after its close animation)
+  // can't land on a row that is already leaving: the list moves focus to the next row once it is gone.
+  const chosen = useRef<"correct" | "forget" | undefined>(undefined);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -202,23 +204,28 @@ function RowMenu({ fact, onCorrect, onForget }: { readonly fact: MemoryFactView;
         align="end"
         className="w-40"
         onCloseAutoFocus={(event) => {
-          // The menu's own focus return runs after the field mounted, so it hands focus to the field itself.
-          if (correcting.current) {
+          const choice = chosen.current;
+          chosen.current = undefined;
+          if (choice === "correct") {
             event.preventDefault();
             document.querySelector<HTMLInputElement>(`[data-correct="${fact.key}"]`)?.focus();
           }
-          correcting.current = false;
+          if (choice === "forget") onForget();
         }}
       >
         <DropdownMenuItem
           onSelect={() => {
-            correcting.current = true;
+            chosen.current = "correct";
             onCorrect();
           }}
         >
           <PencilLine className="text-fg-3" /> Correct
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onForget}>
+        <DropdownMenuItem
+          onSelect={() => {
+            chosen.current = "forget";
+          }}
+        >
           <Trash2 className="text-fg-3" /> Forget
         </DropdownMenuItem>
       </DropdownMenuContent>
