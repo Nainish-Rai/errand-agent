@@ -3,11 +3,9 @@
 import { useAuiState } from "@assistant-ui/react";
 import { ApiRequestError, ChatClient } from "@errand/client";
 import { PROVIDER_UPDATE_PREFIX, type ErrandView, type SearchProvidersInput } from "@errand/contracts";
-import { motion as limeMotion } from "@errand/design-tokens";
 import { MessageSquarePlus } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -69,15 +67,6 @@ function usePersonsRequest(): string {
   });
 }
 
-/** Lime's layout motion; reduced motion makes every change instant. */
-function useCardTransition() {
-  const reduced = useReducedMotion() === true;
-  return {
-    arrive: { duration: reduced ? 0 : limeMotion.base / 1_000, ease: limeMotion.easeOut },
-    leave: { duration: reduced ? 0 : limeMotion.fast / 1_000, ease: limeMotion.easeIn },
-  };
-}
-
 /**
  * Whether the refused search asks for another job than the booked one: another service, area or
  * dates. The agent re-searching the booked job itself gets the plain "already booked" line, not a card.
@@ -92,6 +81,18 @@ export function isDifferentJob(search: SearchProvidersInput, errand: ErrandView)
     window === null ||
     search.date_range.from !== window.from ||
     search.date_range.to !== window.to
+  );
+}
+
+/**
+ * The card's place once it is settled: the line opens its height where the card was (Lime's layout motion,
+ * `animate-open` on --dur-base), so the thread below moves smoothly. Reduced motion zeroes the token: instant.
+ */
+function SettledLine({ children }: { readonly children: ReactNode }) {
+  return (
+    <div data-slot="new-errand-settled" className="grid animate-open grid-rows-[1fr]">
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
   );
 }
 
@@ -114,7 +115,6 @@ export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps
   const { sessionId, loaded, settled, record, markOpen } = useErrandHandoffs();
   const request = usePersonsRequest();
   const router = useRouter();
-  const transition = useCardTransition();
   const [busy, setBusy] = useState<"start" | "dismiss">();
   const [problem, setProblem] = useState<string>();
   const handoff = settled.get(toolCallId);
@@ -158,57 +158,51 @@ export function NewErrandCard({ toolCallId, search, errand }: NewErrandCardProps
   // Until the chat's hand-offs are read, a card that already moved must not flash up.
   if (!loaded) return null;
   return (
-    <motion.div layout transition={transition.arrive} className="my-2">
-      <AnimatePresence initial={false} mode="popLayout">
-        {handoff?.kind === "moved" ? (
-          <motion.div key="moved" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: transition.arrive }}>
-            <HandoffLine href={`/chat/${encodeURIComponent(handoff.toSessionId)}`} label="Open the new chat">
-              Moved to a new chat
-            </HandoffLine>
-          </motion.div>
-        ) : handoff?.kind === "dismissed" ? (
-          <motion.p key="dismissed" className="m-0 text-xs text-fg-3" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: transition.arrive }}>
-            New errand not started.
-          </motion.p>
-        ) : (
-          <motion.section
-            key="card"
-            aria-labelledby={`new-errand-${toolCallId}`}
-            aria-busy={busy !== undefined || undefined}
-            data-slot="new-errand"
-            className="flex w-full min-w-0 flex-col gap-3 rounded-panel bg-surface p-4 text-sm text-fg"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0, transition: transition.arrive }}
-            exit={{ opacity: 0, transition: transition.leave }}
-          >
-            <header className="flex flex-col gap-1">
-              <h3 id={`new-errand-${toolCallId}`} className="m-0 flex items-center gap-2 text-sm font-semibold text-fg">
-                <MessageSquarePlus aria-hidden className="size-4 text-fg-3" />
-                New errand
-              </h3>
-              <p className="m-0 text-xs text-fg-3">{bookingNote(errand)} This one starts in its own chat.</p>
-            </header>
-            <dl className="m-0 grid grid-cols-[64px_1fr] gap-x-3 gap-y-1.5">
-              <Field label="Job" value={serviceLabel(search.service)} />
-              <Field label="Where" value={search.area} />
-              <Field label="When" value={whenLabel(search.date_range)} />
-            </dl>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="primary" loading={busy === "start"} disabled={busy !== undefined} onClick={() => void start()}>
-                {busy === "start" ? "Starting…" : "Start in a new chat"}
-              </Button>
-              <Button variant="ghost" loading={busy === "dismiss"} disabled={busy !== undefined} onClick={() => void dismiss()}>
-                Not now
-              </Button>
-            </div>
-            {problem !== undefined && (
-              <p role="alert" className="m-0 text-xs text-danger-text">
-                {problem}
-              </p>
-            )}
-          </motion.section>
-        )}
-      </AnimatePresence>
-    </motion.div>
+    <div className="my-2">
+      {handoff?.kind === "moved" ? (
+        <SettledLine>
+          <HandoffLine href={`/chat/${encodeURIComponent(handoff.toSessionId)}`} label="Open the new chat">
+            Moved to a new chat
+          </HandoffLine>
+        </SettledLine>
+      ) : handoff?.kind === "dismissed" ? (
+        <SettledLine>
+          <p className="m-0 text-xs text-fg-3">New errand not started.</p>
+        </SettledLine>
+      ) : (
+        <section
+          aria-labelledby={`new-errand-${toolCallId}`}
+          aria-busy={busy !== undefined || undefined}
+          data-slot="new-errand"
+          className="flex w-full min-w-0 animate-rise flex-col gap-3 rounded-panel bg-surface p-4 text-sm text-fg"
+        >
+          <header className="flex flex-col gap-1">
+            <h3 id={`new-errand-${toolCallId}`} className="m-0 flex items-center gap-2 text-sm font-semibold text-fg">
+              <MessageSquarePlus aria-hidden className="size-4 text-fg-3" />
+              New errand
+            </h3>
+            <p className="m-0 text-xs text-fg-3">{bookingNote(errand)} This one starts in its own chat.</p>
+          </header>
+          <dl className="m-0 grid grid-cols-[64px_1fr] gap-x-3 gap-y-1.5">
+            <Field label="Job" value={serviceLabel(search.service)} />
+            <Field label="Where" value={search.area} />
+            <Field label="When" value={whenLabel(search.date_range)} />
+          </dl>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" loading={busy === "start"} disabled={busy !== undefined} onClick={() => void start()}>
+              {busy === "start" ? "Starting…" : "Start in a new chat"}
+            </Button>
+            <Button variant="ghost" loading={busy === "dismiss"} disabled={busy !== undefined} onClick={() => void dismiss()}>
+              Not now
+            </Button>
+          </div>
+          {problem !== undefined && (
+            <p role="alert" className="m-0 text-xs text-danger-text">
+              {problem}
+            </p>
+          )}
+        </section>
+      )}
+    </div>
   );
 }

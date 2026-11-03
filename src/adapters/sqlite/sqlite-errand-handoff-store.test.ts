@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { Errand } from "../../core/errand/errand";
+import type { RecordedSearch, SessionToolCalls } from "../../core/ports/session-tool-calls";
 import type { TraceEvent, TraceRecord, TraceSink } from "../../core/ports/trace-sink";
 import { dismissNewErrand } from "../../core/use-cases/dismiss-new-errand";
 import { listErrandHandoffs } from "../../core/use-cases/list-errand-handoffs";
@@ -31,6 +32,17 @@ class Sink implements TraceSink {
   }
 }
 
+/** The chat session's own record of its tool calls: only searches recorded here back a card. */
+class RecordedCalls implements SessionToolCalls {
+  private readonly calls = new Map<string, RecordedSearch>();
+  record(sessionId: string, toolCallId: string, search: NewErrandSearch, outcome = "not_editable") {
+    this.calls.set(`${sessionId}/${toolCallId}`, { ...search, outcome });
+  }
+  async searchCall(sessionId: string, toolCallId: string) {
+    return this.calls.get(`${sessionId}/${toolCallId}`);
+  }
+}
+
 const NOW = Date.parse("2026-11-04T09:00:00+05:30");
 const AC_IN_HSR: NewErrandSearch = { service: "ac_servicing", area: "hsr", dates: { from: "2026-11-04", to: "2026-11-10" } };
 
@@ -48,10 +60,13 @@ async function setup(file = ":memory:", oldState: Errand["state"] = "done") {
   const errands = new InMemoryErrandStore();
   await errands.change("old", async () => ({ errand: { ...bookedErrand("old"), state: oldState }, result: undefined }));
   const handoffs = new SqliteErrandHandoffStore(openDatabase(file));
-  const deps = { errands, handoffs, catalog: worldCatalog, traceSink: new Sink(), clock: { now: () => new Date(NOW) } };
+  const toolCalls = new RecordedCalls();
+  toolCalls.record("old", "call_ac", AC_IN_HSR);
+  toolCalls.record("old", "call_second", AC_IN_HSR);
+  const deps = { errands, handoffs, toolCalls, catalog: worldCatalog, traceSink: new Sink(), clock: { now: () => new Date(NOW) } };
   const move = (toSessionId: string, search: NewErrandSearch = AC_IN_HSR, toolCallId = "call_ac") =>
     startNewErrand(deps, { fromSessionId: "old", toolCallId, place: { traceId: toSessionId, sessionId: toSessionId }, search });
-  return { deps, errands, handoffs, move };
+  return { deps, errands, handoffs, toolCalls, move };
 }
 
 describe("a different job in a booked chat moves to a new chat", () => {
@@ -112,10 +127,31 @@ describe("a different job in a booked chat moves to a new chat", () => {
   });
 
   it("leaves a search field the catalog doesn't know for the new chat to ask about, and still moves", async () => {
-    const { errands, move } = await setup();
-    const outcome = await move("new", { service: "ac servicing", area: "Atlantis", dates: { from: "2026-11-10", to: "2026-11-04" } });
+    const { errands, toolCalls, move } = await setup();
+    const odd: NewErrandSearch = { service: "ac servicing", area: "Atlantis", dates: { from: "2026-11-10", to: "2026-11-04" } };
+    toolCalls.record("old", "call_odd", odd);
+    const outcome = await move("new", odd, "call_odd");
     expect(outcome.kind).toBe("moved");
     expect((await errands.find("new"))?.details).toEqual({ service: "ac_servicing", preferences: [] });
+  });
+
+  it("refuses a card the chat's own record doesn't back: a forged id, edited details, or a search that wasn't refused", async () => {
+    const { deps, errands, handoffs, toolCalls, move } = await setup();
+    toolCalls.record("old", "call_found", AC_IN_HSR, "found");
+    toolCalls.record("other", "call_elsewhere", AC_IN_HSR);
+
+    expect(await move("new", AC_IN_HSR, "call_forged")).toEqual({ kind: "unknown_card" });
+    expect(await move("new", AC_IN_HSR, "call_elsewhere")).toEqual({ kind: "unknown_card" });
+    expect(await move("new", { ...AC_IN_HSR, area: "koramangala" })).toEqual({ kind: "search_mismatch" });
+    expect(await move("new", { ...AC_IN_HSR, service: "pest_control" })).toEqual({ kind: "search_mismatch" });
+    expect(await move("new", { ...AC_IN_HSR, dates: { from: "2026-11-04", to: "2026-11-30" } })).toEqual({ kind: "search_mismatch" });
+    expect(await move("new", AC_IN_HSR, "call_found")).toEqual({ kind: "not_refused" });
+    expect(await dismissNewErrand(deps, { fromSessionId: "old", toolCallId: "call_forged" })).toEqual({ kind: "unknown_card" });
+    expect(await dismissNewErrand(deps, { fromSessionId: "old", toolCallId: "call_found" })).toEqual({ kind: "not_refused" });
+
+    expect(await errands.find("new")).toBeUndefined();
+    expect(await handoffs.settledIn("old")).toEqual([]);
+    expect(deps.traceSink.events()).toEqual([]);
   });
 
   it("keeps the link between the chats across a restart", async () => {

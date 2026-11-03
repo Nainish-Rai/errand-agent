@@ -2,7 +2,7 @@
   "version": 1,
   "title": "New errand hand-off: a different job in a booked chat becomes a card that moves it to a new chat",
   "feature": "new-errand-handoff",
-  "description": "Ticket 24. In a chat whose errand is booked, asking for a different job shows the New errand card (service, area, when from the refused search; the booking stays as it is; never an outcome code). Start in a new chat starts a session, saves the job as its errand before the first turn, sends the person's own words and moves there, with focus on the composer; the new chat says where it came from, the old chat shows Moved to a new chat · Open after a reload, and the booking is unchanged (API). Not now dismisses the card for good and the chat carries on.",
+  "description": "Ticket 24. In a chat whose errand is booked, asking for a different job shows the New errand card (service, area, when from the refused search; the booking stays as it is; never an outcome code). Start in a new chat starts a session, saves the job as its errand before the first turn, sends the person's own words and moves there, with focus on the composer; the new chat says where it came from, the old chat shows Moved to a new chat · Open after a reload, and the booking is unchanged (API). Not now dismisses the card for good and the chat carries on. Motion: the card rises and the settled line opens over --dur-base; under reduced motion both are instant (computed animation-duration 0s, and frames taken right after each change).",
   "scenarios": [
     {
       "id": "move-to-new-chat-light",
@@ -355,6 +355,16 @@
             "value": ""
           },
           "note": "the composer is empty again"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"new-errand\"]"
+          ],
+          "options": {
+            "style": "animation-duration=0.2s"
+          },
+          "note": "the card rises over --dur-base (200ms) when motion is on"
         },
         {
           "command": "api",
@@ -977,6 +987,16 @@
             "value": ""
           },
           "note": "the composer is empty again"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"new-errand\"]"
+          ],
+          "options": {
+            "style": "animation-duration=0.2s"
+          },
+          "note": "the card rises over --dur-base (200ms) when motion is on"
         },
         {
           "command": "api",
@@ -1618,6 +1638,16 @@
           "note": "no card left"
         },
         {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"new-errand-settled\"]"
+          ],
+          "options": {
+            "style": "animation-duration=0.2s"
+          },
+          "note": "the settled line opens over --dur-base (200ms) when motion is on"
+        },
+        {
           "command": "fill",
           "options": {
             "role": "textbox",
@@ -1667,6 +1697,315 @@
             }
           },
           "note": "the dismissal is on the backend"
+        }
+      ]
+    },
+    {
+      "id": "reduced-motion-is-instant",
+      "title": "Under reduced motion the card is in place at once and Not now settles it at once",
+      "theme": "light",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "motion",
+          "args": [
+            "reduce"
+          ]
+        },
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "no remembered facts"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, Thu 5 Nov at 8:00 am IST, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "ac_servicing",
+                              "area": "HSR Layout",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "That's a new errand. Tap Start in a new chat and I'll pick it up there."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the booking conversation, then a different job"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Options for plumber in Koramangala",
+            "state": "visible"
+          },
+          "note": "the plumber options render"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "the approval card is up"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Booked",
+            "text": "bkg_0002"
+          },
+          "note": "the plumber is booked"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "She needs her AC repaired too, at my mom's place in HSR Layout."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "New errand",
+            "text": "AC servicing"
+          },
+          "note": "the New errand card shows the new job's service"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "reduced-card-at-once.png"
+          ],
+          "options": {
+            "animations": "allow",
+            "viewport": true
+          },
+          "note": "the frame as it is, right after the card arrives: already in place"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"new-errand\"]"
+          ],
+          "options": {
+            "style": "animation-duration=0s"
+          },
+          "note": "no rise under reduced motion: --dur-base is 0"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Not now"
+          }
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "reduced-not-now-at-once.png"
+          ],
+          "options": {
+            "animations": "allow",
+            "viewport": true
+          },
+          "note": "the frame right after the tap: the settled line is already full height"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "New errand not started."
+          },
+          "note": "feedback is kept",
+          "args": [
+            "body"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"new-errand-settled\"]"
+          ],
+          "options": {
+            "style": "animation-duration=0s"
+          },
+          "note": "the settled line doesn't open over time under reduced motion"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "textarea[aria-label=\"Message the errand agent\"]"
+          ],
+          "options": {
+            "state": "enabled"
+          },
+          "note": "the chat carries on"
         }
       ]
     }

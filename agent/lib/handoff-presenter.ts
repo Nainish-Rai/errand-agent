@@ -3,7 +3,7 @@ import type { ErrandHandoffView, GetErrandHandoffsResponse, HandoffOriginView } 
 import type { Errand } from "../../src/core/errand/errand";
 import type { ErrandHandoff, MovedHandoff } from "../../src/core/errand/errand-handoff";
 import type { ErrandHandoffs } from "../../src/core/use-cases/list-errand-handoffs";
-import type { StartNewErrandOutcome } from "../../src/core/use-cases/start-new-errand";
+import type { CardRefusal, StartNewErrandOutcome } from "../../src/core/use-cases/start-new-errand";
 
 // New errand cards (ticket 24): core's hand-offs to the wire, and one message per refusal.
 
@@ -33,6 +33,18 @@ export function presentHandoffs(handoffs: ErrandHandoffs): GetErrandHandoffsResp
   };
 }
 
+/** A card the session's own record doesn't back: forged, not a refused search, or edited. */
+export function presentCardRefusal(outcome: CardRefusal): { readonly status: number; readonly code: string; readonly message: string } {
+  switch (outcome.kind) {
+    case "unknown_card":
+      return { status: 404, code: "unknown_card", message: "This chat has no New errand card with that id." };
+    case "not_refused":
+      return { status: 409, code: "not_refused", message: "That search wasn't refused, so there is no New errand card for it." };
+    case "search_mismatch":
+      return { status: 422, code: "search_mismatch", message: "The card's details don't match the search this chat made." };
+  }
+}
+
 /**
  * What the app API answers when a job doesn't move. The route answers a card moved earlier with its
  * chat, so the only settled card that gets here is a dismissed one.
@@ -49,6 +61,10 @@ export function presentStartRefusal(
       return { status: 422, code: "same_session", message: "Start the new errand in a new chat." };
     case "errand_exists":
       return { status: 409, code: "errand_exists", message: "That chat already has an errand. Start the new errand in a new chat." };
+    case "unknown_card":
+    case "not_refused":
+    case "search_mismatch":
+      return presentCardRefusal(outcome);
   }
 }
 

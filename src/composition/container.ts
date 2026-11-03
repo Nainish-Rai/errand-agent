@@ -383,7 +383,8 @@ class Container {
     return this.#errandHandoffs;
   }
 
-  get newErrandDependencies(): NewErrandDependencies {
+  /** The session's own tool calls come from eve, so the agent ring adds `toolCalls`. */
+  get newErrandDependencies(): Omit<NewErrandDependencies, "toolCalls"> {
     return { ...this.errandDependencies, handoffs: this.errandHandoffs };
   }
 

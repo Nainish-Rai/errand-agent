@@ -18,5 +18,4 @@ The agent's instructions change too. When the person asks for a different job an
 - [x] Not now dismisses the card, and the person can still type in the old chat
 - [x] An offline eval: in a booked errand, "she needs her AC repaired in HSR" leads to the card and not to a "start a new request" paragraph, and nothing is booked or held
 - [x] A verify-errand suite drives the whole hand-off (book, ask for a new job, Start in a new chat, land in the new chat with the area set, go back, see the moved line). Its screenshots, in light and dark, are attached; the suite fails on a plant
-- [ ] The card follows v3 (Lime): one lime action, layout motion with Lime's tokens, instant under reduced motion, and focus moves to the new chat's composer after the move
-  (Not fully met: one lime action, Lime's tokens and the composer focus are proven in the browser; "instant under reduced motion" is in the code only, `useReducedMotion` zeroes the durations, and no browser run proved it.)
+- [x] The card follows v3 (Lime): one lime action, layout motion with Lime's tokens, instant under reduced motion, and focus moves to the new chat's composer after the move

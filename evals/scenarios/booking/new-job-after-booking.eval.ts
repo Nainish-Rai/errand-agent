@@ -1,4 +1,4 @@
-import { ChatClient } from "@errand/client";
+import { ApiRequestError, ChatClient } from "@errand/client";
 import { SearchProvidersInputSchema } from "@errand/contracts";
 import { equals } from "eve/evals/expect";
 
@@ -65,7 +65,13 @@ export default defineScenario({
 
     // "Start in a new chat", as the web card does it: a new session, then the hand-off.
     const session = await new ChatClient({ baseUrl: t.target.url }).startSession();
-    const moved = await run.api.startNewErrand(run.sessionId, { toolCallId: "eval-new-errand-card", toSessionId: session.id, search });
+    const card = { toolCallId: refused?.callId ?? "", toSessionId: session.id, search };
+    const forged = await run.api.startNewErrand(run.sessionId, { ...card, toolCallId: "forged-card" }).then(
+      () => "moved",
+      (error: unknown) => (error instanceof ApiRequestError ? error.code : String(error)),
+    );
+    t.check(forged, equals("unknown_card")).label("a card id the chat never made is refused");
+    const moved = await run.api.startNewErrand(run.sessionId, card);
     t.check([moved.errand?.service, moved.errand?.area, moved.errand?.state], equals(["ac_servicing", "HSR Layout", "gathering"])).label(
       "the new chat's errand starts from the card",
     );

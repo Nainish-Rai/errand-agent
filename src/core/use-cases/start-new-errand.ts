@@ -4,6 +4,7 @@ import { isEditable, type TracePlace } from "../errand/errand-workflow";
 import type { ErrandHandoffStore } from "../ports/errand-handoff-store";
 import type { DateRange } from "../ports/provider-world";
 import type { ServiceCatalog } from "../ports/service-catalog";
+import type { RecordedSearch, SessionToolCalls } from "../ports/session-tool-calls";
 import type { TraceEvent } from "../ports/trace-sink";
 import type { ErrandDependencies } from "./errand-session";
 import { updateErrand } from "./update-errand";
@@ -29,11 +30,48 @@ export type StartNewErrandOutcome =
   /** The chat's own errand can still change, so the job belongs in it. */
   | { readonly kind: "still_editable" }
   | { readonly kind: "same_session" }
+  | CardRefusal
   /** The chat to move to already has an errand (or a moved job); only a fresh chat can take the job. */
   | { readonly kind: "errand_exists" };
 
-export interface NewErrandDependencies extends ErrandDependencies {
+/**
+ * The card names a tool call by id and repeats its arguments. Both come from the client, so they are
+ * checked against the session's own record before anything is drafted or settled.
+ */
+export type CardRefusal =
+  /** The session made no search_providers call with that id: a forged or mistyped card. */
+  | { readonly kind: "unknown_card" }
+  /** The call exists but wasn't refused as not editable, so there is no card for it. */
+  | { readonly kind: "not_refused" }
+  /** The card's arguments aren't the call's: the client changed the job. */
+  | { readonly kind: "search_mismatch" };
+
+export interface CardDependencies {
   readonly handoffs: ErrandHandoffStore;
+  readonly toolCalls: SessionToolCalls;
+}
+
+export interface NewErrandDependencies extends ErrandDependencies, CardDependencies {}
+
+function isSameSearch(recorded: RecordedSearch, sent: NewErrandSearch): boolean {
+  return (
+    recorded.service === sent.service &&
+    recorded.area === sent.area &&
+    recorded.dates.from === sent.dates.from &&
+    recorded.dates.to === sent.dates.to
+  );
+}
+
+/** The card's search as the session recorded it, or why there is no such card. */
+export async function checkCard(
+  toolCalls: SessionToolCalls,
+  card: { readonly fromSessionId: string; readonly toolCallId: string; readonly search?: NewErrandSearch },
+): Promise<CardRefusal | { readonly kind: "card"; readonly search: RecordedSearch }> {
+  const recorded = await toolCalls.searchCall(card.fromSessionId, card.toolCallId);
+  if (recorded === undefined) return { kind: "unknown_card" };
+  if (recorded.outcome !== "not_editable") return { kind: "not_refused" };
+  if (card.search !== undefined && !isSameSearch(recorded, card.search)) return { kind: "search_mismatch" };
+  return { kind: "card", search: recorded };
 }
 
 /**
@@ -86,6 +124,8 @@ export async function startNewErrand(
 ): Promise<StartNewErrandOutcome> {
   const { fromSessionId, toolCallId, place } = request;
   if (place.sessionId === fromSessionId) return { kind: "same_session" };
+  const card = await checkCard(deps.toolCalls, { fromSessionId, toolCallId, search: request.search });
+  if (card.kind !== "card") return card;
   const earlier = await settledCard(deps.handoffs, fromSessionId, toolCallId);
   if (earlier !== undefined) return { kind: "already_settled", handoff: earlier };
   // After a restart the old errand is gone (errands live in memory); the card itself is the proof
@@ -110,7 +150,8 @@ export async function startNewErrand(
   const handoff = await deps.handoffs.settle(candidate);
   if (handoff.kind !== "moved" || handoff.toSessionId !== place.sessionId) return { kind: "already_settled", handoff };
 
-  const patch = patchOf(request.search, deps.catalog);
+  // Drafted from the session's record of the search, never from what the client sent.
+  const patch = patchOf(card.search, deps.catalog);
   if (Object.keys(patch).length === 0) return { kind: "moved", handoff };
   const drafted = await updateErrand(deps, { place, patch });
   // The patch is in the catalog's terms and the errand is new, so only "updated" can come back.

@@ -76,7 +76,8 @@ import { recordOperatorRead } from "../../src/core/use-cases/record-operator-rea
 import { presentActionIntent, presentBooking, presentProposalView } from "../lib/approval-presenter";
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
-import { presentHandoff, presentHandoffs, presentStartRefusal } from "../lib/handoff-presenter";
+import { eveSessionToolCalls } from "../lib/eve-session-tool-calls";
+import { presentCardRefusal, presentHandoff, presentHandoffs, presentStartRefusal } from "../lib/handoff-presenter";
 import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
 import { CALLER_AUTH, memoryOwnerOf, memoryOwnerOfRequest } from "../lib/memory-owner";
 import { presentProviderEventOutcome } from "../lib/provider-update-presenter";
@@ -340,7 +341,7 @@ export default defineChannel({
       const { toolCallId, toSessionId, search } = parsed.data;
       if (!(await claimCallersSession(toSessionId, session.userId))) return sessionNotFound();
       const { newErrandDependencies, catalog } = container();
-      const outcome = await startNewErrand(newErrandDependencies, {
+      const outcome = await startNewErrand({ ...newErrandDependencies, toolCalls: eveSessionToolCalls }, {
         fromSessionId: session.sessionId,
         toolCallId,
         place: { traceId: toSessionId, sessionId: toSessionId },
@@ -363,9 +364,13 @@ export default defineChannel({
       if (!parsed.success) return invalidBody(parsed.error.issues);
       const { errandHandoffs, wallClock } = container();
       const outcome = await dismissNewErrand(
-        { handoffs: errandHandoffs, clock: wallClock },
+        { handoffs: errandHandoffs, toolCalls: eveSessionToolCalls, clock: wallClock },
         { fromSessionId: session.sessionId, toolCallId: parsed.data.toolCallId },
       );
+      if (outcome.kind !== "dismissed" && outcome.kind !== "already_settled") {
+        const refusal = presentCardRefusal(outcome);
+        return failure(refusal.status, refusal.code, refusal.message);
+      }
       const body: DismissNewErrandResponse = { handoff: presentHandoff(outcome.handoff) };
       return Response.json(body);
     }),
