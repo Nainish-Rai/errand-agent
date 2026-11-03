@@ -54,7 +54,7 @@ seen (`found 3, expected 8`, `text is "…"`).
 
 `api GET|POST|PUT /api/v1/...` goes through `packages/client`, so the body is parsed against the
 contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`, `GET /sessions/:id/trace`,
-`POST /dev/scenario`, `PUT /dev/model-script`. `sessions/current` is the chat session the page
+`POST /dev/scenario`, `PUT /dev/model-script`, `PUT /dev/run-limits`, `PUT /dev/world-fault`. `sessions/current` is the chat session the page
 opened (read from its `/eve/v1/session/…` requests). When a ticket adds a route to the client,
 add it to `tools/verify/src/world-api.ts`.
 

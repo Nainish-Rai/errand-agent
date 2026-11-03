@@ -38,6 +38,8 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | GET | `/assets/providers/:file` | Provider photos, served by the backend so every client gets the same images |
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
   | PUT | `/dev/model-script` `{script}` | Dev only. Load a scenario's model turns into the offline model (`null` unloads) |
+  | PUT | `/dev/run-limits` `{limits}` | Dev only. Run-budget limits for runs that start afterwards (`null` restores the defaults) |
+  | PUT | `/dev/world-fault` `{fault}` | Dev only. Make one world operation slow or throw until the next scenario switch (`null` clears it) |
 
   Every request and response body is a schema from **contracts**. The user comes from the channel's
   auth context, never from the body. Locally that is a fixed dev user; real auth later means swapping the

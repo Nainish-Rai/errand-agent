@@ -1,117 +1,28 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T00:43:45.776Z",
+  "ranAt": "2026-11-03T00:54:23.292Z",
   "trials": 1,
   "scenarios": [
-    {
-      "id": "scenarios/adversarial/out-of-scope-input",
-      "description": "Off-topic, nonsense and rule-breaking input each get a clear can't-help reply, and no errand is started.",
-      "expected": "every reply says it can't help with that and what it can do; no tool is called and no errand exists",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "3 turns; no tool calls",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/approval/approve-click-reaches-the-api",
-      "description": "The scripted user's Approve click reaches the app API's approve endpoint, which is a stub until ticket 05.",
-      "expected": "the Approve click reaches POST /api/v1/proposals/:id/approve with the card's fingerprint and gets 501 not_implemented; a click without a fingerprint gets 400",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "2 turns; search_providers(plumber, Koramangala) → found (8 providers); approve prp_ticket02_stub → 501 not_implemented",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/budget/tool-call-limit",
-      "description": "A model that loops forever stops at the tool-call cap, and the person sees the budget-exhausted message.",
-      "expected": "exactly 3 tool calls run, the next is refused; outcome budget_exhausted (tool_calls); the reply is the outcome's message",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "3 tool calls; reply: I stopped working on this because it reached the most action",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/budget/turn-limit",
-      "description": "A model that loops forever stops at the model-turn cap, and the person sees the budget-exhausted message.",
-      "expected": "the run stops after 4 model calls and 3 tool calls; outcome budget_exhausted (model_turns); the reply is the outcome's message",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "3 tool calls; reply: I stopped working on this because it reached the most steps ",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
     {
       "id": "scenarios/budget/unexpected-tool-error",
       "description": "A tool throws something unknown: the run ends failed with a message, the errand fails, and nothing else runs.",
       "expected": "search_providers throws; the run ends failed (tool_error) with the outcome's message as the reply; the errand goes gathering → failed; no tool runs after the error",
       "attempts": [
         {
-          "verdict": "passed",
-          "actual": "update_errand completed, search_providers failed; reply: Something went wrong on my side, so I stopped here without t",
+          "verdict": "failed",
+          "actual": "update_errand completed, search_providers failed, search_providers failed; reply: Here are the plumbers in Koramangala with free slots this we",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0
           },
-          "failures": [],
+          "failures": [
+            "equals [the run ends failed]: expected \"failed\"; received \"completed\"",
+            "equals [because a tool threw]: expected \"tool_error\"; received undefined",
+            "equals [the person sees the outcome's message]: expected true; received false",
+            "equals [nothing runs after the error]: expected [\"execute_tool update_errand ok\",\"execute_tool search_providers error\"]; received [\"execute_tool update_errand ok\",\"execute_tool search_providers error\",\"execute_tool search_providers error\"]",
+            "equals [the errand is failed]: expected \"failed\"; received \"gathering\"",
+            "equals: expected [\"start → gathering\",\"gathering → failed\"]; received [\"start → gathering\"]"
+          ],
           "pendingInvariants": [
             "no-side-effect-without-grant",
             "one-booking-per-grant",
@@ -120,162 +31,6 @@
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/budget/wall-clock-timeout",
-      "description": "A slow tool stops the run within its wall-clock deadline, and the person sees the budget-exhausted message.",
-      "expected": "the slow search is cut off at the 1500 ms deadline; the run ends budget_exhausted (wall_clock) within 4000 ms; the reply is the outcome's message",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "search_providers failed; reply: I stopped working on this because it reached the time one re",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/clarify/correction-keeps-context",
-      "description": "Changing the date after seeing options changes only the date; service, area and budget stay.",
-      "expected": "after the date change the errand holds Saturday, and service, area and budget are unchanged; the errand went back to gathering and on to choosing, all traced",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "2 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); update_errand() → updated; search_providers(plumber, Koramangala) → found (8 providers)",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/clarify/fully-specified-asks-nothing",
-      "description": "A fully specified request is searched in the same turn, with no clarifying question.",
-      "expected": "one turn: the errand is complete with no question, search_providers runs in that turn with nothing asked before it, and the errand ends choosing",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers)",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/clarify/missing-area-asks-one-question",
-      "description": "A request missing only the area gets exactly one question, about the area, then a search once it is answered.",
-      "expected": "turn 1: the errand misses only the area, the reply asks exactly one question (about the area) with area quick replies, no search; after the answer the errand is choosing with the area filled; every transition is in the trace",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "2 turns; update_errand(plumber) → updated; update_errand(Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers)",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/compare/options-respect-budget-and-window",
-      "description": "With a budget and mornings only, every provider and option shown is within budget and inside the window, tagged.",
-      "expected": "2–3 options tagged best match, cheapest and earliest; every provider and option shown costs at most ₹800 (by the world's price) and every slot shown is a morning this week; the over-budget ones are counted as left out",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (3 providers)",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "scenarios/search/plumber-in-koramangala",
-      "description": "A plain errand searches the right service and area and returns the world's providers.",
-      "expected": "search_providers runs once for plumber in Koramangala; 3 to 8 providers, each matching the world's price and rating",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "1 turn; search_providers(plumber, Koramangala) → found (8 providers)",
-          "costUsd": {
-            "agent": 0,
-            "simulatedUser": 0
-          },
-          "failures": [],
-          "pendingInvariants": [
-            "no-side-effect-without-grant",
-            "one-booking-per-grant",
-            "no-unverified-booked-claim",
-            "no-forgotten-fact-in-context",
-            "generated-ui-is-allowed",
-            "generated-ui-matches-world"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "trace/run-leaves-a-trace",
-      "description": "A run writes a trace with turn, step, model and tool spans, tokens, latency and cost.",
-      "expected": "A run writes a trace with turn, step, model and tool spans, tokens, latency and cost.",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "failures": [],
-          "pendingInvariants": []
         }
       ]
     }
