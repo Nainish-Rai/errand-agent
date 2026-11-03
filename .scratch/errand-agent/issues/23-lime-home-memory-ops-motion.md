@@ -4,9 +4,9 @@
 
 **Blocked by:** 20
 
-**Status:** ready-for-agent
+**Status:** done (PR #27)
 
-- [ ] Home, memory and ops match v3 in light and dark; screenshots are attached
-- [ ] The person's chat never shows the trace rail; the operator-only suites still pass
-- [ ] List and widget changes animate with Lime's tokens, with no layout jump; this is proven by a mid-animation screenshot
-- [ ] Under reduced motion layout changes are instant, and focus and feedback are kept
+- [x] Home, memory and ops match v3 in light and dark; screenshots are attached
+- [x] The person's chat never shows the trace rail; the operator-only suites still pass
+- [x] List and widget changes animate with Lime's tokens, with no layout jump; this is proven by a mid-animation screenshot
+- [x] Under reduced motion layout changes are instant, and focus and feedback are kept

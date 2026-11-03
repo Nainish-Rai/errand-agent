@@ -1,26 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 
-import { SuggestionChip } from "@/components/chip";
+import { Presence, Reveal, useLimeTiming } from "@/components/layout-motion";
+import { MemorySheet } from "@/features/memory-panel/memory-sheet";
 
-import { Composer } from "./composer";
+import { Composer, useErrandComposer } from "./composer";
+import { AlertsList, InProgressList, UpcomingList } from "./home-lists";
+import { FollowUps, ServiceTiles } from "./service-tiles";
 import { TopBar } from "./top-bar";
 import { HOME_POLL_MS, useHomeSummary } from "./use-home-summary";
-import { Alerts, BookingActivity, MemoryWidget, UpcomingBookings, WaitingOnYou, WorkingNow } from "./widgets";
 
-// The home screen (mockups/home.html): the hero skyline with the headline and the top bar, the
-// errand composer over its lower edge, suggestions, then the widget grid, two columns and one on
-// a phone. Everything comes from one GET /api/v1/home, polled.
+// Home, as v3's "Home and the composer" draws it: a greeting, the composer, three requests the person
+// could have typed, the service tiles, then the lists (In progress while something runs, Upcoming and
+// Alerts). No stat cards and no icon tiles. Everything comes from one GET /api/v1/home, polled. Sending
+// turns home into the conversation: the suggestions and lists step aside while the chat starts.
 
 const SUGGESTIONS = ["Plumber for a leaking kitchen tap this week", "AC servicing on Saturday morning", "Same electrician as last time"];
 
 const clockFormat = new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const istHour = new Intl.DateTimeFormat("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" });
+
+/** From the backend's clock, in IST, so the greeting matches the person's day and the server's render. */
+function greetingAt(isoTime: string): string {
+  const hour = Number(istHour.format(new Date(isoTime)));
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 /**
- * Re-renders every few seconds, so "0:42 ago" labels keep moving between refreshes. The clock is
- * read only after mount: the page is prerendered, and every label that uses it waits for the
- * fetched summary anyway.
+ * Re-renders every second, so "0:42" labels keep moving between refreshes. The clock is read only after
+ * mount: the page is prerendered, and every label that uses it waits for the fetched summary anyway.
  */
 function useNow(intervalMs: number): number {
   const [now, setNow] = useState(0);
@@ -32,66 +44,87 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
+/** The greeting fades in once the summary says what time it is, in a line that is already there. */
+function Greeting({ generatedAt }: { readonly generatedAt?: string }) {
+  const timing = useLimeTiming();
+  const greeting = generatedAt === undefined ? undefined : greetingAt(generatedAt);
+  return (
+    <div className="grid gap-1">
+      <h1 className="m-0 min-h-[1lh] text-2xl leading-tight font-semibold tracking-tight text-fg">
+        <Presence>
+          {greeting !== undefined && (
+            <motion.span key={greeting} className="block" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: timing.arrive }}>
+              {greeting}
+            </motion.span>
+          )}
+        </Presence>
+      </h1>
+      <p className="m-0 text-base text-fg-2">What errand should I handle?</p>
+    </div>
+  );
+}
+
 export function HomeScreen() {
   const { summary, error } = useHomeSummary();
-  const [prompt, setPrompt] = useState("");
+  const composer = useErrandComposer(summary);
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const nowMs = useNow(1_000);
-  const shell = useRef<HTMLDivElement>(null);
 
-  const focusComposer = () => shell.current?.querySelector<HTMLTextAreaElement>("textarea")?.focus();
-  const suggest = (text: string) => {
-    setPrompt(text);
-    focusComposer();
-  };
+  const focusComposer = () => composer.input.current?.focus();
+  const settled = !composer.sending;
 
   return (
-    <main className="min-h-dvh bg-surface-2 sm:px-4 sm:py-4">
-      <div ref={shell} className="mx-auto max-w-[56rem] overflow-hidden bg-page pb-4 sm:rounded-panel sm:border sm:border-line">
-        {/* v3 has no hero illustration (Lime allows no decoration): the bar, then the page title. */}
-        <header className="relative pt-16 pb-5">
-          <TopBar summary={summary} onNewErrand={focusComposer} />
-          <h1 className="w-full px-4 text-center text-xl font-semibold tracking-tight text-fg sm:text-2xl">What errand should I handle?</h1>
-        </header>
-
-        <Composer summary={summary} prompt={prompt} onPromptChange={setPrompt} />
-
-        <div role="group" aria-label="Suggestions" className="mx-3 mt-2.5 mb-3 flex flex-wrap justify-center gap-1.5">
-          {SUGGESTIONS.map((text) => (
-            <SuggestionChip key={text} onClick={() => suggest(text)}>
-              {text}
-            </SuggestionChip>
-          ))}
+    <main className="min-h-dvh bg-page">
+      <TopBar summary={summary} onNewErrand={focusComposer} onOpenMemory={() => setMemoryOpen(true)} />
+      <div className="mx-auto flex w-full max-w-[42rem] flex-col gap-8 px-4 pt-6 pb-10">
+        <div className="grid gap-4">
+          <Greeting generatedAt={summary?.generatedAt} />
+          <Composer composer={composer} />
+          <Presence>
+            {settled && (
+              <Reveal key="suggestions">
+                <FollowUps suggestions={SUGGESTIONS} disabled={composer.sending} onPick={composer.send} />
+              </Reveal>
+            )}
+          </Presence>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 px-3 min-[560px]:grid-cols-[repeat(2,minmax(0,1fr))]">
-          <WorkingNow summary={summary} nowMs={nowMs} />
-          <WaitingOnYou summary={summary} />
-          <UpcomingBookings summary={summary} />
-          <Alerts summary={summary} nowMs={nowMs} />
-          <BookingActivity summary={summary} onStart={focusComposer} />
-          <MemoryWidget summary={summary} />
-        </div>
+        {/* Once the person sends, home's lists collapse while the chat starts (v3 Home: "home's lists collapse"). */}
+        <Presence>
+          {settled && (
+            <Reveal key="lists" rise={0} className="flex flex-col gap-8">
+              <ServiceTiles disabled={composer.sending} onPick={composer.send} />
+              <Presence>
+                {summary !== undefined && summary.working.length > 0 && (
+                  <Reveal key="in-progress">
+                    <InProgressList summary={summary} />
+                  </Reveal>
+                )}
+              </Presence>
+              <UpcomingList summary={summary} onStart={focusComposer} />
+              <AlertsList summary={summary} nowMs={nowMs} onOpenMemory={() => setMemoryOpen(true)} />
+            </Reveal>
+          )}
+        </Presence>
 
-        <footer className="mt-3 flex justify-end px-3">
-          <p
-            role="status"
-            className="m-0 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-3"
-          >
+        <footer className="flex justify-end">
+          <p role="status" className="m-0 inline-flex items-center gap-2 text-xs text-fg-3">
             {error === undefined ? (
               <>
-                <span aria-hidden className="text-success-text">●</span>
+                <span aria-hidden className="size-2 rounded-full bg-success" />
                 Live · refreshes every {HOME_POLL_MS / 1_000} s
                 {summary !== undefined && <span className="tabular-nums">· {clockFormat.format(new Date(summary.generatedAt))}</span>}
               </>
             ) : (
               <>
-                <span aria-hidden className="text-danger-text">●</span>
+                <span aria-hidden className="size-2 rounded-full bg-danger" />
                 Can&apos;t reach the backend · retrying
               </>
             )}
           </p>
         </footer>
       </div>
+      <MemorySheet open={memoryOpen} onOpenChange={setMemoryOpen} fallbackFocus={focusComposer} />
     </main>
   );
 }

@@ -146,7 +146,7 @@
           "options": {
             "role": "region",
             "name": "Alerts",
-            "text": "No alerts."
+            "text": "No alerts right now"
           },
           "note": "before the event: no alerts"
         },
@@ -884,7 +884,7 @@
           "options": {
             "role": "region",
             "name": "Alerts",
-            "text": "No alerts."
+            "text": "No alerts right now"
           },
           "note": "the Alerts widget stays empty"
         },

@@ -2,6 +2,7 @@
 
 import type { ListOperatorReadsResponse, OperatorReadKind } from "@errand/contracts";
 
+import { AnimatedCount } from "@/components/layout-motion";
 import { Spinner } from "@/components/ui/spinner";
 
 import type { OperatorRead } from "./use-operator-read";
@@ -20,7 +21,7 @@ function at(iso: string): string {
 export function AccessLog({ reads }: { readonly reads: OperatorRead<ListOperatorReadsResponse> }) {
   return (
     <section aria-label="Operator access log" className="grid content-start gap-2">
-      <h2 className="m-0 text-xs font-normal text-fg-3">Operator access log</h2>
+      <h2 className="m-0 text-lg leading-tight font-semibold text-fg">Operator access log</h2>
       {reads.status === "loading" && <Spinner aria-label="Loading the access log" />}
       {reads.status === "failed" && (
         <p className="m-0 rounded-md bg-danger-tint px-3 py-2 text-sm" role="alert">
@@ -43,7 +44,9 @@ export function AccessLog({ reads }: { readonly reads: OperatorRead<ListOperator
               <tr className="border-t border-line" key={`${read.operatorId}:${read.kind}`}>
                 <td className="py-1 pr-2 font-mono">{read.operatorId}</td>
                 <td className="py-1 pr-2">{KINDS[read.kind]}</td>
-                <td className="py-1 pr-2 text-right tabular-nums">{read.reads}</td>
+                <td className="py-1 pr-2 text-right">
+                  <AnimatedCount value={read.reads} />
+                </td>
                 <td className="py-1 tabular-nums" title={`First read ${at(read.firstReadAt)}`}>
                   {at(read.lastReadAt)}
                 </td>

@@ -64,6 +64,19 @@ export function parseTheme(value: string | undefined): Theme {
   throw new Error("theme is dark or light");
 }
 
+/** The system's reduced-motion preference, as `prefers-reduced-motion` reports it to the page. */
+export function parseMotion(value: string | undefined): "reduce" | "no-preference" {
+  if (value === "reduce" || value === "no-preference") return value;
+  throw new Error("motion is reduce or no-preference");
+}
+
+/** Screenshots settle animations by default; `--animations allow` captures a frame mid-motion. */
+function screenshotAnimations(value: string | boolean | undefined): "allow" | "disabled" {
+  if (value === undefined || value === "disabled") return "disabled";
+  if (value === "allow") return "allow";
+  throw new Error("--animations is allow or disabled");
+}
+
 function timeoutOf(options: Options): number {
   return integerOption(options, "timeout-ms", 0, 600_000) ?? DEFAULT_TIMEOUT_MS;
 }
@@ -292,8 +305,13 @@ export class BrowserSession {
         await this.#page.emulateMedia({ colorScheme: theme });
         return { ok: true, systemTheme: theme };
       }
+      case "motion": {
+        const reducedMotion = parseMotion(words[1]);
+        await this.#page.emulateMedia({ reducedMotion });
+        return { ok: true, reducedMotion };
+      }
       case "screenshot":
-        return { ok: true, ...(await this.screenshot(words[1], { fullPage: options.viewport !== true })) };
+        return { ok: true, ...(await this.screenshot(words[1], { fullPage: options.viewport !== true, animations: screenshotAnimations(options.animations) })) };
       case "snapshot":
         // words[1] is the file name; the optional scope comes from the target options alone.
         return await this.snapshot(words[1], targetOf([], options));
@@ -458,10 +476,13 @@ export class BrowserSession {
     };
   }
 
-  async screenshot(name: string | undefined, { fullPage }: { fullPage: boolean }): Promise<{ file: string }> {
+  async screenshot(
+    name: string | undefined,
+    { fullPage, animations = "disabled" }: { fullPage: boolean; animations?: "allow" | "disabled" },
+  ): Promise<{ file: string }> {
     const file = evidenceFile(this.evidence, name ?? `screen-${Date.now()}.png`);
     if (!file.endsWith(".png")) throw new Error("Screenshots are .png files");
-    await this.#page.screenshot({ path: file, fullPage, mask: [this.#page.locator('input[type="password"]')], animations: "disabled" });
+    await this.#page.screenshot({ path: file, fullPage, mask: [this.#page.locator('input[type="password"]')], animations });
     fs.chmodSync(file, 0o600);
     return { file };
   }

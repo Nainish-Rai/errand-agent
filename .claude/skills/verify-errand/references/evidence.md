@@ -19,6 +19,7 @@ cleanup:
 
 ```sh
 pnpm -s verify --run "$RUN" screenshot after.png --viewport
+pnpm -s verify --run "$RUN" screenshot moving.png --viewport --animations allow   # a frame mid-motion (default: animations settle first)
 pnpm -s verify --run "$RUN" snapshot after.txt                       # ARIA tree of the page
 pnpm -s verify --run "$RUN" network --method POST --path '/eve/v1/*'
 pnpm -s verify --run "$RUN" network --status 500

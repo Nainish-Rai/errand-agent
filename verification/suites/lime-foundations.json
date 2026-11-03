@@ -192,12 +192,13 @@
         },
         {
           "command": "assert",
+          "args": [
+            "role=heading[name=/^Good (morning|afternoon|evening)$/]"
+          ],
           "options": {
-            "role": "heading",
-            "name": "What errand should I handle?",
             "state": "visible"
           },
-          "note": "home in Lime (light): no hero illustration, the title sits under the bar"
+          "note": "home in Lime (light): the greeting under the bar (ticket 23)"
         },
         {
           "command": "assert",
@@ -428,9 +429,10 @@
         },
         {
           "command": "assert",
+          "args": [
+            "role=heading[name=/^Good (morning|afternoon|evening)$/]"
+          ],
           "options": {
-            "role": "heading",
-            "name": "What errand should I handle?",
             "state": "visible"
           },
           "note": "home in Lime (dark): no hero illustration, the title sits under the bar"

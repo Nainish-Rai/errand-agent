@@ -6,6 +6,7 @@ import { Brain, House } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Presence } from "@/components/layout-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -108,7 +109,10 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
               <Thread />
             </BookingSessionProvider>
           </div>
-          {rail === "memory" && <MemoryPanel backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
+          {/* The panel collapses as it closes, so it stays mounted until its exit motion ends. */}
+          <Presence>
+            {rail === "memory" && <MemoryPanel key="memory" backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
+          </Presence>
         </div>
         </GeneratedUiTheme>
         </GeneratedUiHostProvider>

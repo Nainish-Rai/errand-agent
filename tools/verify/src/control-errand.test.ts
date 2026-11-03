@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { parseApiCaller } from "./browser-session";
+import { parseApiCaller, parseMotion } from "./browser-session";
 import { parseArguments } from "./cli-arguments";
 import { writeHtmlReport } from "./html-report";
 import { cleanUrl, isAllowed, runOrigins } from "./network-guard";
@@ -121,6 +121,7 @@ describe("suite manifests", () => {
       "exactly-once.json",
       "focus-shells.json",
       "generated-ui.json",
+      "home-memory-ops.json",
       "home.json",
       "lime-chat.json",
       "lime-foundations.json",
@@ -159,6 +160,21 @@ describe("suite manifests", () => {
     expect(parseApiCaller("operator")).toBe("operator");
     expect(parseApiCaller("other-person")).toBe("other-person");
     expect(() => parseApiCaller("admin")).toThrow(/person, operator or other-person/);
+  });
+
+  it("sets the reduced-motion preference and screenshots mid-motion only when asked", () => {
+    const steps = [
+      { command: "motion", args: ["reduce"] },
+      { command: "goto", args: ["/"] },
+      { command: "screenshot", args: ["moving.png"], options: { animations: "allow" } },
+      { command: "assert", args: ["html"], options: { count: 1 } },
+    ];
+    expect(() => validateSuite(scenario(steps))).not.toThrow();
+    expect(stepOptions(steps[2] as never)).toEqual({ animations: "allow" });
+    expect(() => validateSuite(scenario([{ command: "motion", args: ["slow"] }, ...steps.slice(1)]))).toThrow(/reduce or no-preference/);
+    // The browser gets exactly the preference the step asked for.
+    expect(parseMotion("reduce")).toBe("reduce");
+    expect(parseMotion("no-preference")).toBe("no-preference");
   });
 
   it("turns JSON options into command options", () => {
