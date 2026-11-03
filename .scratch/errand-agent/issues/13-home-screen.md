@@ -17,7 +17,7 @@ The layout is responsive and drops to one column on phone widths. A rounder, mor
 
 **Blocked by:** 05, 11, 18
 
-**Status:** ready-for-agent
+**Status:** done (PR #14)
 
 - [x] Starting an errand from the composer, with chips prefilled, opens a chat with those details already in the errand state, so the agent doesn't ask for them
 - [x] Each widget shows live data from the local system, and the empty states are designed
