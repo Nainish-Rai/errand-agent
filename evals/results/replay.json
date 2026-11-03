@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T01:05:51.142Z",
+  "ranAt": "2026-11-03T01:13:13.917Z",
   "trials": 1,
   "scenarios": [
     {
@@ -241,6 +241,79 @@
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/correction-supersedes",
+      "description": "Correcting the remembered area supersedes the old fact (never edits it), and only the new area is used next session.",
+      "expected": "the old area fact is superseded with its value and a closed window, a new explicit fact supersedes it, and session 2 uses only HSR Layout",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "2 turns; correct_fact(area, HSR Layout, My usual area is HSR Layout now, not Koramangala.) → corrected; update_errand(plumber, HSR Layout) → updated; search_providers(plumber, HSR Layout) → found (7 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/forget-then-new-session",
+      "description": "A forgotten area is never used again: re-inferring it from old history is refused, and a new session asks for it.",
+      "expected": "the area is forgotten with a tombstone, re-inferring it from the earlier message is refused, and the new session's errand has no area and asks for it",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/inferred-unconfirmed-vs-confirmed",
+      "description": "An inferred area isn't used while unconfirmed (the area is asked for); once confirmed, the next session uses it.",
+      "expected": "the inferred area waits for confirmation and isn't used (session 2 asks for the area); after the person confirms it, session 3 fills the area from memory",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/remembered-area-across-sessions",
+      "description": "An area saved in session 1 fills the errand in session 2, is never asked for, and is said aloud.",
+      "expected": "session 1 stores area=Koramangala as an explicit, active fact; session 2's errand gets that area from memory (a traced memory_used patch) with no area question, and the reply names Koramangala",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/memory/tool-output-is-not-remembered",
+      "description": "A memory write quoting a tool result (a provider from the search) is refused in core and nothing is stored.",
+      "expected": "both memory writes quoting the search results are refused as tool_output, and memory stays empty",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
         }
       ]
     },
