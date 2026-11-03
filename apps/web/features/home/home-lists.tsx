@@ -235,9 +235,9 @@ function holdLeft(seconds: number): string {
 type ProviderAlertView = Extract<HomeAlertView, { kind: "provider_cancelled" }>;
 
 function replacementLine(alert: ProviderAlertView): string {
-  if (alert.rebooked) return "Replacement booked";
-  if (alert.replacementsReady === 0) return "Finding a replacement…";
-  return alert.replacementsReady === 1 ? "1 replacement ready · needs your approval" : `${alert.replacementsReady} replacements ready · needs your approval`;
+  if (alert.rebooked) return "replacement booked";
+  if (alert.replacementsReady === 0) return "finding a replacement…";
+  return alert.replacementsReady === 1 ? "1 replacement ready · needs approval" : `${alert.replacementsReady} replacements ready · needs approval`;
 }
 
 /** The chat that handles a provider's cancellation, opened at its waiting card if there is one. */
