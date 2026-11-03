@@ -162,7 +162,7 @@ export function TracePanel({
       className="flex min-w-0 flex-col gap-3 p-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{summaryOf(fetched?.trace)}</p>
+        <p className="text-sm text-fg-3">{summaryOf(fetched?.trace)}</p>
         {onClose !== undefined && (
           <Button aria-label="Close the trace" size="icon" variant="ghost" onClick={onClose}>
             <X />
@@ -170,7 +170,7 @@ export function TracePanel({
         )}
       </div>
       {error !== undefined && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm" role="alert">
+        <p className="rounded-md bg-danger/10 px-3 py-2 text-sm" role="alert">
           Can&apos;t read the trace: {error}
         </p>
       )}
@@ -179,7 +179,7 @@ export function TracePanel({
         <ContextLog api={api} sessionId={sessionId} contextEvents={fetched.trace.events.filter((event) => event.kind === "context").length} />
       )}
       {waterfall !== undefined && waterfall.spans.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Send a message and the run shows up here.</p>
+        <p className="py-8 text-center text-sm text-fg-3">Send a message and the run shows up here.</p>
       ) : (
         <TraceWaterfall
           title="Run trace"

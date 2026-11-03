@@ -1,107 +1,71 @@
 // Renders the typed tokens as CSS custom properties. The output is `packages/design-tokens/tokens.css`,
 // which the web app imports and both design-system checks read.
-import { bridge, type BridgeValue } from "./bridge";
-import { colorPrimitives, radius, space } from "./primitives";
-import { semanticRoleNames, themes, type RoleValue, type ThemeName } from "./roles";
-import { durations, easings, fonts, textSizes, weights } from "./type-and-motion";
+import { errandColorExtensions, errandDarkFixes, errandMotionExtensions, errandReducedMotion } from "./errand";
+import { limeDark, limeReducedMotion, limeScaleGroups, limeThemeGroups, type LimeToken } from "./lime";
 
-const HEADER = `/* Errand design tokens: dark (default) + light. Geist + Geist Mono.
+const HEADER = `/* Errand design tokens: Lime (design-system/design-system-v3.html), light by default, dark behind the toggle.
  *
  * GENERATED from the typed tokens in packages/design-tokens/src by \`pnpm tokens:build\`. Do not edit
  * this file: change the source and rebuild. \`pnpm check:tokens\` fails when this file is stale.
  *
- * Layers, read top to bottom (structure from observatory-ui, MIT):
- *   1. primitives: raw palette, spacing, radius. The only place a literal colour may appear.
- *   2. semantic roles: what components read: surfaces, edges, text, interactive, status tones and tints,
- *      brand, categorical chart palette, type scale. Each theme remaps the same role names.
- *   3. library bridge: shadcn variable names, read by the eve chat template, assistant-ui and agents-ui.
- *      OpenUI's theme and the mobile app read the same semantic roles (see DESIGN_SYSTEM.md).
- *   4. motion presets by job, zeroed under reduced motion.
+ * Read top to bottom:
+ *   1. the lime source: Lime's roles and scale, verbatim. The only place a raw value may appear.
+ *   2. Errand's additions: three colour aliases, two streaming durations and two dark contrast fixes.
  *
- * Theme: data-theme="light" | "dark" on <html> or on any subtree. The roles and the bridge are declared
- * on every theme selector, because a custom property resolves var() where it is declared: a nested
- * light panel must re-declare --primary, not inherit the dark value computed at the root.
- *
- * To re-theme, change primitives. To change meaning, change the semantic layer.
- * Components never introduce colours; add a semantic role first.
+ * Theme: data-theme="light" | "dark" on <html> or on any subtree. Every role that is a var() is declared
+ * on every theme selector, because a custom property resolves var() where it is declared: a nested dark
+ * panel must re-declare --ring, not inherit the light value computed at the root.
  */`;
 
-const decl = (name: string, value: string | number) => `  --${name}: ${value};`;
-const px = (value: number) => `${value}px`;
-const varOf = (name: string) => `var(--${name})`;
-const tint = (primitive: string, percent: number) => `color-mix(in oklab, ${varOf(primitive)} ${percent}%, transparent)`;
+// Lime's own selectors, plus :root and a bare data-theme so the app and a nested panel pick a theme.
+const LIGHT = ':root, [data-theme="light"], [data-system="lime"], .lime';
+const DARK = '[data-theme="dark"], [data-system="lime"][data-theme="dark"], .lime[data-theme="dark"]';
+const EVERY_THEME = ":root, [data-theme], :where(.lime)";
 
-function roleCss(value: RoleValue): string {
-  switch (value.kind) {
-    case "ref":
-      return varOf(value.primitive);
-    case "alpha":
-      return tint(value.primitive, value.percent);
-    case "shadow":
-      return `${value.geometry} ${tint(value.primitive, value.percent)}`;
-  }
-}
+const decl = ([name, value, note]: LimeToken) => `  --${name}: ${value};${note ? ` /* ${note} */` : ""}`;
 
-function bridgeCss(value: BridgeValue): string {
-  switch (value.kind) {
-    case "role":
-      return varOf(value.role);
-    case "primitive":
-      return varOf(value.primitive);
-    case "radius":
-      return varOf(value.radius);
-  }
-}
+const lightTokens: readonly LimeToken[] = limeThemeGroups.flatMap((group) => group.tokens);
+const darkNames = new Set<string>(limeDark.map(([name]) => name));
+/** Light roles that are a var() and that dark does not redefine: re-declared so they resolve in dark. */
+const darkRedeclared = lightTokens.filter(([name, value]) => value.includes("var(") && !darkNames.has(name));
 
-function themeLines(theme: ThemeName): string[] {
-  const roles = themes[theme];
-  return [`  color-scheme: ${theme};`, ...semanticRoleNames.map((role) => decl(role, roleCss(roles[role])))];
-}
-
-function bridgeLines(): string[] {
-  return Object.entries(bridge).map(([name, value]) => decl(name, bridgeCss(value)));
+function rule(selector: string, lines: readonly string[]): string[] {
+  return [`${selector} {`, ...lines, "}"];
 }
 
 export function renderTokensCss(): string {
-  const dark = [
-    ":root,",
-    '[data-theme="dark"] {',
-    "  /* ---- primitives ---- */",
-    ...Object.entries(colorPrimitives).map(([name, hex]) => decl(name, hex)),
-    ...Object.entries(space).map(([name, value]) => decl(name, px(value))),
-    ...Object.entries(radius).map(([name, value]) => decl(name, px(value))),
+  const lime = [
+    "/* ---- lime source: Lime's tokens verbatim (last-updated 2026-11-02). Raw values are allowed only between",
+    "   this line and the end marker. */",
+    ...rule(LIGHT, [
+      "  color-scheme: light;",
+      ...limeThemeGroups.flatMap((group) => [`  /* == ${group.title} == */`, ...group.tokens.map(decl), ""]).slice(0, -1),
+    ]),
     "",
-    "  /* ---- semantic roles (dark) ---- */",
-    ...themeLines("dark"),
+    "/* The dark theme redefines the roles. The lime steps down a little in lightness and saturation so it does not glare",
+    "   on a near-black page, and black stays the text on it. */",
+    ...rule(DARK, ["  color-scheme: dark;", ...limeDark.map(decl), ...darkRedeclared.map(decl)]),
     "",
-    ...Object.entries(fonts).map(([name, value]) => decl(name, value)),
-    ...Object.entries(textSizes).map(([name, value]) => decl(name, px(value))),
-    ...Object.entries(weights).map(([name, value]) => decl(name, value)),
+    ...rule(":root", limeScaleGroups.flatMap((group) => [`  /* == ${group.title} == */`, ...group.tokens.map(decl), ""]).slice(0, -1)),
     "",
-    "  /* ---- library bridge (shadcn names; assistant-ui, agents-ui and the eve template read these) ---- */",
-    ...bridgeLines(),
-    "",
-    "  /* ---- motion presets (by job) ---- */",
-    ...Object.entries(easings).map(([name, value]) => decl(name, value)),
-    ...Object.entries(durations).map(([name, ms]) => decl(name, `${ms}ms`)),
-    "}",
-  ];
-  const light = [
-    "/* ---- semantic roles (light): same names, light primitives ---- */",
-    '[data-theme="light"] {',
-    ...themeLines("light"),
-    "",
-    "  /* ---- library bridge, re-declared so it resolves against the light roles ---- */",
-    ...bridgeLines(),
-    "}",
-  ];
-  const reducedMotion = [
+    "/* Reduced motion zeroes every duration except the spinner, which is the only signal that work is running. */",
     "@media (prefers-reduced-motion: reduce) {",
-    "  :root,",
-    "  [data-theme] {",
-    ...Object.keys(durations).map((name) => `  ${decl(name, "0ms")}`),
-    "  }",
+    ...rule(":root", limeReducedMotion.map(decl)).map((line) => `  ${line}`),
     "}",
+    "/* ---- end lime source */",
   ];
-  return [HEADER, ...dark, "", ...light, "", ...reducedMotion, ""].join("\n");
+  const errand = [
+    "/* ---- Errand additions: no raw values below this line. */",
+    "/* Lime has no equivalent for these ideas, so they alias Lime roles and add no value. */",
+    ...rule(EVERY_THEME, errandColorExtensions.map(decl)),
+    "",
+    ...rule(":root", errandMotionExtensions.map(decl)),
+    "@media (prefers-reduced-motion: reduce) {",
+    ...rule(":root", errandReducedMotion.map(decl)).map((line) => `  ${line}`),
+    "}",
+    "",
+    "/* Errand fix for two Lime dark values that fall under AA with the dark --on-danger (see packages/design-tokens/src/errand.ts). */",
+    ...rule(DARK, errandDarkFixes.map(decl)),
+  ];
+  return [HEADER, ...lime, "", ...errand, ""].join("\n");
 }

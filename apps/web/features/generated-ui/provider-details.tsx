@@ -17,23 +17,23 @@ export function ProviderDetailsPanel({ providerId }: { readonly providerId: stri
   const providers = useProviders([providerId]);
   if (providers.status === "loading") {
     return (
-      <div aria-busy className="flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
+      <div aria-busy className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
         <Skeleton className="h-24" />
         <Skeleton className="w-1/2" />
       </div>
     );
   }
   const provider = providers.status === "ready" ? providers.data[0] : undefined;
-  if (provider === undefined) return <p className="my-2 text-label text-fg-meta">Details aren't available for this provider.</p>;
+  if (provider === undefined) return <p className="my-2 text-xs text-fg-3">Details aren't available for this provider.</p>;
 
   return (
-    <section aria-label={`${provider.name} details`} data-testid="provider-details" className="flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
+    <section aria-label={`${provider.name} details`} data-testid="provider-details" className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="m-0 text-panel font-medium text-fg-emph">{provider.name}</h3>
-        <Money amount={provider.priceInr} className="text-body text-fg-emph" />
+        <h3 className="m-0 text-sm font-medium text-fg">{provider.name}</h3>
+        <Money amount={provider.priceInr} className="text-sm text-fg" />
       </div>
       <ImageGallery images={provider.photos.map((photo) => ({ src: api.photoUrl(photo.src), alt: photo.alt }))} />
-      <p className="m-0 text-label text-fg-body">{provider.about}</p>
+      <p className="m-0 text-xs text-fg-2">{provider.about}</p>
       <div className="flex flex-wrap gap-1">
         {provider.attributes.map((attribute) => (
           <Badge key={attribute} variant="tag">
@@ -41,7 +41,7 @@ export function ProviderDetailsPanel({ providerId }: { readonly providerId: stri
           </Badge>
         ))}
       </div>
-      <p className="m-0 text-label text-fg-meta">Cancellation: {provider.cancellationTerms}</p>
+      <p className="m-0 text-xs text-fg-3">Cancellation: {provider.cancellationTerms}</p>
     </section>
   );
 }

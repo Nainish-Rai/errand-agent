@@ -1,167 +1,134 @@
 # Errand design system
 
-The look comes from the home mock (`mockups/home.html`): dark and dense, with a light theme. The token
-structure is copied from [observatory-ui](https://github.com/Nainish-Rai/observatory-ui) (MIT, our own),
-and its `check_tokens.py` comes along with it. One set of tokens themes every UI library in the app:
-shadcn, assistant-ui, agents-ui and OpenUI. The mobile app reads the same tokens.
+**The source of truth is [`design-system-v3.html`](design-system-v3.html)**, Errand's design system rebased
+on [Lime](https://design.how/systems/lime): a light system for consumer apps with one acid yellow-green
+accent, a white page, warm-grey surfaces, near-black text and no blue. Open it in a browser: its change log
+says what changed from v2 and why, its foundation tables are read live from the tokens, its "From v2 tokens
+to Lime" table maps every v2 token, and each Errand pattern is a working screen. v2
+([`design-system-v2.html`](design-system-v2.html)) is kept for comparison only. This file says how the app
+follows v3; where the two disagree, v3 wins.
 
 ## Principles
 
-1. **Hierarchy comes from surfaces and hairlines.** There are four surface steps: well, canvas, card and
-   raised. Edges are 1px. Shadows are used only for things that float, such as popovers, toasts and the
-   composer over the hero.
-2. **Words are set in Geist; numbers, times and IDs in Geist Mono** with tabular figures (`₹899`, `09:00`, `0:42`).
-3. **Colour carries meaning, never decoration.**
-   - `ok` means confirmed or verified.
-   - `warn` means it needs you, or is inferred.
-   - `err` means cancelled or failed.
-   - `info` and `interactive` mean in progress or focus.
-   - `brand` (orange) is used only for the logo and the illustration.
-4. **Trust surfaces look different on purpose.** The approval card, booking receipt and alerts are fixed
-   components with their own layout. Generated UI never copies their look, and it has no Approve button.
-5. **Inferred things are dashed.** An inferred memory fact, an estimated cost or a heuristic score uses a
-   dashed edge in the `warn` tone, so a user can always tell a guess from a fact.
-6. **Missing data says so.** It reads "not available" or "checking…", never `0` or a blank.
-7. **Motion runs once and on purpose.** Every duration is a token and is zeroed under reduced motion.
-8. **Accessible in both themes.** Every text role is at least 4.5:1 against card and canvas in both themes;
-   the measured values are below. The focus ring is always visible, and touch targets are at least 32px
-   (44px on mobile).
+1. **Lime's foundations, verbatim.** Colour, type, spacing, radius, elevation and motion are Lime's tokens.
+   Errand adds three aliases (`--errand-ok-fill`, `--errand-on-ok-fill`, `--errand-inferred-edge`), two
+   streaming durations (`--dur-stream-word`, `--dur-stream-lag`) and two dark contrast fixes, and nothing else.
+2. **Light by default.** The app opens light whatever the OS prefers; dark is behind the toggle.
+3. **One lime action per view.** The primary action is Lime's glowing lime (`glow glow-accent`); Approve is
+   that action whenever an approval card shows. Lime is never a page, card or section background.
+4. **One typeface.** Hanken Grotesk at 400, 500 and 600 (no 700). Figures are tabular Hanken; mono is only for
+   codes (booking IDs, keys, tool names). No uppercase, no letter spacing except `--tracking-tight` on
+   `text-xl` and up, no eyebrow labels.
+5. **Colour carries meaning, never decoration.** Status keeps three hues (success, warn, danger), each with a
+   mark, a tint and a text step. There is no info hue and no category hue. No gradient but the glow.
+6. **Trust surfaces look different on purpose.** The approval card, booking receipt and alerts are fixed
+   components. Generated UI never copies their look, and it has no Approve button.
+7. **Inferred things are dashed** in `--errand-inferred-edge`, so a guess never looks like a fact.
+8. **Missing data says so.** It reads "not available" or "checking…", never `0` or a blank.
+9. **Motion is short and only on change.** `--ease-out` to arrive, `--ease-in` to leave, popups from
+   `--scale-enter`, pressed controls to `--scale-press`. The spinner is the only loop. Reduced motion zeroes
+   every duration but the spinner's.
 
 ## Tokens (`packages/design-tokens`)
 
-The source is the typed object in `packages/design-tokens/src` (primitives, then the dark and light roles,
-then the bridge, then type and motion). `pnpm tokens:build` generates `packages/design-tokens/tokens.css`
-from it and rebuilds the inlined gallery; the web app imports only that generated file
-(`@errand/design-tokens/tokens.css`). Never edit `tokens.css` by hand: `pnpm check:tokens` fails when it
-is stale. The roles and the bridge are declared on `:root`, `[data-theme="dark"]` and `[data-theme="light"]`,
-so a panel can force either theme inside the other.
+The typed source is `packages/design-tokens/src`: `lime.ts` holds Lime's tokens copied from v3's lime source
+block (light roles, dark roles, scale), and `errand.ts` holds Errand's additions and the two dark fixes. A test
+(`tokens.test.ts`) reads v3 and fails if any value differs. `pnpm tokens:build` writes
+`packages/design-tokens/tokens.css`, the only token file the web app imports (`@errand/design-tokens/tokens.css`);
+never edit it by hand, `pnpm check:tokens` fails when it is stale. The package also exports `tokens.light`
+and `tokens.dark` (every role resolved to a value, for clients that cannot read CSS) and `motion` (the
+durations in ms and the curves as numbers, for script animation such as `motion/react`).
 
-| Group | Tokens | Notes |
-|---|---|---|
-| Primitives | `--ink-0…9`, `--paper-0…8`, `--blue/green/amber/red/orange-{bright,deep}`, `--cat-1…6`, `--night-*`, `--day-*` | The only literal colours in the repo (enforced by the checker) |
-| Surfaces | `--surface-well`, `--surface-canvas`, `--surface-card`, `--surface-raised`, `--surface-glass` | |
-| Edges | `--edge`, `--edge-strong`, `--edge-glass` | |
-| Text | `--fg-emph`, `--fg-body`, `--fg-meta`, `--fg-faint` | `fg-faint` is only for icons and dividers, never text |
-| Tones | `--ok`, `--warn`, `--err`, `--info`, `--interactive`, each with a `-tint`; `--warn-fill`, `--err-fill` with `--on-*-fill` | |
-| Brand and hero | `--brand`, `--hero-*` | The hero swaps night for day by theme |
-| Type | `--font-sans`, `--font-mono`, `--text-meta 10`, `--text-label 11`, `--text-body 12`, `--text-panel 14`, `--text-title 19`, `--text-kpi 22`, `--weight-*` | |
-| Space and radius | `--space-1…8` (4px grid), `--radius-1 4`, `--radius-2 6`, `--radius-3 10`, `--radius-pill` | |
-| Motion | `--ease-out`, `--ease-sheet`, `--dur-micro/collapse/exit/enter/theme/draw/spin` | All zeroed under `prefers-reduced-motion` |
-| Library bridge | `--background`, `--foreground`, `--card`, `--primary`, `--muted`, `--accent`, `--border`, `--ring`, `--radius`, `--chart-1…5` | shadcn names, mapped from semantic roles |
+Every role that is a `var()` is declared on `:root`, `[data-theme="light"]` and `[data-theme="dark"]`, so a
+panel can force either theme inside the other (the `/design` route does). Lime's base, glow and
+forced-colors rules are vendored verbatim in `apps/web/app/lime.css`; `<html>` carries `class="lime"`. Lime's scope
+rule gives its element `--text-sm`, which on `<html>` would make 1rem 14px and shrink Tailwind's rem-based spacing, so
+`globals.css` keeps the root at the browser's size and sets body text to `--text-sm`.
 
-Measured contrast with `check_contrast.py`, on card, with the lowest surface (raised) in brackets:
+| Group | Tokens |
+|---|---|
+| Surfaces | `--page`, `--surface`, `--surface-2`, `--surface-3`, `--raised`, `--field`, `--scrim` |
+| Text | `--fg`, `--fg-2`, `--fg-3`, `--fg-disabled`, `--fg-inverse`, `--on-accent` |
+| Lines | `--line`, `--line-strong`, `--control` |
+| Ink | `--ink`, `--ink-hover`, `--ink-active` |
+| Accent | `--accent`, `--accent-hover`, `--accent-active`, `--accent-wash`, `--accent-line`, `--ring` |
+| Status | `--success`, `--warn`, `--danger` with `-tint` and `-text`; `--danger-hover`, `--on-danger` |
+| Elevation | `--shadow-card`, `--shadow-menu`, `--shadow-overlay`, `--shadow-thumb` (overlays and raised cards only) |
+| Glow | `--glow-accent-*`, `--glow-danger-*`, `--glow-success-*`, read only through the `.glow` classes |
+| Type | `--font-sans` (Hanken Grotesk), `--font-mono` (system mono), `--text-xs 12` … `--text-3xl 36`, `--leading-*`, `--tracking-tight`, `--weight-normal/medium/semibold` |
+| Size and radius | `--control-sm/md/lg`; `--radius-sm 6`, `--radius-md 10`, `--radius-field 12`, `--radius-panel 16`, `--radius-sheet 24`, `--radius-control` (pill) |
+| Motion | `--dur-instant 80`, `--dur-fast 140`, `--dur-base 200`, `--dur-slow 280`, `--dur-spin 900`, `--ease-out`, `--ease-in`, `--scale-enter`, `--scale-press`; Errand's `--dur-stream-word 240`, `--dur-stream-lag 400` |
+| Layers and layout | `--z-dialog/popover/toast`, `--overlay-sm/-/lg`, `--popover`, `--sheet`, `--popup-max`, `--focus-offset`, `--line-focus` |
+| Errand | `--errand-ok-fill`, `--errand-on-ok-fill`, `--errand-inferred-edge` |
 
-| Theme | emph | body | meta | interactive | ok | warn | err | warn badge | err badge |
-|---|---|---|---|---|---|---|---|---|---|
-| Dark | 13.3 (12.0) | 8.6 (7.8) | 5.1 (4.6) | 5.0 (4.6) | 6.4 (5.8) | 6.4 (5.8) | 5.4 (4.9) | 7.5 | 5.4 |
-| Light | 15.5 (14.5) | 9.7 (9.1) | 5.3 (5.0) | 5.3 (5.0) | 5.4 (5.1) | 5.3 (4.9) | 5.0 (4.7) | 7.5 | 5.4 |
+Components read these through Tailwind classes named after the roles (`bg-surface-2`, `text-fg-3`,
+`border-line`, `text-danger-text`, `rounded-panel`, `shadow-menu`, `text-sm`, `duration-(--dur-base)`,
+`ease-out`). The stock Tailwind palette, shadows, type scale, radii, tracking and animations are reset, so a
+stock class Lime has no token for generates nothing. The only other colour names are seven shadcn names and
+`red-*`, mapped in `globals.css` for streamdown's compiled classes; our own code never uses them.
 
-**Theme switching:** `data-theme="light" | "dark"` on `<html>`. The default follows the system
-setting; the user's choice is saved.
+**Theme switching:** `data-theme="light" | "dark"` on `<html>`. The server renders `light`, so the first
+frame is light whatever the OS prefers. The toggle saves a dark choice in `localStorage` (`errand-theme`) and
+a head script applies it before the first frame; switching back to light forgets it. v3's catalogue page does
+not remember the toggle; the app does, because a person who picks dark should not have to pick it again, and
+it never reads `prefers-color-scheme`, so light stays the default.
 
 ## One token source for every library and device
 
 | Consumer | How it gets the tokens |
 |---|---|
-| eve chat template (shadcn, Tailwind v4) | The bridge variables. The template's `@theme inline` maps `--color-*` onto them, so its components restyle without code changes |
-| assistant-ui | Reads the same shadcn variables |
-| agents-ui | shadcn-style components, so they read the same variables. Its typeface (Hanken Grotesk) is replaced by `--font-sans` |
-| OpenUI | `createTheme(...)` built from the semantic roles in one small mapping module, with `mode` following `data-theme` |
-| Mobile (later) | `packages/design-tokens` exports the same values as a typed object (`tokens.dark`, `tokens.light`), which NativeWind or StyleSheet uses directly. `tokens.css` is generated from that object |
+| Our components and the vendored shadcn ui (`apps/web/components/ui`) | Tailwind classes on the Lime roles |
+| agents-ui (`apps/web/components/agents`) | The same classes; its springs, shimmer, sweep, shake, breathing spinner and overshoot are removed, and its script motion reads `motion` from the tokens package |
+| streamdown | Its compiled shadcn class names, mapped to Lime roles in `globals.css` |
+| OpenUI | `createTheme(...)` built from the Lime roles in `features/generated-ui/openui-theme.ts`, with `mode` following `data-theme` |
+| Mobile (later) | `tokens.light` / `tokens.dark` and `motion` from `@errand/design-tokens` |
 
 ## Components
 
-Each component has one source. Every interactive component has default, hover, focus-visible, disabled
-and loading states.
+Each component has one source; every interactive one has default, hover, focus-visible, disabled and
+loading states. v3 rebuilds the chat patterns on Lime components (ApprovalRequest, ToolCall, ActionReceipt,
+FollowUps, List, Field, Empty, ErrorState); the app moves to them in tickets 21–23. Until then the app's
+components below wear the Lime tokens.
 
-### Foundations
-
-| Component | Source | Variants |
+| Component | Source | Notes |
 |---|---|---|
-| Button | shadcn | primary (`--primary` fill), secondary, ghost, danger; sm and md |
-| Icon button | shadcn | with badge |
-| Chip | custom | filter chip (with ⌄ menu), suggestion chip (dashed pill), memory chip (explicit solid, inferred dashed) |
-| Badge | custom | count (`warn-fill`), alert (`err-fill`), tag (outline) |
-| Status mark | custom | ✓ ok, ◌ checking, ↻ replacing, ✕ cancelled, ● needs you, each with a text label as well, never colour alone |
-| Spinner, Skeleton | custom / shadcn | |
-| Tabs and segmented control | shadcn | composer tabs |
-| Tooltip, Popover, Menu, Select | shadcn (Radix) | |
-| Kbd | agents-ui primitive | `⌘K` |
-| Avatar and monogram | custom | initials monograms for providers (no photos of people) |
-| Toast | shadcn (sonner) | ok, err, info |
-| Empty state | custom | one line plus one action |
-| Mini bar chart | custom (CSS) | widgets; OpenUI charts inside chat |
+| Button | shadcn | primary and default are the lime glow; secondary on `--surface-2`; ghost; outline; danger on the danger tint; pills |
+| Chip | custom | filter chip (selected on `--accent-wash` with the olive line), suggestion chip (dashed pill), memory chip (explicit solid, inferred dashed) |
+| Badge | custom | count (warn tint), alert (danger fill), tag, verified, inferred; pills |
+| Status mark | custom | a mark beside a word, never colour alone |
+| Spinner | custom / agents-ui | a quarter arc turning once per `--dur-spin`, the only loop |
+| Skeleton | custom | still, on `--surface-2` |
+| Tabs and segmented control | Radix | underline tabs; the selected segment is raised |
+| Tooltip, toast | shadcn / agents-ui | ink (`--ink`, `--fg-inverse`) |
+| Popover, menu, select, dialog | shadcn (Radix), agents-ui | `--raised`, `--radius-panel` (dialogs `--radius-sheet`), `--shadow-menu` / `--shadow-overlay`, enter from `--scale-enter` |
+| Fields | shadcn | `--field` fill, `--line-strong` edge, `--radius-field`, Lime's focus ring |
+| Monogram | custom | a provider's initials on `--surface`, the fallback where a photo is missing |
+| Widget, mini bar chart | custom | `--surface` panel; bars in ink |
+| Trace waterfall | agents-ui | operator console only: no glow, no hue, bars in ink steps, waiting dashed |
+| Fixed trust components | custom | approval card, booking receipt, verification banner, provider-cancelled alert, memory fact row, inferred-fact prompt (`apps/web/features/trust`) |
 
-### App shell
-
-| Component | Notes |
-|---|---|
-| Top bar | home switcher with count, search `⌘K`, theme toggle, notification bell |
-| Hero | SVG skyline with night and day themes from `--hero-*`; headline uses `--text-title` |
-| Composer | tabs (New errand / Running N), input, chips for area, budget, time and model, send button |
-| Widget | header (icon, title, count, optional action), body, compact rows. The base for every home widget |
-| Widget grid | 2 columns, 1 column below 560px |
-| Bottom tab bar | mobile only |
-
-### Home widgets (built on Widget)
-
-Working now · Waiting on you · Upcoming bookings · Alerts · Bookings activity · Memory
-
-### Chat
-
-| Component | Source |
-|---|---|
-| Thread, message, composer, scroller | assistant-ui with agents-ui `message`, `message-scroller`, `chat-input` |
-| Agent progress | agents-ui `task-list` and `reasoning-steps`, showing steps such as "comparing 5 providers" |
-| Status line | custom: "Checking with the provider…" while verifying |
-
-### Fixed trust components (custom; never generated)
-
-| Component | States |
-|---|---|
-| Approval card | variants for book (provider, job, time in IST, price, address, cancellation terms), cancel (shows the fee) and reschedule (old time beside new). States: pending, approving, approved, voided ("price changed ₹899 → ₹1,050"), expired, declined (the hold was released). Material details sit in a fixed key–value table. Actions are Approve (the price on a booking's button, the fee or "free cancellation" on a cancel's, "Approve move" on a reschedule's), Other options and Decline. *Approve* is used only here; *confirm* is only for inferred facts |
-| Booking receipt | verified booking ID (mono), provider, slot and price. States: booked, checking, failed |
-| Verification banner | "Checking with the provider…" with a promised update |
-| Provider-cancelled alert | the cancelled booking, "N replacements ready" and See options |
-| Memory fact row | explicit or inferred badge, source, Correct and Forget actions; a forgotten fact shows a tombstone line |
-| Inferred-fact prompt | "Prefers mornings?" with Yes and No |
-
-### Generated components (OpenUI library, themed by tokens)
-
-| Component | Data binding |
-|---|---|
-| Provider choice card (row of up to 3, carousel beyond) | provider ID: photo, tag, name, rating, price and earliest slot come from the API; the reason comes from the model. Buttons are **Choose** and **Details** |
-| Provider details | provider ID: gallery and review-insight tags |
-| Review insight card | review-reader schema output |
-| Slot picker | provider ID and week: slots from the API |
-| Pick-one list | booking or slot IDs |
-| Ask form | only the missing errand fields (chips, slider, date) |
-| Charts: price, availability, spend | IDs or a query; values from the API |
-| Follow-up chips | the model's suggestions |
-
-### Observability
-
-| Component | Source |
-|---|---|
-| Trace waterfall | agents-ui `trace-waterfall` |
-| Context log panel | custom: per turn, the facts included and excluded with reasons |
-| Trace side panel | custom layout: chat on the left, trace on the right; collapses to a sheet on mobile |
+The `/design` route renders the foundations and trust components from the real code in both themes side by
+side.
 
 ## Rules and checks
 
-- Components read semantic roles only. A new colour means a new semantic role in `packages/design-tokens/src/roles.ts` first.
-- `python3 -I design-system/check_tokens.py [--tokens packages/design-tokens/tokens.css] <files>` flags literal
-  colours outside primitives, undefined tokens, fixed durations and a missing reduced-motion block. `--tokens`
-  lets an app stylesheet use the variables the token file defines. `pnpm check:tokens` runs it over the
-  generated tokens, every CSS file under `apps/` and the inlined gallery, after checking the generated file
-  is current. It runs in `pnpm check`. It was shown failing
-  (52 findings when the primitive markers were wrong) and passing (0 findings) on the current tokens.
-- `python3 -I design-system/check_contrast.py packages/design-tokens/tokens.css` (`pnpm check:contrast`) resolves every role to its hex in both themes and
-  checks 48 pairs: 7 text roles on 3 surfaces, plus the filled badges and the primary button. It fails below
-  4.5:1 and runs in `pnpm check`. Its first run failed on 4 pairs: the dark error badge was 3.35, dark `err`
-  on raised was 4.36, and light `ok` and `warn` on raised were 4.45 and 4.46. Those primitives were adjusted
-  and it now passes 48 of 48.
-- The gallery source is `design-system/gallery.html`, which links the generated `tokens.css`.
-  `python3 -I design-system/build_gallery.py design-system/gallery.html packages/design-tokens/tokens.css mockups/design-system.html`
-  inlines the tokens into one file that the checker can scan. Every component is shown in both themes.
-  In the app it is the `/design` route, built from the real components.
+- Components read Lime roles only. A new colour means a new token in v3 first, then in
+  `packages/design-tokens/src`.
+- `pnpm check:tokens` (in `pnpm check`) first checks `tokens.css` is current, then runs
+  `python3 -I design-system/check_tokens.py --lime` over the generated tokens, every CSS, TS and TSX file
+  under `apps/web/{app,components,features,lib}`, and v3 itself. Outside the vendored regions (Lime's source
+  in `tokens.css`, `lime.css` and v3) it flags: a raw colour or stock Tailwind colour; a 700 weight; uppercase
+  or letter spacing; a gradient; a literal duration, delay or curve, a spring or a loop other than the
+  spinner; scroll reveal; `transition-all`; a shadow other than Lime's; a literal font size or radius, or a
+  stock size Lime has no token for; a v2 or shadcn role name; an undefined `var()`. In CSS it also flags an
+  em dash, an emoji and padding off the 4px scale. Shown failing on a planted line (17 findings) and on a
+  planted CSS rule (6), and passing (0) on the current code.
+- `pnpm check:contrast` runs `python3 -I design-system/check_contrast.py` over `tokens.css` and over v3. It
+  resolves every role in both themes and checks 134 pairs: six text roles on three surfaces, every filled
+  pair, the text on every stop of the accent, danger and success glows (rest, lit and pressed, both ends) at
+  4.5:1, and the control outline, status marks, focus ring, booked mark and inferred edge at 3:1. Shown
+  failing on 2 pairs without Errand's two dark fixes (dark `--danger-hover` 4.06:1, the pressed danger glow
+  top 4.26:1) and passing 134 of 134 with them.
+- `packages/design-tokens/src/tokens.test.ts` (in `pnpm check:tests`) pins the typed tokens to v3 value for
+  value, checks every role resolves in both themes, and checks reduced motion zeroes every duration but
+  `--dur-spin` and `--dur-stream-lag`.

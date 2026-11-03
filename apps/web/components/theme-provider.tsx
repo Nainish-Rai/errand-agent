@@ -6,85 +6,38 @@ import { THEME_STORAGE_KEY } from "./theme-init-script";
 
 export type Theme = "dark" | "light";
 
-/** Where the theme came from: the system setting, until the user picks one. */
-export type ThemeSource = "system" | "user";
-
 type ThemeContextValue = {
   /** Unknown until mounted; the head script has already set data-theme by then. */
   readonly theme: Theme | undefined;
-  readonly source: ThemeSource;
   readonly toggleTheme: () => void;
-  readonly followSystem: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function systemTheme(): Theme {
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+function currentTheme(): Theme {
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
-function readStoredTheme(): Theme | undefined {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return stored === "light" || stored === "dark" ? stored : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
-}
-
+/** Light is the default whatever the OS prefers; only the toggle picks dark, and the choice is saved. */
 export function ThemeProvider({ children }: { readonly children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>();
-  const [source, setSource] = useState<ThemeSource>("system");
 
-  useEffect(() => {
-    const stored = readStoredTheme();
-    setSource(stored === undefined ? "system" : "user");
-    setTheme(stored ?? systemTheme());
-  }, []);
-
-  // Follow the system setting until the user picks a theme.
-  useEffect(() => {
-    if (source !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const follow = () => {
-      const next = systemTheme();
-      applyTheme(next);
-      setTheme(next);
-    };
-    media.addEventListener("change", follow);
-    return () => media.removeEventListener("change", follow);
-  }, [source]);
+  useEffect(() => setTheme(currentTheme()), []);
 
   const toggleTheme = useCallback(() => {
-    const current = (document.documentElement.dataset.theme as Theme | undefined) ?? systemTheme();
-    const next: Theme = current === "dark" ? "light" : "dark";
+    const next: Theme = currentTheme() === "dark" ? "light" : "dark";
     try {
-      window.localStorage.setItem(THEME_STORAGE_KEY, next);
+      // Light is the default, so saving it is the same as forgetting the choice.
+      if (next === "dark") window.localStorage.setItem(THEME_STORAGE_KEY, next);
+      else window.localStorage.removeItem(THEME_STORAGE_KEY);
     } catch {
       // Private mode: the choice lasts for this page only.
     }
-    applyTheme(next);
+    document.documentElement.dataset.theme = next;
     setTheme(next);
-    setSource("user");
   }, []);
 
-  const followSystem = useCallback(() => {
-    try {
-      window.localStorage.removeItem(THEME_STORAGE_KEY);
-    } catch {
-      // Nothing stored to remove.
-    }
-    const next = systemTheme();
-    applyTheme(next);
-    setTheme(next);
-    setSource("system");
-  }, []);
-
-  const value = useMemo(() => ({ theme, source, toggleTheme, followSystem }), [theme, source, toggleTheme, followSystem]);
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

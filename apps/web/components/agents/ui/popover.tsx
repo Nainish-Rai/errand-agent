@@ -4,12 +4,8 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 import { cn } from '@/lib/utils'
 
 /*
- * Measured from the reference:
- * - Opens with a short flip: from perspective(600px) rotateX(-20deg) scale(0.94) to rest over 300ms,
- *   opacity over 160ms, both on cubic-bezier(0.23, 1, 0.32, 1). Closes to scale(0.96) and opacity 0
- *   over 160ms on cubic-bezier(0.4, 0, 0.6, 1).
- * - 320px wide, 10px padding, 16px between header and body, 10px radius, a 10% foreground hairline
- *   plus shadow-md, 8px from the trigger, with a 9px arrow.
+ * Errand: restyled on Lime (design-system-v3.html). A --raised panel with --radius-panel and --shadow-menu. It opens
+ * from --scale-enter over --dur-base on --ease-out and closes over --dur-fast on --ease-in; no flip.
  */
 
 /** Root. `open` / `defaultOpen` / `onOpenChange` control visibility; `modal` traps focus and scroll. */
@@ -62,11 +58,10 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            'relative flex w-80 max-w-(--available-width) origin-(--transform-origin) flex-col gap-4 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none',
-            'transition-[transform,opacity] ease-[cubic-bezier(0.23,1,0.32,1)] [transition-duration:300ms,160ms]',
-            'data-starting-style:[transform:perspective(600px)_rotateX(-20deg)_scale(0.94)] data-starting-style:opacity-0',
-            'data-ending-style:[transform:scale(0.96)] data-ending-style:opacity-0 data-ending-style:ease-[cubic-bezier(0.4,0,0.6,1)] data-ending-style:[transition-duration:160ms]',
-            'motion-reduce:transition-none',
+            'relative z-(--z-popover) flex w-(--popover) max-w-(--available-width) origin-(--transform-origin) flex-col gap-4 rounded-panel bg-raised p-3 text-sm text-fg shadow-menu outline-none',
+            'transition-[scale,opacity] duration-(--dur-base) ease-out',
+            'data-starting-style:scale-(--scale-enter) data-starting-style:opacity-0',
+            'data-ending-style:opacity-0 data-ending-style:duration-(--dur-fast) data-ending-style:ease-in',
             className,
           )}
           {...props}
@@ -84,11 +79,11 @@ function PopoverArrow({ className, ...props }: React.ComponentProps<typeof Popov
     <PopoverPrimitive.Arrow
       data-slot="popover-arrow"
       className={cn(
-        'size-[9px] rotate-45 border-foreground/10 bg-popover',
-        'data-[side=bottom]:-top-[4.5px] data-[side=bottom]:rounded-tl-[2px] data-[side=bottom]:border-t data-[side=bottom]:border-l',
-        'data-[side=top]:-bottom-[4.5px] data-[side=top]:rounded-br-[2px] data-[side=top]:border-r data-[side=top]:border-b',
-        'data-[side=left]:-right-[4.5px] data-[side=left]:rounded-tr-[2px] data-[side=left]:border-t data-[side=left]:border-r',
-        'data-[side=right]:-left-[4.5px] data-[side=right]:rounded-bl-[2px] data-[side=right]:border-b data-[side=right]:border-l',
+        'size-[9px] rotate-45 border-line bg-raised',
+        'data-[side=bottom]:-top-[4.5px] data-[side=bottom]:border-t data-[side=bottom]:border-l',
+        'data-[side=top]:-bottom-[4.5px] data-[side=top]:border-r data-[side=top]:border-b',
+        'data-[side=left]:-right-[4.5px] data-[side=left]:border-t data-[side=left]:border-r',
+        'data-[side=right]:-left-[4.5px] data-[side=right]:border-b data-[side=right]:border-l',
         className,
       )}
       {...props}
@@ -101,12 +96,12 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return <div data-slot="popover-header" className={cn('flex flex-col gap-0.5', className)} {...props} />
 }
 
-/** 16px title, announced as the popover's label. */
+/** --text-base semibold title, announced as the popover's label. */
 function PopoverTitle({ className, ...props }: React.ComponentProps<typeof PopoverPrimitive.Title>) {
   return (
     <PopoverPrimitive.Title
       data-slot="popover-title"
-      className={cn('text-base font-normal text-popover-foreground', className)}
+      className={cn('text-base font-semibold text-fg', className)}
       {...props}
     />
   )
@@ -117,7 +112,7 @@ function PopoverDescription({ className, ...props }: React.ComponentProps<typeof
   return (
     <PopoverPrimitive.Description
       data-slot="popover-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-sm text-fg-3', className)}
       {...props}
     />
   )

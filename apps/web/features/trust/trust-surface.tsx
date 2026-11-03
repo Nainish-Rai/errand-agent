@@ -21,9 +21,9 @@ export function TrustCard({
       aria-busy={busy || undefined}
       data-trust-surface=""
       className={cn(
-        "overflow-hidden rounded-lg border bg-surface-card text-body",
-        tone === "voided" ? "border-err/45" : "border-edge-strong",
-        tone === "alert" && "border-l-[3px] border-l-err",
+        "overflow-hidden rounded-panel border bg-surface text-sm",
+        tone === "voided" ? "border-danger/45" : "border-line-strong",
+        tone === "alert" && "border-l-[3px] border-l-danger",
       )}
     >
       {children}
@@ -33,9 +33,9 @@ export function TrustCard({
 
 export function TrustHeader({ title, lead, status }: { readonly title: string; readonly lead?: ReactNode; readonly status?: ReactNode }) {
   return (
-    <header className="flex items-center gap-2 border-b border-edge px-3 py-2 text-label text-fg-meta">
+    <header className="flex items-center gap-2 border-b border-line px-3 py-2 text-xs text-fg-3">
       {lead}
-      <h3 className="m-0 text-body font-semibold text-fg-emph">{title}</h3>
+      <h3 className="m-0 text-sm font-semibold text-fg">{title}</h3>
       {status !== undefined && <div className="ml-auto">{status}</div>}
     </header>
   );
@@ -54,8 +54,8 @@ export function DetailTable({ rows, faded = false }: { readonly rows: readonly D
     <dl className={cn("m-0 grid grid-cols-[64px_1fr] gap-x-3 gap-y-1.5 p-3", faded && "opacity-60")}>
       {rows.map((row) => (
         <div key={row.label} className="contents">
-          <dt className="text-fg-meta">{row.label}</dt>
-          <dd className={cn("m-0 flex items-center gap-1.5 text-fg-emph", row.mono && "font-mono tabular-nums")}>{row.value}</dd>
+          <dt className="text-fg-3">{row.label}</dt>
+          <dd className={cn("m-0 flex items-center gap-1.5 text-fg", row.mono && "font-mono tabular-nums")}>{row.value}</dd>
         </div>
       ))}
     </dl>
@@ -63,7 +63,7 @@ export function DetailTable({ rows, faded = false }: { readonly rows: readonly D
 }
 
 export function TrustNote({ children }: { readonly children: ReactNode }) {
-  return <p className="m-0 px-3 pb-2 text-label text-fg-meta">{children}</p>;
+  return <p className="m-0 px-3 pb-2 text-xs text-fg-3">{children}</p>;
 }
 
 export function TrustActions({ children }: { readonly children: ReactNode }) {
@@ -86,10 +86,10 @@ export function Notice({
     <div
       aria-live={live ? "polite" : undefined}
       className={cn(
-        "flex items-start gap-2 px-3 py-2 text-label text-fg-emph",
-        tone === "err" && "bg-err-tint",
-        tone === "info" && "bg-interactive-tint",
-        tone === "ok" && "bg-ok-tint",
+        "flex items-start gap-2 px-3 py-2 text-xs text-fg",
+        tone === "err" && "bg-danger-tint",
+        tone === "info" && "bg-accent-wash",
+        tone === "ok" && "bg-success-tint",
       )}
     >
       <span className="mt-0.5 flex-none">{lead}</span>

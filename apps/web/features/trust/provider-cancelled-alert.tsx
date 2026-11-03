@@ -25,7 +25,7 @@ export function ProviderCancelledAlert({ provider, service, slot, replacementsRe
       <div role="alert" className="px-3 py-2">
         <ListRow
           lead={
-            <span aria-hidden className="text-err">
+            <span aria-hidden className="text-danger-text">
               ✕
             </span>
           }

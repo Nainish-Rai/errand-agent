@@ -21,10 +21,10 @@ const FAILED: Readonly<Record<string, string>> = {
 };
 
 export const ToolStatus: ToolCallMessagePartComponent = ({ toolName, status, isError }) => {
-  if (isError === true) return <p className="my-1 text-label text-fg-meta">{FAILED[toolName] ?? "One step didn't work."}</p>;
+  if (isError === true) return <p className="my-1 text-xs text-fg-3">{FAILED[toolName] ?? "One step didn't work."}</p>;
   if (status.type !== "running") return null;
   return (
-    <p className="my-1 flex items-center gap-2 text-label text-fg-meta" role="status">
+    <p className="my-1 flex items-center gap-2 text-xs text-fg-3" role="status">
       <Spinner /> {RUNNING[toolName] ?? "Working on it…"}
     </p>
   );

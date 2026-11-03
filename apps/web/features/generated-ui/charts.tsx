@@ -25,8 +25,8 @@ function ChartFrame({
   readonly children: ReactNode;
 }) {
   return (
-    <figure aria-label={label} data-testid="generated-chart" className="my-3 flex flex-col gap-2 rounded-lg border border-edge bg-surface-card p-3">
-      <figcaption className="text-label text-fg-meta">{title}</figcaption>
+    <figure aria-label={label} data-testid="generated-chart" className="my-3 flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
+      <figcaption className="text-xs text-fg-3">{title}</figcaption>
       {children}
       <table className="sr-only">
         <tbody>
@@ -44,14 +44,14 @@ function ChartFrame({
 
 function Pending({ what }: { readonly what: string }) {
   return (
-    <div aria-busy aria-label={`Loading ${what}`} className="my-3 rounded-lg border border-edge bg-surface-card p-3">
+    <div aria-busy aria-label={`Loading ${what}`} className="my-3 rounded-panel border border-line bg-surface p-3">
       <Skeleton className="h-32" />
     </div>
   );
 }
 
 function Unavailable({ what }: { readonly what: string }) {
-  return <p className="my-2 text-label text-fg-meta">The {what} isn't available right now.</p>;
+  return <p className="my-2 text-xs text-fg-3">The {what} isn't available right now.</p>;
 }
 
 export function PriceChart({ providerIds, title }: { readonly providerIds: readonly string[]; readonly title?: string }) {
@@ -92,7 +92,7 @@ export function SlotsPerDayChart({ providerIds, title }: { readonly providerIds:
             type="button"
             disabled={running || day.freeSlots === 0}
             onClick={() => void send(dayMessage(day.label))}
-            className="rounded-md border border-edge bg-surface-canvas px-2 py-0.5 text-label text-fg-body hover:border-edge-strong disabled:cursor-not-allowed disabled:opacity-45"
+            className="rounded-md border border-line bg-page px-2 py-0.5 text-xs text-fg-2 hover:border-line-strong disabled:cursor-not-allowed disabled:opacity-45"
           >
             {day.label}
           </button>

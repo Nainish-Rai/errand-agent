@@ -20,17 +20,17 @@ function at(iso: string): string {
 export function AccessLog({ reads }: { readonly reads: OperatorRead<ListOperatorReadsResponse> }) {
   return (
     <section aria-label="Operator access log" className="grid content-start gap-2">
-      <h2 className="m-0 text-label font-normal text-fg-meta">Operator access log</h2>
+      <h2 className="m-0 text-xs font-normal text-fg-3">Operator access log</h2>
       {reads.status === "loading" && <Spinner aria-label="Loading the access log" />}
       {reads.status === "failed" && (
-        <p className="m-0 rounded-md bg-err-tint px-3 py-2 text-body" role="alert">
+        <p className="m-0 rounded-md bg-danger-tint px-3 py-2 text-sm" role="alert">
           Can&apos;t read the access log: {reads.message}
         </p>
       )}
-      {reads.status === "ready" && reads.data.reads.length === 0 && <p className="m-0 text-body text-fg-meta">No operator has read this session.</p>}
+      {reads.status === "ready" && reads.data.reads.length === 0 && <p className="m-0 text-sm text-fg-3">No operator has read this session.</p>}
       {reads.status === "ready" && reads.data.reads.length > 0 && (
-        <table className="w-full border-collapse text-left text-body">
-          <thead className="text-label text-fg-meta">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead className="text-xs text-fg-3">
             <tr>
               <th className="py-1 pr-2 font-normal" scope="col">Operator</th>
               <th className="py-1 pr-2 font-normal" scope="col">Read</th>
@@ -38,13 +38,13 @@ export function AccessLog({ reads }: { readonly reads: OperatorRead<ListOperator
               <th className="py-1 font-normal" scope="col">Last read</th>
             </tr>
           </thead>
-          <tbody className="text-fg-body">
+          <tbody className="text-fg-2">
             {reads.data.reads.map((read) => (
-              <tr className="border-t border-edge" key={`${read.operatorId}:${read.kind}`}>
+              <tr className="border-t border-line" key={`${read.operatorId}:${read.kind}`}>
                 <td className="py-1 pr-2 font-mono">{read.operatorId}</td>
                 <td className="py-1 pr-2">{KINDS[read.kind]}</td>
-                <td className="py-1 pr-2 text-right font-mono tabular-nums">{read.reads}</td>
-                <td className="py-1 font-mono tabular-nums" title={`First read ${at(read.firstReadAt)}`}>
+                <td className="py-1 pr-2 text-right tabular-nums">{read.reads}</td>
+                <td className="py-1 tabular-nums" title={`First read ${at(read.firstReadAt)}`}>
                   {at(read.lastReadAt)}
                 </td>
               </tr>

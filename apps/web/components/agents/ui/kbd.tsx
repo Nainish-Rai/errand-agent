@@ -4,19 +4,19 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 /**
- * Size steps measured from the reference: height, minimum width, radius, side padding and type.
- * sm 16px / 10px type, md 20px / 12px, lg 24px / 13px, xl 28px / 14px.
+ * Size steps: height, minimum width and side padding. Errand: Lime's kbd is --radius-sm in --font-mono, and its
+ * smallest type is --text-xs.
  */
 const kbdSizes = {
-  sm: 'h-4 min-w-4 rounded-sm px-1 text-[10px]/[1.5]',
-  md: 'h-5 min-w-5 rounded-sm px-1 text-xs',
-  lg: 'h-6 min-w-6 rounded-md px-1.5 text-[13px]/[1.5]',
-  xl: 'h-7 min-w-7 rounded-lg px-2 text-sm',
+  sm: 'h-4 min-w-4 px-1 text-xs',
+  md: 'h-5 min-w-5 px-1 text-xs',
+  lg: 'h-6 min-w-6 px-1.5 text-xs',
+  xl: 'h-7 min-w-7 px-2 text-sm',
 } as const
 
 const kbdVariants = cva(
   [
-    'pointer-events-none inline-flex w-fit items-center justify-center gap-1 border border-border bg-muted font-sans font-normal text-foreground select-none tabular-nums',
+    'pointer-events-none inline-flex w-fit items-center justify-center gap-1 rounded-sm border border-line bg-surface font-mono font-normal text-fg-2 select-none',
     "[&_svg:not([class*='size-'])]:size-3",
   ],
   {

@@ -147,12 +147,12 @@ export function MemoryPanel({
     <aside
       aria-label="Memory"
       aria-busy={memory === undefined || undefined}
-      className="fixed inset-0 z-30 flex h-dvh w-full flex-col gap-3 overflow-y-auto border-l border-edge bg-surface-canvas p-3 text-body lg:static lg:z-auto lg:w-[24rem] lg:shrink-0"
+      className="fixed inset-0 z-30 flex h-dvh w-full flex-col gap-3 overflow-y-auto border-l border-line bg-page p-3 text-sm lg:static lg:z-auto lg:w-[24rem] lg:shrink-0"
     >
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="m-0 text-panel font-semibold text-fg-emph">Memory</h2>
-          <p className="m-0 text-label text-fg-meta">What the agent remembers about you. Guesses are dashed and never used until you confirm them.</p>
+          <h2 className="m-0 text-sm font-semibold text-fg">Memory</h2>
+          <p className="m-0 text-xs text-fg-3">What the agent remembers about you. Guesses are dashed and never used until you confirm them.</p>
         </div>
         <Button aria-label="Close memory" size="icon" variant="ghost" onClick={onClose}>
           <X />
@@ -160,7 +160,7 @@ export function MemoryPanel({
       </header>
 
       {(error ?? actionError) !== undefined && (
-        <p className="m-0 rounded-md bg-err-tint px-3 py-2 text-label text-fg-emph" role="alert">
+        <p className="m-0 rounded-md bg-danger-tint px-3 py-2 text-xs text-fg" role="alert">
           {actionError ?? `Can't read memory: ${error}`}
         </p>
       )}
@@ -201,7 +201,7 @@ export function MemoryPanel({
 
       {forgotten.length > 0 && (
         <section aria-label="Forgotten" className="grid gap-1.5">
-          <h3 className="m-0 text-label font-normal text-fg-meta">Forgotten</h3>
+          <h3 className="m-0 text-xs font-normal text-fg-3">Forgotten</h3>
           <ul className="m-0 grid list-none gap-1.5 p-0">
             {forgotten.map((tombstone) => (
               <li key={tombstone.key} aria-label={`Forgotten: ${tombstone.label}`}>
@@ -214,10 +214,10 @@ export function MemoryPanel({
 
       {replaced.length > 0 && (
         <section aria-label="Replaced" className="grid gap-1">
-          <h3 className="m-0 text-label font-normal text-fg-meta">Replaced</h3>
+          <h3 className="m-0 text-xs font-normal text-fg-3">Replaced</h3>
           <ul className="m-0 grid list-none gap-1 p-0">
             {replaced.map((fact) => (
-              <li key={fact.id} aria-label={`Replaced: ${statementOf(fact)}`} className="font-mono text-meta text-fg-meta">
+              <li key={fact.id} aria-label={`Replaced: ${statementOf(fact)}`} className="text-xs text-fg-3">
                 {statementOf(fact)} · until {fact.validTo === null ? "now" : day(fact.validTo)} · kept, never used
               </li>
             ))}

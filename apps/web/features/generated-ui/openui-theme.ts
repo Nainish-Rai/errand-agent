@@ -1,4 +1,4 @@
-// OpenUI's theme, built from the same semantic roles and type scale as everything else. This is the
+// OpenUI's theme, built from the same Lime roles and type scale as everything else. This is the
 // one mapping module generated UI uses (generated-ui-theme.tsx):
 //
 //   const theme = createTheme(buildOpenUiTheme());
@@ -9,7 +9,7 @@
 //
 // Generated UI never gets the trust components' look or an Approve button: this folder may not import
 // features/trust (enforced by `pnpm check:layers`).
-import type { SemanticRole } from "@errand/design-tokens";
+import { tokens } from "@errand/design-tokens";
 
 import type { Theme } from "@/components/theme-provider";
 
@@ -66,8 +66,8 @@ export type OpenUiThemeOverrides = {
 } & Readonly<Record<OpenUiTextStyle, string>>;
 
 /**
- * OpenUI's compound `font:` styles. Its defaults are 12-16px Inter; ours are the chat's scale
- * (--text-meta … --text-title), so a chip or a date picker reads like the rest of the thread.
+ * OpenUI's compound `font:` styles. Its defaults are 12-16px Inter; ours are Lime's scale
+ * (--text-xs … --text-xl), so a chip or a date picker reads like the rest of the thread.
  */
 type OpenUiTextStyle =
   | "textLabelXs"
@@ -90,93 +90,100 @@ type OpenUiTextStyle =
   | "textNumbersSm"
   | "textNumbersDefault";
 
-const REGULAR = "400";
-const HEAVY = "560";
-const text = (weight: string, size: string, family = "var(--font-sans)") => `${weight} var(--${size})/1.35 ${family}`;
+const REGULAR = "var(--weight-normal)";
+const HEAVY = "var(--weight-medium)";
+const HEADING = "var(--weight-semibold)";
+const text = (weight: string, size: string) => `${weight} var(--${size})/var(--leading-snug) var(--font-sans)`;
 
 function textStyles(): Record<OpenUiTextStyle, string> {
   return {
-    textLabelXs: text(REGULAR, "text-meta"),
-    textLabelXsHeavy: text(HEAVY, "text-meta"),
-    textLabelSm: text(REGULAR, "text-label"),
-    textLabelSmHeavy: text(HEAVY, "text-label"),
-    textLabelDefault: text(REGULAR, "text-label"),
-    textLabelDefaultHeavy: text(HEAVY, "text-label"),
-    textLabelLg: text(REGULAR, "text-body"),
-    textLabelLgHeavy: text(HEAVY, "text-body"),
-    textBodyXs: text(REGULAR, "text-meta"),
-    textBodySm: text(REGULAR, "text-label"),
-    textBodyDefault: text(REGULAR, "text-body"),
-    textBodyDefaultHeavy: text(HEAVY, "text-body"),
-    textBodyLg: text(REGULAR, "text-panel"),
-    textHeadingXs: text(HEAVY, "text-body"),
-    textHeadingSm: text(HEAVY, "text-panel"),
-    textHeadingMd: text(HEAVY, "text-title"),
-    textNumbersXs: text(REGULAR, "text-meta", "var(--font-mono)"),
-    textNumbersSm: text(REGULAR, "text-label", "var(--font-mono)"),
-    textNumbersDefault: text(REGULAR, "text-body", "var(--font-mono)"),
+    textLabelXs: text(REGULAR, "text-xs"),
+    textLabelXsHeavy: text(HEAVY, "text-xs"),
+    textLabelSm: text(REGULAR, "text-xs"),
+    textLabelSmHeavy: text(HEAVY, "text-xs"),
+    textLabelDefault: text(REGULAR, "text-sm"),
+    textLabelDefaultHeavy: text(HEAVY, "text-sm"),
+    textLabelLg: text(REGULAR, "text-sm"),
+    textLabelLgHeavy: text(HEAVY, "text-sm"),
+    textBodyXs: text(REGULAR, "text-xs"),
+    textBodySm: text(REGULAR, "text-xs"),
+    textBodyDefault: text(REGULAR, "text-sm"),
+    textBodyDefaultHeavy: text(HEAVY, "text-sm"),
+    textBodyLg: text(REGULAR, "text-base"),
+    textHeadingXs: text(HEADING, "text-sm"),
+    textHeadingSm: text(HEADING, "text-base"),
+    textHeadingMd: text(HEADING, "text-lg"),
+    // Figures are tabular Hanken Grotesk, not mono (Lime keeps mono for codes).
+    textNumbersXs: text(REGULAR, "text-xs"),
+    textNumbersSm: text(REGULAR, "text-xs"),
+    textNumbersDefault: text(REGULAR, "text-sm"),
   };
 }
 
-const role = (name: SemanticRole) => `var(--${name})`;
+/** A Lime role or Errand addition by name; an unknown name fails at load, so a typo never ships a blank colour. */
+function role(name: string): string {
+  if (!(name in tokens.light)) throw new Error(`--${name} is not a design token`);
+  return `var(--${name})`;
+}
 
 export function buildOpenUiTheme(): OpenUiThemeOverrides {
   return {
-    background: role("surface-canvas"),
-    foreground: role("fg-emph"),
-    popoverBackground: role("surface-raised"),
-    sunk: role("surface-well"),
-    sunkDeep: role("surface-well"),
-    elevated: role("surface-card"),
-    elevatedStrong: role("surface-raised"),
+    background: role("page"),
+    foreground: role("fg"),
+    popoverBackground: role("raised"),
+    sunk: role("surface-2"),
+    sunkDeep: role("surface-3"),
+    elevated: role("surface"),
+    elevatedStrong: role("raised"),
     overlay: role("scrim"),
-    highlight: role("interactive-tint"),
-    infoBackground: role("interactive-tint"),
-    successBackground: role("ok-tint"),
+    highlight: role("accent-wash"),
+    // Lime has no info hue, so OpenUI's info tone is the quiet wash and the olive line.
+    infoBackground: role("accent-wash"),
+    successBackground: role("success-tint"),
     alertBackground: role("warn-tint"),
-    dangerBackground: role("err-tint"),
-    textNeutralPrimary: role("fg-emph"),
-    textNeutralSecondary: role("fg-body"),
-    textNeutralTertiary: role("fg-meta"),
-    textNeutralLink: role("interactive"),
-    // The brand orange is for the logo and the illustration only, so generated text never gets it.
-    textBrand: role("fg-emph"),
-    textAccentPrimary: role("fg-emph"),
-    textSuccessPrimary: role("ok"),
-    textAlertPrimary: role("warn"),
-    textDangerPrimary: role("err"),
-    textInfoPrimary: role("info"),
-    // The shadcn bridge's --primary, so a generated Choose button matches every other primary button.
-    interactiveAccentDefault: "var(--primary)",
-    interactiveAccentHover: "color-mix(in oklab, var(--primary) 85%, transparent)",
-    interactiveAccentPressed: "var(--primary)",
-    interactiveAccentDisabled: role("surface-raised"),
-    interactiveDestructiveDefault: role("err"),
-    borderDefault: role("edge"),
-    borderInteractive: role("edge-strong"),
-    borderInteractiveEmphasis: role("edge-strong"),
-    borderInteractiveSelected: role("interactive"),
-    borderAccent: role("interactive"),
-    borderInfo: role("info"),
+    dangerBackground: role("danger-tint"),
+    textNeutralPrimary: role("fg"),
+    textNeutralSecondary: role("fg-2"),
+    textNeutralTertiary: role("fg-3"),
+    textNeutralLink: role("fg"),
+    textBrand: role("fg"),
+    textAccentPrimary: role("fg"),
+    textSuccessPrimary: role("success-text"),
+    textAlertPrimary: role("warn-text"),
+    textDangerPrimary: role("danger-text"),
+    textInfoPrimary: role("fg-2"),
+    // The lime, so a generated Choose button matches every other primary button.
+    interactiveAccentDefault: role("accent"),
+    interactiveAccentHover: role("accent-hover"),
+    interactiveAccentPressed: role("accent-active"),
+    interactiveAccentDisabled: role("surface-2"),
+    interactiveDestructiveDefault: role("danger"),
+    borderDefault: role("line"),
+    borderInteractive: role("line-strong"),
+    borderInteractiveEmphasis: role("control"),
+    borderInteractiveSelected: role("accent-line"),
+    borderAccent: role("accent-line"),
+    borderInfo: role("accent-line"),
     borderAlert: role("warn"),
-    borderSuccess: role("ok"),
-    borderDanger: role("err"),
-    chatUserResponseBg: role("surface-raised"),
-    chatUserResponseText: role("fg-emph"),
-    defaultChartPalette: ["var(--cat-1)", "var(--cat-2)", "var(--cat-3)", "var(--cat-4)", "var(--cat-5)", "var(--cat-6)"],
-    fontBody: "var(--font-sans)",
-    fontHeading: "var(--font-sans)",
-    fontLabel: "var(--font-sans)",
-    fontCode: "var(--font-mono)",
-    fontNumbers: "var(--font-mono)",
-    radiusS: "var(--radius-1)",
-    radiusM: "var(--radius-2)",
-    radiusL: "var(--radius-3)",
+    borderSuccess: role("success"),
+    borderDanger: role("danger"),
+    chatUserResponseBg: role("surface-2"),
+    chatUserResponseText: role("fg"),
+    // Lime draws charts in ink only.
+    defaultChartPalette: [role("ink"), role("fg-3")],
+    fontBody: role("font-sans"),
+    fontHeading: role("font-sans"),
+    fontLabel: role("font-sans"),
+    fontCode: role("font-mono"),
+    fontNumbers: role("font-sans"),
+    radiusS: role("radius-sm"),
+    radiusM: role("radius-md"),
+    radiusL: role("radius-field"),
     ...textStyles(),
   };
 }
 
-/** OpenUI's mode follows data-theme. Before the theme is known (server render), dark is the default. */
+/** OpenUI's mode follows data-theme. Before the theme is known (server render), light is the default. */
 export function openUiMode(theme: Theme | undefined): "dark" | "light" {
-  return theme ?? "dark";
+  return theme ?? "light";
 }

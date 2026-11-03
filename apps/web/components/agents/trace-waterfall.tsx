@@ -11,6 +11,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { cva } from 'class-variance-authority'
+import { motion as limeMotion } from '@errand/design-tokens'
 import { motion, useReducedMotion } from 'motion/react'
 import { TextMorph } from 'torph/react'
 
@@ -22,7 +23,6 @@ import { Kbd, KbdGroup } from '@/components/agents/ui/kbd'
 import { NativeSelect, NativeSelectOption } from '@/components/agents/ui/native-select'
 import { Popover, PopoverContent, PopoverTitle } from '@/components/agents/ui/popover'
 import { Spinner } from '@/components/agents/ui/spinner'
-import { TextShimmer } from '@/components/agents/ui/text-shimmer'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/agents/ui/tooltip'
 
 import {
@@ -62,43 +62,30 @@ export type { TraceSpan, TraceSpanKind, TraceSpanStatus, TraceTone }
  * - Bars: 20px (agents, 6px radius) or 16px (steps, 5px radius), 2px shorter than their span, at least 4px.
  *   Each hue is a base colour (model calls) mixed 50% (tool calls) and 24% (an agent's own time) into the card.
  *   Waiting is a -45deg hatch of foreground 22% with a 1px inset ring.
- * - Motion: rows enter over 400ms on cubic-bezier(0.22,1,0.36,1) (grid rows 0 -> 1fr, opacity, blur 2px, y -8px).
- *   Running bars sweep a highlight every 1600ms; running names shimmer every 1350ms beside a 1000ms spinner.
- *   Settling swaps the spinner out (300ms, cubic-bezier(0.23,1,0.32,1)); a failure turns the name destructive
- *   (300ms) and shakes it (280ms). KPI digits morph per glyph over 220ms. Handoff connectors draw over 420ms on
- *   cubic-bezier(0.65,0,0.35,1) with their dot popping over 220ms.
+ * - Errand motion (Lime, design-system-v3.html): rows arrive over --dur-base on --ease-out (grid rows 0 -> 1fr,
+ *   opacity, y -8px); settling cross-fades the spinner out over --dur-fast; a failure turns the name to the danger
+ *   text over --dur-fast. KPI digits morph over --dur-base; handoff connectors fade in over --dur-base. The running-bar
+ *   sweep, the name shimmer, the failure shake and the blur on arrival are gone: the spinner is the only loop.
+ *   Every duration is a token, so reduced motion zeroes it.
+ * - Errand colour: no hue in the operator console. Bars are ink steps (model calls --fg-3, tool calls and an agent's
+ *   own time mixed into the surface) and waiting is a dashed outline instead of a hatch.
  */
 
 const STYLES = `
 [data-slot=trace-waterfall] {
   /* Errand: hues come from the token palette, so both themes and the gallery agree. */
-  --trace-gray: var(--fg-faint);
-  --trace-blue: var(--cat-1);
-  --trace-purple: var(--cat-2);
-  --trace-orange: var(--cat-6);
-  --trace-green: var(--cat-3);
-  --trace-sweep: color-mix(in oklab, var(--card) 60%, transparent);
-}
-[data-theme=dark] [data-slot=trace-waterfall] {
-  --trace-sweep: color-mix(in oklab, var(--foreground) 22%, transparent);
-}
-@keyframes trace-sweep {
-  from { translate: -100% 0; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1) }
-  to { translate: 100% 0 }
-}
-@keyframes trace-name-shake {
-  0% { translate: 0; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) }
-  28.57% { translate: 4px; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) }
-  57.14% { translate: -4px; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) }
-  78.57% { translate: 2px; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) }
-  100% { translate: 0 }
+  --trace-gray: var(--fg-3);
+  --trace-blue: var(--fg-3);
+  --trace-purple: var(--fg-3);
+  --trace-orange: var(--fg-3);
+  --trace-green: var(--fg-3);
 }
 @keyframes trace-replay { from { rotate: 0deg } to { rotate: -360deg } }
 `
 
 const ROW = 36
-const EASE_ROW = 'ease-[cubic-bezier(0.22,1,0.36,1)]'
-const EASE_OUT = 'ease-[cubic-bezier(0.23,1,0.32,1)]'
+const EASE_ROW = 'ease-out'
+const EASE_OUT = 'ease-out'
 /** KPI readouts tick at most this often and show a value this long after taking it. */
 const KPI_INTERVAL = 750
 const KPI_LEAD = 80
@@ -111,22 +98,21 @@ const TONE: Record<TraceTone, string> = {
   green: '[--hue:var(--trace-green)]',
 }
 
-const HATCH =
-  'bg-[repeating-linear-gradient(-45deg,color-mix(in_oklab,var(--foreground)_22%,transparent)_0_1px,transparent_1px_6px)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_22%,transparent)]'
+const HATCH = 'border border-dashed border-fg-3 bg-transparent'
 
 /** One bar piece. `kind` picks the fill from the row's hue; `size` is agent (20px) or step (16px). */
-const traceBarVariants = cva('absolute flex items-center justify-center overflow-hidden text-white', {
+const traceBarVariants = cva('absolute flex items-center justify-center overflow-hidden text-fg-inverse', {
   variants: {
     kind: {
-      self: 'bg-[color-mix(in_oklab,var(--hue)_24%,var(--card))]',
-      tool: 'bg-[color-mix(in_oklab,var(--hue)_50%,var(--card))]',
+      self: 'bg-[color-mix(in_oklab,var(--hue)_24%,var(--surface))]',
+      tool: 'bg-[color-mix(in_oklab,var(--hue)_50%,var(--surface))]',
       llm: 'bg-(--hue)',
-      failed: 'bg-destructive',
+      failed: 'bg-danger',
       wait: HATCH,
     },
     size: {
-      agent: 'top-2 h-5 rounded-[6px]',
-      step: 'top-2.5 h-4 rounded-[5px]',
+      agent: 'top-2 h-5 rounded-sm',
+      step: 'top-2.5 h-4 rounded-sm',
     },
   },
   defaultVariants: { kind: 'llm', size: 'step' },
@@ -271,7 +257,7 @@ function TraceWaterfall({
       data-slot="trace-waterfall"
       data-state={complete ? 'complete' : playing ? 'playing' : 'paused'}
       className={cn(
-        '@container/trace w-full max-w-[46rem] overflow-hidden rounded-[14px] border bg-card text-sm text-card-foreground',
+        '@container/trace w-full max-w-[46rem] overflow-hidden rounded-panel border bg-surface text-sm text-fg',
         className,
       )}
       style={style}
@@ -347,12 +333,12 @@ function TraceHeader({
 
   return (
     <div data-slot="trace-waterfall-header" className="flex items-center gap-4 border-b px-4 py-3">
-      <span className="font-bold">{title}</span>
+      <span className="font-semibold">{title}</span>
       <label
         data-slot="trace-waterfall-search"
         className={cn(
-          'ms-auto flex h-8 w-[191px] min-w-0 cursor-text items-center gap-2 rounded-[10px] border border-foreground/10 bg-foreground/[0.03] ps-2.5 pe-1.5 text-muted-foreground dark:bg-foreground/[0.045]',
-          'transition-[background-color,border-color] duration-150 focus-within:border-foreground/[0.14] focus-within:bg-foreground/[0.055] dark:focus-within:bg-foreground/[0.07]',
+          'ms-auto flex h-8 w-[191px] min-w-0 cursor-text items-center gap-2 rounded-field border border-line-strong bg-field ps-2.5 pe-1.5 text-fg-3',
+          'transition-[border-color] duration-(--dur-instant) ease-out focus-within:border-control',
           EASE_OUT,
         )}
       >
@@ -372,7 +358,7 @@ function TraceHeader({
               onQueryChange('')
             }
           }}
-          className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
+          className="min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-3 [&::-webkit-search-cancel-button]:appearance-none"
         />
         <KbdGroup>
           <Kbd size="md" className="min-w-7 font-mono">
@@ -386,7 +372,7 @@ function TraceHeader({
 
 /* ---------------------------------------------------------------------------------------------- KPIs */
 
-const MORPH = { duration: 220, ease: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+const MORPH = { duration: limeMotion.base, ease: `cubic-bezier(${limeMotion.easeOut.join(', ')})` }
 
 function TraceKpis({ totals, immediate }: { totals: TraceTotals; immediate: boolean }) {
   const items: [string, string][] = [
@@ -399,10 +385,10 @@ function TraceKpis({ totals, immediate }: { totals: TraceTotals; immediate: bool
     ['Errors', String(totals.errors)],
   ]
   return (
-    <dl data-slot="trace-waterfall-kpis" className="grid grid-cols-3 gap-px bg-border pb-px @lg/trace:grid-cols-6">
+    <dl data-slot="trace-waterfall-kpis" className="grid grid-cols-3 gap-px bg-line pb-px @lg/trace:grid-cols-6">
       {items.map(([label, value]) => (
-        <div key={label} className="flex min-w-0 flex-col gap-1 bg-card p-3">
-          <dt className="truncate text-xs text-muted-foreground">{label}</dt>
+        <div key={label} className="flex min-w-0 flex-col gap-1 bg-surface p-3">
+          <dt className="truncate text-xs text-fg-3">{label}</dt>
           <dd className="text-lg/6 tabular-nums" aria-live={label === 'Errors' ? 'polite' : undefined}>
             <KpiValue value={value} immediate={immediate} />
           </dd>
@@ -692,7 +678,7 @@ function TraceChart({
       <div
         aria-hidden
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 transition-opacity duration-200',
+          'pointer-events-none absolute inset-y-0 right-0 transition-opacity duration-(--dur-base) ease-out',
           empty && 'opacity-0',
         )}
         style={{ left: label }}
@@ -710,12 +696,12 @@ function TraceChart({
         <span
           data-slot="trace-waterfall-now"
           className={cn(
-            'absolute inset-y-0 w-px bg-foreground/70 transition-opacity duration-200',
+            'absolute inset-y-0 w-px bg-fg/70 transition-opacity duration-(--dur-base) ease-out',
             (complete || empty) && 'opacity-0',
           )}
           style={{ left: scale.x(now) }}
         >
-          <span className="absolute top-8 -left-[3.5px] size-2 rounded-full bg-foreground ring-2 ring-card" />
+          <span className="absolute top-8 -left-[3.5px] size-2 rounded-full bg-fg ring-2 ring-surface" />
         </span>
       </div>
       {/* Axis */}
@@ -723,7 +709,7 @@ function TraceChart({
         <div className="flex h-9">
           <span
             data-slot="trace-waterfall-label"
-            className="flex shrink-0 items-center gap-1.5 ps-4 text-xs text-muted-foreground"
+            className="flex shrink-0 items-center gap-1.5 ps-4 text-xs text-fg-3"
             style={{ width: label }}
           >
             <IconHierarchy aria-hidden className="size-3.5" />
@@ -735,8 +721,8 @@ function TraceChart({
                 <span
                   key={t}
                   className={cn(
-                    'absolute top-2.5 ps-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums',
-                    'transition-opacity duration-150 starting:opacity-0 motion-reduce:transition-none',
+                    'absolute top-2.5 ps-2 text-xs whitespace-nowrap text-fg-3 tabular-nums',
+                    'transition-opacity duration-(--dur-fast) ease-out starting:opacity-0',
                   )}
                   style={{ left: t * px }}
                 >
@@ -774,7 +760,7 @@ function TraceChart({
             <div
               ref={badgeRef}
               aria-hidden={!slowest}
-              className="pointer-events-none absolute top-0 left-0 z-[5] opacity-0 transition-opacity duration-200"
+              className="pointer-events-none absolute top-0 left-0 z-[5] opacity-0 transition-opacity duration-(--dur-base) ease-out"
             >
               <Badge variant="warning" className="h-5 gap-1 px-1.5 text-xs">
                 Slowest
@@ -787,11 +773,11 @@ function TraceChart({
             </ul>
             <Collapse open={empty} className="data-[state=closed]:translate-y-1">
               <div role="status" className="flex flex-col items-center gap-1 px-6 py-10 text-center">
-                <span className="mb-2 flex size-9 items-center justify-center rounded-[10px] border bg-card text-muted-foreground">
+                <span className="mb-2 flex size-9 items-center justify-center rounded-md border bg-surface text-fg-3">
                   <IconSearchOff aria-hidden className="size-4" />
                 </span>
                 <span>No matching steps</span>
-                <span className="text-muted-foreground">Nothing in this trace matches “{query}”</span>
+                <span className="text-fg-3">Nothing in this trace matches “{query}”</span>
               </div>
             </Collapse>
           </div>
@@ -801,12 +787,12 @@ function TraceChart({
           aria-hidden
           data-overflow="false"
           className={cn(
-            'pointer-events-none absolute inset-y-0.5 right-0.5 w-1.5 opacity-0 transition-opacity duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'pointer-events-none absolute inset-y-0.5 right-0.5 w-1.5 opacity-0 transition-opacity duration-(--dur-base) ease-out',
             'data-[overflow=true]:group-hover/scroll:opacity-100',
             scrollUi && 'data-[overflow=true]:opacity-100',
           )}
         >
-          <div ref={thumbRef} data-slot="trace-waterfall-thumb" className="w-1.5 rounded-full bg-foreground/25" />
+          <div ref={thumbRef} data-slot="trace-waterfall-thumb" className="w-1.5 rounded-full bg-fg/25" />
         </div>
       </div>
       <SplitHandle label={label} width={width} split={split} onSplitChange={onSplitChange} />
@@ -815,7 +801,7 @@ function TraceChart({
 }
 
 function Gridlines({ ticks, px }: { ticks: number[]; px: number }) {
-  return ticks.map((t) => <span key={t} className="absolute inset-y-0 w-px bg-border" style={{ left: t * px }} />)
+  return ticks.map((t) => <span key={t} className="absolute inset-y-0 w-px bg-line" style={{ left: t * px }} />)
 }
 
 /** Grid-rows collapsible used for rows, groups, the axis and the empty state (400ms, blur 2px, y -8px). */
@@ -824,9 +810,9 @@ function Collapse({ open, className, children, ...props }: React.ComponentProps<
     <div
       data-state={open ? 'open' : 'closed'}
       className={cn(
-        'grid grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity,filter,translate] duration-400 motion-reduce:transition-none',
+        'grid grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity,translate] duration-(--dur-base)',
         EASE_ROW,
-        'data-[state=closed]:grid-rows-[0fr] data-[state=closed]:opacity-0 data-[state=closed]:blur-[2px]',
+        'data-[state=closed]:grid-rows-[0fr] data-[state=closed]:opacity-0',
         className,
       )}
       inert={!open || undefined}
@@ -858,7 +844,8 @@ function Connector({
   const d = returning
     ? `M ${x - r} ${y2} Q ${x} ${y2} ${x} ${y2 - r} L ${x} ${y1}`
     : `M ${x} ${y1} L ${x} ${y2 - r} Q ${x} ${y2} ${x + r * dir} ${y2}`
-  const ease = [0.65, 0, 0.35, 1] as const
+  // Errand: the connector fades in on --ease-out instead of drawing, and its dot arrives without a pop.
+  const seconds = (ms: number) => (reduced ? 0 : ms / 1000)
   return (
     <g className={toneClass}>
       <motion.path
@@ -867,24 +854,20 @@ function Connector({
         strokeWidth={1.5}
         strokeLinecap="round"
         className="stroke-(--hue)"
-        initial={reduced ? false : { pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 0.42, delay: returning ? 0 : 0.12, ease }}
+        initial={reduced ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: seconds(limeMotion.base), ease: [...limeMotion.easeOut] }}
       />
       <motion.circle
         cx={x}
         cy={y1}
         r={3.5}
-        className="fill-(--hue) stroke-card"
+        className="fill-(--hue) stroke-surface"
         strokeWidth={1}
         style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
-        initial={reduced ? false : { scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{
-          duration: 0.22,
-          delay: returning ? 0.38 : 0,
-          ease: [0.23, 1, 0.32, 1],
-        }}
+        initial={reduced ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: seconds(limeMotion.base), ease: [...limeMotion.easeOut] }}
       />
     </g>
   )
@@ -969,7 +952,7 @@ function TraceRow({ node, ctx }: { node: TraceNode; ctx: RowContext }) {
       data-hidden={shown ? undefined : ''}
       inert={!shown || undefined}
       className={cn(
-        'group/li grid grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity] duration-400 motion-reduce:transition-none',
+        'group/li grid grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity] duration-(--dur-base)',
         EASE_ROW,
         !ctx.initial.has(span.id) && 'starting:grid-rows-[0fr] starting:opacity-0',
         'data-hidden:grid-rows-[0fr] data-hidden:opacity-0',
@@ -985,14 +968,14 @@ function TraceRow({ node, ctx }: { node: TraceNode; ctx: RowContext }) {
           data-sticky={isAgent ? '' : undefined}
           className={cn(
             'group/row relative flex h-9',
-            'transition-[filter,translate,background-color] duration-400 motion-reduce:transition-none',
+            'transition-[translate,background-color] duration-(--dur-base)',
             EASE_ROW,
-            !ctx.initial.has(span.id) && 'starting:-translate-y-2 starting:blur-[2px]',
-            'group-data-hidden/li:-translate-y-2 group-data-hidden/li:blur-[2px]',
-            'hover:bg-foreground/5',
+            !ctx.initial.has(span.id) && 'starting:-translate-y-2',
+            'group-data-hidden/li:-translate-y-2',
+            'hover:bg-fg/5',
             isAgent && [
-              'sticky data-stuck:bg-card data-stuck:shadow-[0_1px_0_0_var(--border)]',
-              'data-stuck:hover:bg-[color-mix(in_oklab,var(--foreground)_5%,var(--card))]',
+              'sticky data-stuck:border-b data-stuck:border-line data-stuck:bg-surface',
+              'data-stuck:hover:bg-[color-mix(in_oklab,var(--fg)_5%,var(--surface))]',
             ],
             TONE[node.tone],
           )}
@@ -1019,7 +1002,7 @@ function TraceRow({ node, ctx }: { node: TraceNode; ctx: RowContext }) {
         {kids.length > 0 && (
           <Collapse open={open} className={cn('relative', !open && '-translate-y-2')}>
             <ul role="group" className="relative">
-              <span aria-hidden className="absolute top-0 bottom-3 w-px bg-border" style={{ left: 18 + depth * 20 }} />
+              <span aria-hidden className="absolute top-0 bottom-3 w-px bg-line" style={{ left: 18 + depth * 20 }} />
               {kids.map((child) => (
                 <TraceRow key={child.span.id} node={child} ctx={ctx} />
               ))}
@@ -1046,7 +1029,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, i)}
-      <mark className="rounded-[3px] bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] text-inherit">
+      <mark className="rounded-sm bg-accent-wash text-inherit">
         {text.slice(i, i + query.length)}
       </mark>
       {text.slice(i + query.length)}
@@ -1069,15 +1052,7 @@ function RowLabel({
 }) {
   const { span, depth } = node
   const status = statusAt(span, ctx.now)
-  // Shake once when a running step fails (derived from the previous status during render, not in an effect).
-  const [prevStatus, setPrevStatus] = React.useState(status)
-  const [shake, setShake] = React.useState(false)
-  if (prevStatus !== status) {
-    setPrevStatus(status)
-    if (status === 'failed' && prevStatus === 'running' && !ctx.reduced) setShake(true)
-  }
-
-  // Agents carry their activity in the bar; only steps show a spinner and a shimmering name.
+  // Agents carry their activity in the bar; only steps show a spinner beside their name.
   const running = status === 'running' && span.kind !== 'agent'
   const failed = status === 'failed'
   return (
@@ -1098,19 +1073,19 @@ function RowLabel({
             event.stopPropagation()
             onToggle()
           }}
-          className="relative flex size-4 shrink-0 items-center justify-center rounded-[4px] text-muted-foreground outline-none hover:bg-foreground/7 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="relative flex size-4 shrink-0 items-center justify-center rounded-sm text-fg-3 outline-none hover:bg-surface-2 hover:text-fg"
         >
           <IconChevronDown
             aria-hidden
             className={cn(
-              'size-3.5 transition-transform duration-200 motion-reduce:transition-none',
+              'size-3.5 transition-transform duration-(--dur-fast) ease-out',
               EASE_OUT,
               !open && '-rotate-90',
             )}
           />
         </button>
       )}
-      <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[5px] border bg-card [&_svg]:size-3">
+      <span className="flex size-[22px] shrink-0 items-center justify-center rounded-sm border bg-surface [&_svg]:size-3">
         {span.icon}
       </span>
       <span className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -1118,26 +1093,18 @@ function RowLabel({
           <StatusSlot status={span.kind === 'agent' && status === 'running' ? 'done' : status} />
           <span
             className={cn(
-              'grid min-w-0 transition-colors duration-300',
+              'grid min-w-0 transition-colors duration-(--dur-fast) ease-out',
               EASE_OUT,
-              failed && 'text-destructive',
-              shake && 'animate-[trace-name-shake_280ms_linear]',
+              failed && 'text-danger-text',
             )}
-            onAnimationEnd={() => setShake(false)}
           >
-            {running ? (
-              <TextShimmer duration={1.35} className={cn('truncate', isAgent && 'font-bold')}>
-                {span.name}
-              </TextShimmer>
-            ) : (
-              <span className={cn('truncate', isAgent && 'font-bold')}>
-                <Highlight text={span.name} query={ctx.query} />
-              </span>
-            )}
+            <span className={cn('truncate', isAgent && 'font-semibold')}>
+              <Highlight text={span.name} query={ctx.query} />
+            </span>
           </span>
         </span>
         {span.subtitle && (
-          <span className="min-w-0 truncate text-muted-foreground">
+          <span className="min-w-0 truncate text-fg-3">
             <Highlight text={span.subtitle} query={ctx.query} />
           </span>
         )}
@@ -1146,7 +1113,7 @@ function RowLabel({
   )
 }
 
-/** Spinner while running, a warning when failed, nothing when done (it folds away with a blur). */
+/** Spinner while running, a warning when failed, nothing when done. */
 function StatusSlot({ status }: { status: TraceSpanStatus }) {
   const running = status === 'running'
   const failed = status === 'failed'
@@ -1163,9 +1130,9 @@ function StatusSlot({ status }: { status: TraceSpanStatus }) {
     <span
       aria-hidden
       className={cn(
-        'grid shrink-0 transition-[width,margin,opacity,filter] duration-300 motion-reduce:transition-none',
+        'grid shrink-0 transition-[width,margin,opacity] duration-(--dur-fast)',
         EASE_OUT,
-        shown ? 'w-3.5 opacity-100' : '-me-1.5 w-0 opacity-0 blur-[2px]',
+        shown ? 'w-3.5 opacity-100' : '-me-1.5 w-0 opacity-0',
       )}
     >
       {spinner && (
@@ -1173,36 +1140,22 @@ function StatusSlot({ status }: { status: TraceSpanStatus }) {
           dynamic={false}
           aria-hidden
           className={cn(
-            'col-start-1 row-start-1 size-3.5 text-muted-foreground [animation-duration:1000ms]',
-            'transition-[opacity,scale,filter] duration-300 motion-reduce:transition-none',
+            'col-start-1 row-start-1 size-3.5 text-fg-3',
+            'transition-[opacity,scale] duration-(--dur-fast) ease-out',
             EASE_OUT,
-            running ? 'scale-100 opacity-100' : 'scale-50 opacity-0 blur-[2px]',
+            running ? 'opacity-100' : 'opacity-0',
           )}
         />
       )}
       <IconAlertTriangleFilled
         className={cn(
-          'col-start-1 row-start-1 size-3.5 text-destructive',
-          'transition-[opacity,scale,filter] duration-300 motion-reduce:transition-none',
+          'col-start-1 row-start-1 size-3.5 text-danger-text',
+          'transition-[opacity,scale] duration-(--dur-fast) ease-out',
           EASE_OUT,
-          failed ? 'scale-100 opacity-100' : 'scale-25 opacity-0 blur-[4px]',
+          failed ? 'opacity-100' : 'opacity-0',
         )}
       />
     </span>
-  )
-}
-
-function Sweep({ kind }: { kind: BarKind }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'pointer-events-none absolute inset-0 animate-[trace-sweep_1600ms_linear_infinite] motion-reduce:hidden',
-        kind === 'wait'
-          ? 'bg-[linear-gradient(90deg,transparent,color-mix(in_oklab,var(--foreground)_14%,transparent),transparent)]'
-          : 'bg-[linear-gradient(90deg,transparent,var(--trace-sweep),transparent)]',
-      )}
-    />
   )
 }
 
@@ -1242,7 +1195,7 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
       aria-label={`Details for ${name}`}
       aria-haspopup="dialog"
       onClick={(event) => open(id, event.currentTarget, event.clientX)}
-      className="absolute top-1 z-[1] h-7 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="absolute top-1 z-[1] h-7 rounded-md outline-none"
       style={{ left, width }}
     />
   )
@@ -1255,7 +1208,6 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
         {segments.map((seg) => {
           const left = scale.x(seg.from)
           const width = barW(seg.from, seg.to)
-          const sweeping = running && seg.to >= now - 1e-6
           const clickable = seg.kind === 'llm' || seg.kind === 'tool' || seg.kind === 'failed'
           const childName = node.children.find((c) => c.span.id === seg.spanId)?.span.name ?? span.name
           return (
@@ -1266,7 +1218,6 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
                 className={cn(traceBarVariants({ kind: seg.kind, size: 'agent' }), 'pointer-events-none')}
                 style={{ left, width }}
               >
-                {sweeping && <Sweep kind={seg.kind} />}
                 <BarGlyph kind={seg.kind} retry={seg.retry} width={width} />
               </span>
             </React.Fragment>
@@ -1277,7 +1228,7 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
           aria-label={`Details for ${span.name}`}
           aria-haspopup="dialog"
           onClick={(event) => open(span.id, event.currentTarget, event.clientX, event.currentTarget)}
-          className="absolute top-1 h-7 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="absolute top-1 h-7 rounded-md outline-none"
           style={{
             left: scale.x(span.start),
             width: Math.max(4, (end - span.start) * scale.px),
@@ -1297,7 +1248,6 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
           className={cn(traceBarVariants({ kind, size: 'step' }), 'pointer-events-none')}
           style={{ left, width }}
         >
-          {running && <Sweep kind={kind} />}
           <BarGlyph kind={kind} retry={span.retry} width={width} />
         </span>
       </>
@@ -1310,13 +1260,13 @@ function RowBars({ node, ctx, isAgent }: { node: TraceNode; ctx: RowContext; isA
       {bars}
       <span
         className={cn(
-          'pointer-events-none absolute top-2.5 flex items-center gap-2 ps-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums',
+          'pointer-events-none absolute top-2.5 flex items-center gap-2 ps-2 text-xs whitespace-nowrap text-fg-3 tabular-nums',
         )}
         style={{ left: labelLeft }}
       >
         <span
           ref={(el) => register('label', span.id, el)}
-          className="transition-opacity duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] starting:opacity-0 motion-reduce:transition-none"
+          className="transition-opacity duration-(--dur-base) ease-out starting:opacity-0"
         >
           {labelText}
         </span>
@@ -1340,7 +1290,7 @@ function PlayPauseIcon({ playing }: { playing: boolean }) {
           style={{ d: `path("${d}")` } as React.CSSProperties}
           stroke="currentColor"
           strokeWidth={1}
-          className={cn('transition-[d] duration-200 motion-reduce:transition-none', EASE_OUT)}
+          className={cn('transition-[d] duration-(--dur-base)', EASE_OUT)}
         />
       ))}
     </svg>
@@ -1396,7 +1346,7 @@ function TraceFooter({
             data-slot="trace-replay-icon"
             className={cn(
               'flex',
-              spin > 0 && 'animate-[trace-replay_500ms_cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none',
+              spin > 0 && 'animate-[trace-replay_var(--dur-slow)_var(--ease-out)]',
             )}
           >
             <IconRotate aria-hidden className="size-4" />
@@ -1410,7 +1360,7 @@ function TraceFooter({
         value={String(speed)}
         onValueChange={(v) => onSpeedChange(Number(v))}
         wrapperClassName="w-[71px]"
-        className="rounded-lg border-border ps-2.5 pe-8 text-sm dark:bg-transparent"
+        className="border-line ps-2.5 pe-8 text-sm"
       >
         {speeds.map((s) => (
           <NativeSelectOption key={s} value={String(s)}>
@@ -1428,19 +1378,19 @@ function TraceLegend({ className, ...props }: React.ComponentProps<'ul'>) {
   return (
     <ul
       data-slot="trace-waterfall-legend"
-      className={cn('flex h-8 items-center gap-4 text-xs text-muted-foreground [--hue:var(--trace-gray)]', className)}
+      className={cn('flex h-8 items-center gap-4 text-xs text-fg-3 [--hue:var(--trace-gray)]', className)}
       {...props}
     >
       <li className="flex items-center gap-1.5">
-        <span className="h-2.5 w-4 rounded-[3px] bg-(--hue)" />
+        <span className="h-2.5 w-4 rounded-sm bg-(--hue)" />
         Model call
       </li>
       <li className="flex items-center gap-1.5">
-        <span className="h-2.5 w-4 rounded-[3px] bg-[color-mix(in_oklab,var(--hue)_50%,var(--card))]" />
+        <span className="h-2.5 w-4 rounded-sm bg-[color-mix(in_oklab,var(--hue)_50%,var(--surface))]" />
         Tool call
       </li>
       <li className="flex items-center gap-1.5">
-        <span className={cn('h-2.5 w-4 rounded-[3px]', HATCH)} />
+        <span className={cn('h-2.5 w-4 rounded-sm', HATCH)} />
         Waiting
       </li>
       <li className="flex items-center gap-1.5">
@@ -1448,7 +1398,7 @@ function TraceLegend({ className, ...props }: React.ComponentProps<'ul'>) {
         Handoff
       </li>
       <li className="flex items-center gap-1.5">
-        <span className="flex h-2.5 w-4 items-center justify-center rounded-[3px] bg-destructive text-white">
+        <span className="flex h-2.5 w-4 items-center justify-center rounded-sm bg-danger text-on-danger">
           <IconX aria-hidden className="size-2.5" strokeWidth={3} />
         </span>
         Failed
@@ -1525,14 +1475,14 @@ function TraceSpanPopover({
         alignOffset={-11}
         showArrow={false}
         data-status={status}
-        className="gap-3 rounded-[14px] p-3.5"
+        className="gap-3 p-3.5"
       >
         <div className="flex items-center gap-2">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border bg-card [&_svg]:size-4">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-surface [&_svg]:size-4">
             {span.icon}
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <PopoverTitle render={<h2 />} className="truncate text-sm font-bold">
+            <PopoverTitle render={<h2 />} className="truncate text-sm font-semibold">
               {span.name}
             </PopoverTitle>
             <Badge variant={badge.variant} className="h-5 px-1.5 text-xs">
@@ -1542,29 +1492,29 @@ function TraceSpanPopover({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground/5 text-muted-foreground outline-none transition-colors duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.99]"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-3 outline-none transition-[color,background-color,scale] duration-(--dur-instant) ease-out hover:bg-surface-3 hover:text-fg active:scale-(--scale-press)"
           >
             <IconX aria-hidden className="size-4" />
             <span className="sr-only">Close</span>
           </button>
         </div>
-        <dl className="grid grid-cols-3 gap-3 rounded-[10px] bg-muted/60 p-3">
+        <dl className="grid grid-cols-3 gap-3 rounded-md bg-surface-2 p-3">
           {stats.map(([k, v]) => (
             <div key={k} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="truncate text-xs text-muted-foreground">{k}</dt>
+              <dt className="truncate text-xs text-fg-3">{k}</dt>
               <dd className="tabular-nums">{v}</dd>
             </div>
           ))}
         </dl>
         {span.input && (
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-muted-foreground">Input</span>
+            <span className="text-xs text-fg-3">Input</span>
             <p>{span.input}</p>
           </div>
         )}
         {span.output && (
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-muted-foreground">Output</span>
+            <span className="text-xs text-fg-3">Output</span>
             <p>{span.output}</p>
           </div>
         )}

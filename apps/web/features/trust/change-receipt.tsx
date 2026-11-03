@@ -36,11 +36,11 @@ export function ChangeReceipt({ booking, state }: ChangeReceiptProps) {
     case "cancelled":
       return (
         <TrustCard label="Cancelled">
-          <TrustHeader lead={<span aria-hidden className="text-ok">✓</span>} title="Cancelled" status={<Badge variant="verified">verified</Badge>} />
+          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Cancelled" status={<Badge variant="verified">verified</Badge>} />
           <DetailTable
             rows={[
               ...baseRows(booking),
-              { label: "When", value: <s className="text-fg-meta">{booking.slot}</s>, mono: true },
+              { label: "When", value: <s className="text-fg-3">{booking.slot}</s>, mono: true },
               { label: "Fee", value: state.fee === 0 ? "No fee" : <Money amount={state.fee} /> },
             ]}
           />
@@ -49,7 +49,7 @@ export function ChangeReceipt({ booking, state }: ChangeReceiptProps) {
     case "moved":
       return (
         <TrustCard label="Moved">
-          <TrustHeader lead={<span aria-hidden className="text-ok">✓</span>} title="Moved" status={<Badge variant="verified">verified</Badge>} />
+          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Moved" status={<Badge variant="verified">verified</Badge>} />
           <DetailTable
             rows={[
               ...baseRows(booking),
@@ -57,7 +57,7 @@ export function ChangeReceipt({ booking, state }: ChangeReceiptProps) {
                 label: "When",
                 value: (
                   <>
-                    <s className="text-fg-meta">{booking.slot}</s>
+                    <s className="text-fg-3">{booking.slot}</s>
                     <span aria-hidden>→</span>
                     <span className="sr-only">moved to</span>
                     {state.toSlot}
@@ -80,7 +80,7 @@ export function ChangeReceipt({ booking, state }: ChangeReceiptProps) {
       return (
         <TrustCard label="Not changed" tone="voided">
           <TrustHeader title={state.action === "cancel" ? "Not cancelled" : "Not moved"} status={<StatusMark kind="cancelled" label="Failed" />} />
-          <Notice tone="err" lead={<span aria-hidden className="text-err">✕</span>}>
+          <Notice tone="err" lead={<span aria-hidden className="text-danger-text">✕</span>}>
             {state.reason}
           </Notice>
           <DetailTable faded rows={[...baseRows(booking), { label: "When", value: booking.slot, mono: true }]} />

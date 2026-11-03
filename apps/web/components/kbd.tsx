@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export function Kbd({ className, ...props }: ComponentProps<"kbd">) {
   return (
     <kbd
-      className={cn("rounded-sm border border-b-2 border-edge-strong px-1 font-mono text-meta text-fg-meta", className)}
+      className={cn("rounded-sm border border-b-2 border-line-strong px-1 font-mono text-xs text-fg-3", className)}
       {...props}
     />
   );

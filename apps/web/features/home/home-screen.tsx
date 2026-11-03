@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { SuggestionChip } from "@/components/chip";
 
 import { Composer } from "./composer";
-import { HeroSkyline } from "./hero-skyline";
 import { TopBar } from "./top-bar";
 import { HOME_POLL_MS, useHomeSummary } from "./use-home-summary";
 import { Alerts, BookingActivity, MemoryWidget, UpcomingBookings, WaitingOnYou, WorkingNow } from "./widgets";
@@ -46,14 +45,12 @@ export function HomeScreen() {
   };
 
   return (
-    <main className="min-h-dvh bg-surface-well sm:px-4 sm:py-4">
-      <div ref={shell} className="mx-auto max-w-[56rem] overflow-hidden bg-surface-canvas pb-4 sm:rounded-lg sm:border sm:border-edge">
-        <header className="relative h-[230px]">
+    <main className="min-h-dvh bg-surface-2 sm:px-4 sm:py-4">
+      <div ref={shell} className="mx-auto max-w-[56rem] overflow-hidden bg-page pb-4 sm:rounded-panel sm:border sm:border-line">
+        {/* v3 has no hero illustration (Lime allows no decoration): the bar, then the page title. */}
+        <header className="relative pt-16 pb-5">
           <TopBar summary={summary} onNewErrand={focusComposer} />
-          <HeroSkyline />
-          <h1 className="absolute bottom-5 w-full px-4 text-center text-title font-semibold tracking-tight text-fg-emph [text-shadow:var(--hero-title-shadow)]">
-            What errand should I handle?
-          </h1>
+          <h1 className="w-full px-4 text-center text-xl font-semibold tracking-tight text-fg sm:text-2xl">What errand should I handle?</h1>
         </header>
 
         <Composer summary={summary} prompt={prompt} onPromptChange={setPrompt} />
@@ -78,17 +75,17 @@ export function HomeScreen() {
         <footer className="mt-3 flex justify-end px-3">
           <p
             role="status"
-            className="m-0 inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-card px-2 py-1 text-label text-fg-meta"
+            className="m-0 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-3"
           >
             {error === undefined ? (
               <>
-                <span aria-hidden className="text-ok">●</span>
+                <span aria-hidden className="text-success-text">●</span>
                 Live · refreshes every {HOME_POLL_MS / 1_000} s
-                {summary !== undefined && <span className="font-mono tabular-nums">· {clockFormat.format(new Date(summary.generatedAt))}</span>}
+                {summary !== undefined && <span className="tabular-nums">· {clockFormat.format(new Date(summary.generatedAt))}</span>}
               </>
             ) : (
               <>
-                <span aria-hidden className="text-err">●</span>
+                <span aria-hidden className="text-danger-text">●</span>
                 Can&apos;t reach the backend · retrying
               </>
             )}

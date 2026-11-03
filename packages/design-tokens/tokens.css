@@ -1,274 +1,302 @@
-/* Errand design tokens: dark (default) + light. Geist + Geist Mono.
+/* Errand design tokens: Lime (design-system/design-system-v3.html), light by default, dark behind the toggle.
  *
  * GENERATED from the typed tokens in packages/design-tokens/src by `pnpm tokens:build`. Do not edit
  * this file: change the source and rebuild. `pnpm check:tokens` fails when this file is stale.
  *
- * Layers, read top to bottom (structure from observatory-ui, MIT):
- *   1. primitives: raw palette, spacing, radius. The only place a literal colour may appear.
- *   2. semantic roles: what components read: surfaces, edges, text, interactive, status tones and tints,
- *      brand, categorical chart palette, type scale. Each theme remaps the same role names.
- *   3. library bridge: shadcn variable names, read by the eve chat template, assistant-ui and agents-ui.
- *      OpenUI's theme and the mobile app read the same semantic roles (see DESIGN_SYSTEM.md).
- *   4. motion presets by job, zeroed under reduced motion.
+ * Read top to bottom:
+ *   1. the lime source: Lime's roles and scale, verbatim. The only place a raw value may appear.
+ *   2. Errand's additions: three colour aliases, two streaming durations and two dark contrast fixes.
  *
- * Theme: data-theme="light" | "dark" on <html> or on any subtree. The roles and the bridge are declared
- * on every theme selector, because a custom property resolves var() where it is declared: a nested
- * light panel must re-declare --primary, not inherit the dark value computed at the root.
- *
- * To re-theme, change primitives. To change meaning, change the semantic layer.
- * Components never introduce colours; add a semantic role first.
+ * Theme: data-theme="light" | "dark" on <html> or on any subtree. Every role that is a var() is declared
+ * on every theme selector, because a custom property resolves var() where it is declared: a nested dark
+ * panel must re-declare --ring, not inherit the light value computed at the root.
  */
-:root,
-[data-theme="dark"] {
-  /* ---- primitives ---- */
-  --ink-0: #0f1114;
-  --ink-1: #17191d;
-  --ink-2: #1e2126;
-  --ink-3: #25292f;
-  --ink-4: #2a2e35;
-  --ink-5: #3a3f47;
-  --ink-6: #5d636d;
-  --ink-7: #8b919c;
-  --ink-8: #b8bdc6;
-  --ink-9: #e7e9ee;
-  --paper-0: #ffffff;
-  --paper-1: #f6f7f9;
-  --paper-2: #eef0f3;
-  --paper-3: #e3e6eb;
-  --paper-4: #cfd4db;
-  --paper-5: #8a919c;
-  --paper-6: #5f6773;
-  --paper-7: #3a404a;
-  --paper-8: #1b1f24;
-  --paper-well: #f1f3f6;
-  --blue-bright: #4c8dff;
-  --blue-deep: #1f5fd6;
-  --green-bright: #3fb950;
-  --green-deep: #18752f;
-  --amber-bright: #d29922;
-  --amber-deep: #915c00;
-  --red-bright: #ff5f57;
-  --red-deep: #cf222e;
-  --orange-bright: #ff7a1a;
-  --orange-deep: #d9600a;
-  --on-amber: #111111;
-  --on-red: #ffffff;
-  --black: #000000;
-  --white: #ffffff;
-  --cat-1: #7aabfc;
-  --cat-2: #b897f0;
-  --cat-3: #1dc5ae;
-  --cat-4: #e189c5;
-  --cat-5: #2ebbe8;
-  --cat-6: #da9e3f;
-  --night-sky-top: #16274d;
-  --night-sky-mid: #2c4a82;
-  --night-building: #0e1424;
-  --night-window: #ffd77a;
-  --night-cloud: #9fb3dd;
-  --night-road: #0b0f1a;
-  --day-sky-top: #7fb6f5;
-  --day-sky-mid: #cfe3fb;
-  --day-building: #8a9ab8;
-  --day-window: #e4ebf5;
-  --day-cloud: #ffffff;
-  --day-road: #9aa7bf;
-  --night-star: #cfd8ff;
-  --night-moon: #f4ecd0;
-  --night-beam: #ffe9a8;
-  --day-sun: #ffd36b;
-  --van-glass: #9fc3ff;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --radius-1: 4px;
-  --radius-2: 6px;
-  --radius-3: 10px;
-  --radius-pill: 999px;
-
-  /* ---- semantic roles (dark) ---- */
-  color-scheme: dark;
-  --surface-well: var(--ink-0);
-  --surface-canvas: var(--ink-1);
-  --surface-card: var(--ink-2);
-  --surface-raised: var(--ink-3);
-  --surface-glass: color-mix(in oklab, var(--ink-0) 55%, transparent);
-  --edge: var(--ink-4);
-  --edge-strong: var(--ink-5);
-  --edge-glass: color-mix(in oklab, var(--white) 8%, transparent);
-  --fg-emph: var(--ink-9);
-  --fg-body: var(--ink-8);
-  --fg-meta: var(--ink-7);
-  --fg-faint: var(--ink-6);
-  --interactive: var(--blue-bright);
-  --interactive-tint: color-mix(in oklab, var(--blue-bright) 15%, transparent);
-  --ok: var(--green-bright);
-  --warn: var(--amber-bright);
-  --err: var(--red-bright);
-  --info: var(--blue-bright);
-  --ok-tint: color-mix(in oklab, var(--green-bright) 14%, transparent);
-  --warn-tint: color-mix(in oklab, var(--amber-bright) 14%, transparent);
-  --err-tint: color-mix(in oklab, var(--red-bright) 14%, transparent);
-  --warn-fill: var(--amber-bright);
-  --on-warn-fill: var(--on-amber);
-  --err-fill: var(--red-deep);
-  --on-err-fill: var(--on-red);
-  --brand: var(--orange-bright);
-  --scrim: color-mix(in oklab, var(--black) 45%, transparent);
-  --shadow-pop: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
-  --hero-sky-top: var(--night-sky-top);
-  --hero-sky-mid: var(--night-sky-mid);
-  --hero-building: var(--night-building);
-  --hero-window: var(--night-window);
-  --hero-cloud: var(--night-cloud);
-  --hero-road: var(--night-road);
-  --hero-title-shadow: 0 2px 12px color-mix(in oklab, var(--black) 60%, transparent);
-  --hero-star: var(--night-star);
-  --hero-moon: var(--night-moon);
-  --hero-sun: var(--day-sun);
-  --hero-beam: var(--night-beam);
-  --hero-van: var(--orange-bright);
-  --hero-van-glass: var(--van-glass);
-  --hero-tyre: var(--on-amber);
-  --hero-dither: color-mix(in oklab, var(--black) 18%, transparent);
-
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --text-meta: 10px;
-  --text-label: 11px;
-  --text-body: 12px;
-  --text-panel: 14px;
-  --text-title: 19px;
-  --text-kpi: 22px;
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-strong: 600;
-
-  /* ---- library bridge (shadcn names; assistant-ui, agents-ui and the eve template read these) ---- */
-  --background: var(--surface-canvas);
-  --foreground: var(--fg-emph);
-  --card: var(--surface-card);
-  --card-foreground: var(--fg-emph);
-  --popover: var(--surface-raised);
-  --popover-foreground: var(--fg-emph);
-  --primary: var(--fg-emph);
-  --primary-foreground: var(--surface-canvas);
-  --secondary: var(--surface-raised);
-  --secondary-foreground: var(--fg-emph);
-  --muted: var(--surface-raised);
-  --muted-foreground: var(--fg-meta);
-  --accent: var(--surface-raised);
-  --accent-foreground: var(--fg-emph);
-  --destructive: var(--err);
-  --border: var(--edge);
-  --input: var(--edge);
-  --ring: var(--interactive);
-  --radius: var(--radius-3);
-  --chart-1: var(--cat-1);
-  --chart-2: var(--cat-2);
-  --chart-3: var(--cat-3);
-  --chart-4: var(--cat-4);
-  --chart-5: var(--cat-5);
-
-  /* ---- motion presets (by job) ---- */
-  --ease-out: cubic-bezier(.16, 1, .3, 1);
-  --ease-sheet: cubic-bezier(.32, .72, 0, 1);
-  --dur-micro: 100ms;
-  --dur-collapse: 150ms;
-  --dur-exit: 160ms;
-  --dur-enter: 220ms;
-  --dur-theme: 200ms;
-  --dur-draw: 550ms;
-  --dur-spin: 900ms;
-}
-
-/* ---- semantic roles (light): same names, light primitives ---- */
-[data-theme="light"] {
+/* ---- lime source: Lime's tokens verbatim (last-updated 2026-11-02). Raw values are allowed only between
+   this line and the end marker. */
+:root, [data-theme="light"], [data-system="lime"], .lime {
   color-scheme: light;
-  --surface-well: var(--paper-well);
-  --surface-canvas: var(--paper-0);
-  --surface-card: var(--paper-1);
-  --surface-raised: var(--paper-2);
-  --surface-glass: color-mix(in oklab, var(--paper-0) 72%, transparent);
-  --edge: var(--paper-3);
-  --edge-strong: var(--paper-4);
-  --edge-glass: color-mix(in oklab, var(--black) 8%, transparent);
-  --fg-emph: var(--paper-8);
-  --fg-body: var(--paper-7);
-  --fg-meta: var(--paper-6);
-  --fg-faint: var(--paper-5);
-  --interactive: var(--blue-deep);
-  --interactive-tint: color-mix(in oklab, var(--blue-deep) 12%, transparent);
-  --ok: var(--green-deep);
-  --warn: var(--amber-deep);
-  --err: var(--red-deep);
-  --info: var(--blue-deep);
-  --ok-tint: color-mix(in oklab, var(--green-deep) 12%, transparent);
-  --warn-tint: color-mix(in oklab, var(--amber-deep) 12%, transparent);
-  --err-tint: color-mix(in oklab, var(--red-deep) 10%, transparent);
-  --warn-fill: var(--amber-bright);
-  --on-warn-fill: var(--on-amber);
-  --err-fill: var(--red-deep);
-  --on-err-fill: var(--on-red);
-  --brand: var(--orange-deep);
-  --scrim: color-mix(in oklab, var(--black) 25%, transparent);
-  --shadow-pop: 0 8px 24px color-mix(in oklab, var(--black) 12%, transparent);
-  --hero-sky-top: var(--day-sky-top);
-  --hero-sky-mid: var(--day-sky-mid);
-  --hero-building: var(--day-building);
-  --hero-window: var(--day-window);
-  --hero-cloud: var(--day-cloud);
-  --hero-road: var(--day-road);
-  --hero-title-shadow: 0 1px 10px color-mix(in oklab, var(--white) 80%, transparent);
-  --hero-star: var(--night-star);
-  --hero-moon: var(--night-moon);
-  --hero-sun: var(--day-sun);
-  --hero-beam: var(--night-beam);
-  --hero-van: var(--orange-deep);
-  --hero-van-glass: var(--van-glass);
-  --hero-tyre: var(--on-amber);
-  --hero-dither: color-mix(in oklab, var(--black) 8%, transparent);
+  /* == Surfaces == */
+  --page: #ffffff; /* the page | app background */
+  --surface: #f6f5f2; /* warm grey: cards, wells, quiet panels | card, sidebar, table header */
+  --surface-2: #efeeea; /* a control at rest or a row on hover | secondary button, chip, hover */
+  --surface-3: #e6e4df; /* pressed, a track | pressed control, slider and switch track */
+  --raised: #ffffff; /* a surface that floats above the page | popover, menu, dialog, sheet */
+  --field: #f6f5f2; /* the fill of a text field | input, textarea, select trigger */
+  --scrim: rgb(15 15 13 / 0.5); /* the layer behind a dialog or sheet | dialog, sheet */
 
-  /* ---- library bridge, re-declared so it resolves against the light roles ---- */
-  --background: var(--surface-canvas);
-  --foreground: var(--fg-emph);
-  --card: var(--surface-card);
-  --card-foreground: var(--fg-emph);
-  --popover: var(--surface-raised);
-  --popover-foreground: var(--fg-emph);
-  --primary: var(--fg-emph);
-  --primary-foreground: var(--surface-canvas);
-  --secondary: var(--surface-raised);
-  --secondary-foreground: var(--fg-emph);
-  --muted: var(--surface-raised);
-  --muted-foreground: var(--fg-meta);
-  --accent: var(--surface-raised);
-  --accent-foreground: var(--fg-emph);
-  --destructive: var(--err);
-  --border: var(--edge);
-  --input: var(--edge);
-  --ring: var(--interactive);
-  --radius: var(--radius-3);
-  --chart-1: var(--cat-1);
-  --chart-2: var(--cat-2);
-  --chart-3: var(--cat-3);
-  --chart-4: var(--cat-4);
-  --chart-5: var(--cat-5);
+  /* == Text == */
+  --fg: #0f0f0d; /* primary text, 17.6:1 on --surface | headings, body, labels */
+  --fg-2: #4a4943; /* secondary text, 9.0:1 on --page | descriptions, table cells */
+  --fg-3: #6b6a63; /* supporting text and icons, 5.4:1 on --page and 5.0:1 on --surface | hints, captions, placeholders */
+  --fg-disabled: #a6a49b; /* a disabled label; no contrast claim | disabled controls */
+  --fg-inverse: #ffffff; /* text on the solid ink fill | solid button, tooltip, toast */
+  --on-accent: #0f0f0d; /* text and icons on the lime in both themes, 15.6:1 on --accent | primary button, selected chip */
+  --glow-accent-fg: #0f0f0d; /* text and icons on the lime glow: ink, on the light body and the calmer dark one alike (Customize turns it white for a picked hue whose dark body runs deep) | primary button, balance chip, featured card */
+
+  /* == Lines == */
+  --line: #e6e4df; /* a hairline between things; decorative | card edge, divider, table rule */
+  --line-strong: #cfcdc6; /* a hairline that must read a little more | field edge, hovered edge */
+  --control: #85827a; /* the outline of a control, 3.8:1 on --page, 3.5:1 on --surface and 3.3:1 on --surface-2, all over the minimum of WCAG 1.4.11; darkened one step from #8f8c84, which fell under it on --surface-2 | checkbox, radio, switch off, slider thumb */
+
+  /* == Solid ink == */
+  --ink: #0f0f0d; /* the ink fill: the second action beside the lime | solid button, tooltip, toast */
+  --ink-hover: #2a2a26; /* ink on hover | solid button */
+  --ink-active: #3f3f3a; /* ink pressed | solid button */
+
+  /* == Accent: acid lime == */
+  --accent: #e4f222; /* the mark: the fill of a primary action, 15.6:1 with --on-accent | primary button, selected segment, switch on, slider fill, progress */
+  --accent-hover: #d6e41a; /* the mark on hover, 13.7:1 with --on-accent | primary button */
+  --accent-active: #c4d211; /* the mark pressed, 11.5:1 with --on-accent | primary button */
+  --accent-wash: #f5f9c4; /* a soft highlight, 17.6:1 with --fg | selected row, highlighted option, the current answer */
+  --accent-line: #7c8700; /* olive line step, 3.95:1 on --page and 3.62:1 on --surface | focus ring, outline, icon on white */
+  --ring: var(--accent-line); /* the focus ring colour | every focus-visible state */
+
+  /* == Status: three hues, each with a mark, a tint and a text step == */
+  --success: #1e8e4a; /* success mark, 4.2:1 on --page | status dot, progress done */
+  --success-tint: #e5f5ea; /* success wash | success badge, alert */
+  --success-text: #17703a; /* success text, 6.1:1 on --page and 5.4:1 on --success-tint | success label */
+  --warn: #c27a00; /* warning mark, 3.5:1 on --page | status dot */
+  --warn-tint: #fff3d6; /* warning wash | warning badge, alert */
+  --warn-text: #8a5200; /* warning text, 6.4:1 on --page and 5.8:1 on --warn-tint | warning label */
+  --danger: #d93636; /* error fill, 4.6:1 with --on-danger | destructive button, invalid ring */
+  --danger-hover: #c02c2c; /* error fill on hover, 5.8:1 with --on-danger | destructive button */
+  --danger-tint: #fdebeb; /* error wash | error badge, alert */
+  --on-danger: #ffffff; /* text on the error fill | destructive button */
+  --danger-text: #b42323; /* error text, 6.6:1 on --page and 5.7:1 on --danger-tint | error message, error label */
+
+  /* == Elevation: a warm ink, low alpha == */
+  --shadow-ink: 40 36 20; /* the shadow channel | every shadow */
+  --shadow-card: 0 1px 2px rgb(var(--shadow-ink) / 0.06), 0 1px 1px rgb(var(--shadow-ink) / 0.04); /* a raised card | card with the raised prop */
+  --shadow-menu: 0 8px 24px -6px rgb(var(--shadow-ink) / 0.16), 0 2px 6px rgb(var(--shadow-ink) / 0.06); /* a menu, popover or select popup | popover, dropdown-menu, select, combobox */
+  --shadow-overlay: 0 24px 48px -12px rgb(var(--shadow-ink) / 0.24), 0 4px 12px rgb(var(--shadow-ink) / 0.08); /* a dialog or sheet | dialog, alert-dialog, sheet */
+  --thumb: #ffffff; /* the knob of a switch, white | switch */
+  --switch-on: var(--accent); /* a switch's track when on | switch */
+  --switch-on-thumb: var(--thumb); /* a switch's knob when on: white on the lime | switch */
+  --shadow-thumb: 0 2px 5px rgb(var(--shadow-ink) / 0.1), 0 1px 1px rgb(var(--shadow-ink) / 0.07), 0 0 0 0.5px rgb(var(--shadow-ink) / 0.1); /* the knob's lift, like a phone's switch: a soft drop, a contact shadow and a hairline edge | switch */
+
+  /* == Glow: a lit surface == */
+  --glow-accent-from: #dbec1c; /* top of the lime body, black text 15.1:1 at the darkest stop | primary button, balance chip, featured card */
+  --glow-accent-to: #f6ff7c; /* bottom of the lime body | primary button, balance chip, featured card */
+  --glow-accent-edge: rgb(255 255 255 / 0.7); /* the crisp light line on the lower inner edge | glow-accent */
+  --glow-accent-bloom: rgb(255 255 255 / 0.28); /* the soft inner bloom | glow-accent */
+  --glow-accent-cast: 112 120 20; /* the olive outer cast, an RGB triplet | glow-accent */
+  --glow-accent-light: 1; /* strength of the white sheen and bloom on the body | glow-accent */
+  --glow-accent-from-lit: #e4f42c; /* top of the body when powered on (hover), black text 16.3:1 at the darkest stop | glow-accent */
+  --glow-accent-to-lit: #faff9c; /* bottom of the body when powered on | glow-accent */
+  --glow-accent-edge-lit: rgb(255 255 255 / 0.9); /* the lower edge line when powered on | glow-accent */
+  --glow-accent-bloom-lit: rgb(255 255 255 / 0.4); /* the inner bloom when powered on | glow-accent */
+  --glow-accent-from-press: #c8d915; /* top of the body while pressed, a darker body, black text 12.4:1 at the darkest stop | glow-accent */
+  --glow-accent-to-press: #e6f24a; /* bottom of the body while pressed | glow-accent */
+  --glow-danger-from: #a31f1f; /* top of the red body, white text 6.1:1 at the worst point | destructive button */
+  --glow-danger-to: #c42b2b; /* bottom of the red body | destructive button */
+  --glow-danger-edge: rgb(255 255 255 / 0.4); /* the lower edge line | glow-danger */
+  --glow-danger-bloom: rgb(255 255 255 / 0.16); /* the inner bloom | glow-danger */
+  --glow-danger-cast: 130 30 30; /* the red outer cast | glow-danger */
+  --glow-danger-light: 0.4; /* a dimmer sheen, so white text keeps 4.5:1 | glow-danger */
+  --glow-danger-from-lit: #b02424; /* top when powered on, white text 5.2:1 at the worst point | glow-danger */
+  --glow-danger-to-lit: #d03333; /* bottom when powered on | glow-danger */
+  --glow-danger-edge-lit: rgb(255 255 255 / 0.6); /* the lower edge line when powered on | glow-danger */
+  --glow-danger-bloom-lit: rgb(255 255 255 / 0.24); /* the inner bloom when powered on | glow-danger */
+  --glow-danger-from-press: #8a1818; /* top while pressed, white text 7.6:1 at the worst point | glow-danger */
+  --glow-danger-to-press: #a82121; /* bottom while pressed | glow-danger */
+  --glow-success-from: #136b35; /* top of the green body, white text 5.2:1 at the worst point | glow-success */
+  --glow-success-to: #1a8445; /* bottom of the green body | glow-success */
+  --glow-success-edge: rgb(255 255 255 / 0.4); /* the lower edge line | glow-success */
+  --glow-success-bloom: rgb(255 255 255 / 0.16); /* the inner bloom | glow-success */
+  --glow-success-cast: 20 100 55; /* the green outer cast | glow-success */
+  --glow-success-light: 0.4; /* a dimmer sheen, so white text keeps 4.5:1 | glow-success */
+  --glow-success-fg: #ffffff; /* text on the green body | glow-success */
+  --glow-success-from-lit: #126f39; /* top when powered on, white text 4.6:1 at the worst point | glow-success */
+  --glow-success-to-lit: #1a8445; /* bottom when powered on | glow-success */
+  --glow-success-edge-lit: rgb(255 255 255 / 0.6); /* the lower edge line when powered on | glow-success */
+  --glow-success-bloom-lit: rgb(255 255 255 / 0.24); /* the inner bloom when powered on | glow-success */
+  --glow-success-from-press: #0f5a2b; /* top while pressed, white text 6.5:1 at the worst point | glow-success */
+  --glow-success-to-press: #157038; /* bottom while pressed | glow-success */
+
+  /* == Scrollbar == */
+  --scrollbar-thumb: var(--line-strong); /* the scrollbar thumb | scroll-area, native scrollbars */
 }
 
+/* The dark theme redefines the roles. The lime steps down a little in lightness and saturation so it does not glare
+   on a near-black page, and black stays the text on it. */
+[data-theme="dark"], [data-system="lime"][data-theme="dark"], .lime[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0e0e0c;
+  --surface: #1a1a17;
+  --surface-2: #262622;
+  --surface-3: #32322d;
+  --raised: #1f1f1c;
+  --field: #1a1a17;
+  --scrim: rgb(0 0 0 / 0.64);
+  --fg: #f4f3ee; /* 15.7:1 on --surface */
+  --fg-2: #c9c7be;
+  --fg-3: #9a9890; /* 5.3:1 on --surface-2 */
+  --fg-disabled: #5e5d57;
+  --fg-inverse: #0f0f0d;
+  --on-accent: #0f0f0d;
+  --line: #2e2e29;
+  --line-strong: #3f3f39;
+  --control: #8a8880; /* 4.9:1 on --surface */
+  --ink: #f4f3ee;
+  --ink-hover: #e1dfd7;
+  --ink-active: #cfcdc4;
+  --accent: #cad649; /* the lime a step calmer for a dark page: 12.2:1 on --page, 12.1:1 with --on-accent */
+  --accent-hover: #d6e262;
+  --accent-active: #bac534;
+  --accent-wash: #2b2e0c; /* 12.6:1 with --fg */
+  --accent-line: #cad649; /* the line step is the mark on dark */
+  --shadow-thumb: 0 2px 5px rgb(0 0 0 / 0.22), 0 1px 1px rgb(0 0 0 / 0.16), 0 0 0 0.5px rgb(0 0 0 / 0.2);
+  --success: #4ade80;
+  --success-tint: #12281a;
+  --success-text: #6ee79b;
+  --warn: #ffb224;
+  --warn-tint: #2e2209;
+  --warn-text: #ffc85c;
+  --danger: #e5484d;
+  --danger-hover: #d33a3f;
+  --danger-tint: #2d1415;
+  --on-danger: #0f0f0d;
+  --danger-text: #ff8a8a;
+  --shadow-ink: 0 0 0;
+  --shadow-card: 0 1px 2px rgb(var(--shadow-ink) / 0.4);
+  --shadow-menu: 0 8px 24px -6px rgb(var(--shadow-ink) / 0.6), 0 0 0 1px var(--line);
+  --shadow-overlay: 0 24px 48px -12px rgb(var(--shadow-ink) / 0.7), 0 0 0 1px var(--line);
+  --glow-accent-cast: 0 0 0;
+  --glow-accent-fg: #0f0f0d;
+  --glow-accent-from: #c2cd3f;
+  --glow-accent-to: #d1e376;
+  --glow-accent-from-lit: #c8d447;
+  --glow-accent-to-lit: #d8e983;
+  --glow-accent-from-press: #b7c230;
+  --glow-accent-to-press: #c6d65f;
+  --glow-accent-light: 0.25;
+  --glow-accent-edge: rgb(255 255 255 / 0.3);
+  --glow-accent-bloom: rgb(255 255 255 / 0.12);
+  --glow-accent-edge-lit: rgb(255 255 255 / 0.45);
+  --glow-accent-bloom-lit: rgb(255 255 255 / 0.18);
+  --glow-danger-from: #da474c; /* black text 4.9:1 at the worst point */
+  --glow-danger-to: #f36a6f;
+  --glow-danger-edge: rgb(255 255 255 / 0.5);
+  --glow-danger-bloom: rgb(255 255 255 / 0.2);
+  --glow-danger-cast: 0 0 0;
+  --glow-danger-light: 1;
+  --glow-danger-from-lit: #e45a5f; /* black text 5.9:1 */
+  --glow-danger-to-lit: #f98285;
+  --glow-danger-edge-lit: rgb(255 255 255 / 0.75);
+  --glow-danger-bloom-lit: rgb(255 255 255 / 0.3);
+  --glow-danger-from-press: #d24449; /* black text 4.6:1 */
+  --glow-danger-to-press: #ec6368;
+  --glow-success-from: #27a75d; /* black text 7.0:1 at the worst point */
+  --glow-success-to: #55d88a;
+  --glow-success-edge: rgb(255 255 255 / 0.5);
+  --glow-success-bloom: rgb(255 255 255 / 0.2);
+  --glow-success-cast: 0 0 0;
+  --glow-success-light: 1;
+  --glow-success-fg: #0f0f0d;
+  --glow-success-from-lit: #32b96b;
+  --glow-success-to-lit: #68e49b;
+  --glow-success-edge-lit: rgb(255 255 255 / 0.75);
+  --glow-success-bloom-lit: rgb(255 255 255 / 0.3);
+  --glow-success-from-press: #1f8f4d; /* black text 5.3:1 */
+  --glow-success-to-press: #43bf74;
+  --ring: var(--accent-line); /* the focus ring colour | every focus-visible state */
+  --switch-on: var(--accent); /* a switch's track when on | switch */
+  --switch-on-thumb: var(--thumb); /* a switch's knob when on: white on the lime | switch */
+  --scrollbar-thumb: var(--line-strong); /* the scrollbar thumb | scroll-area, native scrollbars */
+}
+
+:root {
+  /* == Type == */
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; /* every word | all text */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* code and keys only | code, shortcut */
+  --text-xs: 12px; /* captions, counters | badge, hint */
+  --text-sm: 14px; /* controls and body | button, input, menu item */
+  --text-base: 16px; /* prose, large controls | message, large button */
+  --text-lg: 18px; /* a small heading | card title, empty title */
+  --text-xl: 22px; /* a section or overlay heading | page section, dialog, alert-dialog and sheet titles */
+  --text-2xl: 28px; /* a page heading | page title */
+  --text-3xl: 36px; /* a display figure | account balance */
+  --leading-tight: 1.2; /* headings | text-lg and up */
+  --leading-snug: 1.35; /* labels and short copy | button, card */
+  --leading-normal: 1.5; /* prose | body */
+  --tracking-tight: -0.01em; /* large headings only; Lime never tracks out | text-xl and up */
+  --weight-normal: 400; /* body | prose */
+  --weight-medium: 500; /* controls and labels | button, label */
+  --weight-semibold: 600; /* headings | titles */
+
+  /* == Size: the control height ramp == */
+  --control-sm: 32px; /* a compact control | sm button, chip, input */
+  --control-md: 40px; /* the default control | button, input, select */
+  --control-lg: 48px; /* a primary mobile action | lg button, chat input */
+
+  /* == Radius: controls are pills, fields and panels are soft == */
+  --radius-sm: 6px; /* a tiny inner shape | kbd, checkbox */
+  --radius-md: 10px; /* a menu item | menu item, tab list inner */
+  --radius-field: 12px; /* a text field | input, textarea, select trigger */
+  --radius-panel: 16px; /* a card, popover or dialog | card, popover, dialog, alert */
+  --radius-sheet: 24px; /* a dialog or sheet | dialog, sheet */
+  --radius-control: 999px; /* a button, chip, badge, segment | button, chip, badge, segmented */
+
+  /* == Motion: short, ease-out, never decorative == */
+  --dur-instant: 80ms; /* hover and press colour | every control */
+  --dur-fast: 140ms; /* a small state change | switch, chip, checkbox */
+  --dur-base: 200ms; /* a popup or tab opening | popover, menu, tooltip */
+  --dur-slow: 280ms; /* a dialog or sheet moving | dialog, sheet */
+  --dur-spin: 900ms; /* one turn of the spinner, the only looping motion | spinner */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* the house curve | all transitions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* an element leaving | closing popups */
+  --scale-enter: 0.97; /* a popup's starting scale | popover, menu, dialog */
+  --scale-press: 0.98; /* a control's scale while pressed | button, balance, keypad key */
+
+  /* == Layers: what sits above what == */
+  --z-dialog: 40; /* a dialog or sheet and its scrim | dialog, alert-dialog, sheet */
+  --z-popover: 50; /* a popup anchored to a control, above the dialog it opens from | popover, menu, select, combobox, tooltip */
+  --z-toast: 60; /* a toast, above everything else | toast */
+
+  /* == Layout == */
+  --overlay-sm: 384px; /* a small dialog | alert-dialog */
+  --overlay: 480px; /* the default dialog | dialog */
+  --overlay-lg: 640px; /* a wide dialog | dialog size lg */
+  --popover: 320px; /* a popover's width | popover */
+  --sheet: 400px; /* a side sheet's width, so the page stays in view beside it | sheet */
+  --popup-max: 320px; /* the tallest a list popup grows before it scrolls | select, combobox, menu */
+  --focus-offset: 2px; /* the gap between a control and its ring | every focus-visible state */
+  --line-focus: 2px; /* the ring weight | every focus-visible state */
+}
+
+/* Reduced motion zeroes every duration except the spinner, which is the only signal that work is running. */
 @media (prefers-reduced-motion: reduce) {
-  :root,
-  [data-theme] {
-    --dur-micro: 0ms;
-    --dur-collapse: 0ms;
-    --dur-exit: 0ms;
-    --dur-enter: 0ms;
-    --dur-theme: 0ms;
-    --dur-draw: 0ms;
-    --dur-spin: 0ms;
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --scale-enter: 1;
+    --scale-press: 1;
   }
+}
+/* ---- end lime source */
+
+/* ---- Errand additions: no raw values below this line. */
+/* Lime has no equivalent for these ideas, so they alias Lime roles and add no value. */
+:root, [data-theme], :where(.lime) {
+  --errand-ok-fill: var(--success); /* the solid mark of a provider-confirmed booking | tracker booked mark */
+  --errand-on-ok-fill: var(--page); /* the check drawn on that mark, page white on light and near-black on dark | tracker booked mark */
+  --errand-inferred-edge: var(--warn); /* the dashed edge of a fact Errand inferred or took from memory | memory, request chips */
+}
+
+:root {
+  --dur-stream-word: 240ms; /* one streamed word's blur-in | streaming answer text */
+  --dur-stream-lag: 400ms; /* the most the reveal may trail the stream before it speeds up | streaming answer text */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-stream-word: 0ms;
+  }
+}
+
+/* Errand fix for two Lime dark values that fall under AA with the dark --on-danger (see packages/design-tokens/src/errand.ts). */
+[data-theme="dark"], [data-system="lime"][data-theme="dark"], .lime[data-theme="dark"] {
+  --danger-hover: var(--danger);
+  --glow-danger-from-press: var(--glow-danger-from);
 }

@@ -121,6 +121,7 @@ describe("suite manifests", () => {
       "exactly-once.json",
       "generated-ui.json",
       "home.json",
+      "lime-foundations.json",
       "memory.json",
       "operator-only-traces.json",
       "provider-cancellation.json",

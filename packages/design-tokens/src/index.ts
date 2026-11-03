@@ -1,64 +1,66 @@
-// The design tokens as a typed object: `tokens.dark` and `tokens.light` hold every semantic role and
-// bridge name resolved to a concrete colour, for clients that cannot read CSS (NativeWind, StyleSheet).
-// The web reads the generated `@errand/design-tokens/tokens.css` instead.
-import { bridge, type BridgeName, type BridgeValue } from "./bridge";
-import { colorPrimitives, radius, space, type ColorPrimitive } from "./primitives";
-import { semanticRoleNames, themeNames, themes, type RoleValue, type SemanticRole, type ThemeName } from "./roles";
-import { durations, easings, fonts, textSizes, weights } from "./type-and-motion";
+// The design tokens as a typed object: `tokens.light` and `tokens.dark` hold every Lime role and Errand
+// addition resolved to a concrete value, for clients that cannot read CSS (NativeWind, StyleSheet), and
+// `motion` gives script animation the same durations and curves. The web reads the generated
+// `@errand/design-tokens/tokens.css` instead.
+import { errandColorExtensions, errandDarkFixes, errandMotionExtensions, errandReducedMotion } from "./errand";
+import { limeDark, limeReducedMotion, limeScaleGroups, limeThemeGroups, type LimeGroup, type LimeToken } from "./lime";
 
-export { bridge, colorPrimitives, durations, easings, fonts, radius, semanticRoleNames, space, textSizes, themeNames, themes, weights };
-export type { BridgeName, BridgeValue, ColorPrimitive, RoleValue, SemanticRole, ThemeName };
+export { errandColorExtensions, errandDarkFixes, errandMotionExtensions, errandReducedMotion, limeDark, limeReducedMotion, limeScaleGroups, limeThemeGroups };
+export type { LimeGroup, LimeToken };
 export { renderTokensCss } from "./css";
 
-export type ResolvedTheme = { readonly [name in SemanticRole | BridgeName]: string };
+export const themeNames = ["light", "dark"] as const;
+export type ThemeName = (typeof themeNames)[number];
 
-/** `color-mix(in oklab, C p%, transparent)` is C at alpha p, so it resolves to an 8-digit hex. */
-function withAlpha(primitive: ColorPrimitive, percent: number): string {
-  const alphaByte = Math.round((percent / 100) * 255);
-  return colorPrimitives[primitive] + alphaByte.toString(16).padStart(2, "0");
+type Values = Readonly<Record<string, string>>;
+
+const entries = (tokens: readonly LimeToken[]): Values => Object.fromEntries(tokens.map(([name, value]) => [name, value]));
+const scale = entries(limeScaleGroups.flatMap((group) => group.tokens));
+const motionExtensions = entries(errandMotionExtensions);
+const light = { ...entries(limeThemeGroups.flatMap((group) => group.tokens)), ...entries(errandColorExtensions) };
+const dark = { ...light, ...entries(limeDark), ...entries(errandDarkFixes) };
+
+/** Substitutes every var(--x) with x's own resolved value, as the browser does where the role is declared. */
+function resolveValue(value: string, values: Values, seen: readonly string[] = []): string {
+  return value.replace(/var\(--([\w-]+)\)/g, (_, name: string) => {
+    if (seen.includes(name)) throw new Error(`token cycle at --${name}`);
+    const next = values[name];
+    if (next === undefined) throw new Error(`undefined token --${name}`);
+    return resolveValue(next, values, [...seen, name]);
+  });
 }
 
-function resolveRole(value: RoleValue): string {
-  switch (value.kind) {
-    case "ref":
-      return colorPrimitives[value.primitive];
-    case "alpha":
-      return withAlpha(value.primitive, value.percent);
-    case "shadow":
-      return `${value.geometry} ${withAlpha(value.primitive, value.percent)}`;
-  }
+function resolveTheme(values: Values): Values {
+  const all = { ...scale, ...motionExtensions, ...values };
+  return Object.fromEntries(Object.keys(all).map((name) => [name, resolveValue(all[name] as string, all)]));
 }
 
-function resolveBridge(value: BridgeValue, roles: Record<SemanticRole, string>): string {
-  switch (value.kind) {
-    case "role":
-      return roles[value.role];
-    case "primitive":
-      return colorPrimitives[value.primitive];
-    case "radius":
-      return `${radius[value.radius]}px`;
-  }
+/** A duration token in milliseconds, e.g. `ms("dur-base")` is 200. Zero it yourself under reduced motion. */
+function ms(name: string): number {
+  const value = scale[name] ?? motionExtensions[name];
+  const match = value?.match(/^(\d+)ms$/);
+  if (!match) throw new Error(`--${name} is not a duration`);
+  return Number(match[1]);
 }
 
-function resolveTheme(theme: ThemeName): ResolvedTheme {
-  const roles = Object.fromEntries(semanticRoleNames.map((role) => [role, resolveRole(themes[theme][role])])) as Record<
-    SemanticRole,
-    string
-  >;
-  const bridged = Object.fromEntries(
-    Object.entries(bridge).map(([name, value]: [string, BridgeValue]) => [name, resolveBridge(value, roles)]),
-  ) as Record<BridgeName, string>;
-  return { ...roles, ...bridged };
+/** A curve token as the four numbers motion libraries take, e.g. `curve("ease-out")`. */
+function curve(name: string): readonly [number, number, number, number] {
+  const match = scale[name]?.match(/^cubic-bezier\(([^)]+)\)$/);
+  if (!match) throw new Error(`--${name} is not a cubic-bezier curve`);
+  const [a, b, c, d] = (match[1] as string).split(",").map(Number);
+  return [a as number, b as number, c as number, d as number];
 }
 
-export const tokens = {
-  dark: resolveTheme("dark"),
-  light: resolveTheme("light"),
-  space,
-  radius,
-  fonts,
-  textSizes,
-  weights,
-  easings,
-  durations,
+export const motion = {
+  instant: ms("dur-instant"),
+  fast: ms("dur-fast"),
+  base: ms("dur-base"),
+  slow: ms("dur-slow"),
+  spin: ms("dur-spin"),
+  streamWord: ms("dur-stream-word"),
+  streamLag: ms("dur-stream-lag"),
+  easeOut: curve("ease-out"),
+  easeIn: curve("ease-in"),
 } as const;
+
+export const tokens = { light: resolveTheme(light), dark: resolveTheme(dark) } as const;

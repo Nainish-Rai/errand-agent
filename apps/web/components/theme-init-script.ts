@@ -4,17 +4,15 @@
 export const THEME_STORAGE_KEY = "errand-theme";
 
 /**
- * Runs in <head> before first paint, so the page never flashes the wrong theme: the saved choice if
- * there is one, otherwise the system setting. It is inlined as a string, so it must be self-contained.
+ * Runs in <head> before first paint, so the page never flashes the wrong theme. Light is the default
+ * whatever the OS prefers (design system v3): prefers-color-scheme is never read. Dark is only behind
+ * the toggle, and a toggled choice is saved. The server already renders data-theme="light", so a page
+ * with nothing saved never changes theme at all. It is inlined as a string, so it must be self-contained.
  */
 export const themeInitScript = `(() => {
-  const root = document.documentElement;
   try {
-    const stored = localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-    root.dataset.theme = stored === "light" || stored === "dark"
-      ? stored
-      : window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    if (localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)}) === "dark") document.documentElement.dataset.theme = "dark";
   } catch {
-    root.dataset.theme = "dark";
+    // Storage is blocked: stay light.
   }
 })();`;

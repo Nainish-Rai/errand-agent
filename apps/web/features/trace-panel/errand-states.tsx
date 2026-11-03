@@ -28,20 +28,20 @@ export function ErrandStates({ trace }: { readonly trace: GetSessionTraceRespons
   if (transitions.length === 0) return null;
   const originMs = Math.min(...trace.spans.map((span) => span.startTimeMs), ...transitions.map((event) => event.timeMs));
   return (
-    <section aria-label="Errand states" className="rounded-md border border-border bg-card p-3">
-      <h2 className="mb-2 text-label font-semibold text-fg-emph">Errand states</h2>
+    <section aria-label="Errand states" className="rounded-md border border-line bg-surface p-3">
+      <h2 className="mb-2 text-xs font-semibold text-fg">Errand states</h2>
       <ol className="flex flex-col gap-1">
         {transitions.map((event) => {
           const reason = stringAt(event, "errand.transition.reason");
           return (
             <li key={event.eventId} className="flex items-baseline justify-between gap-3 text-sm">
               <span>
-                <span className="text-fg-meta">{label(stringAt(event, "errand.state.from"))}</span>
+                <span className="text-fg-3">{label(stringAt(event, "errand.state.from"))}</span>
                 {" → "}
-                <span className="font-medium text-fg-emph">{label(stringAt(event, "errand.state.to"))}</span>
-                {reason !== undefined && <span className="text-fg-meta"> · {REASON_LABELS[reason] ?? reason}</span>}
+                <span className="font-medium text-fg">{label(stringAt(event, "errand.state.to"))}</span>
+                {reason !== undefined && <span className="text-fg-3"> · {REASON_LABELS[reason] ?? reason}</span>}
               </span>
-              <span className="shrink-0 font-mono text-label text-fg-meta tabular-nums">
+              <span className="shrink-0 text-xs text-fg-3 tabular-nums">
                 {((event.timeMs - originMs) / 1000).toFixed(1)}s
               </span>
             </li>

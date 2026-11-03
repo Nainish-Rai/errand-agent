@@ -4,6 +4,8 @@
     python3 -I design-system/check_contrast.py [packages/design-tokens/tokens.css]
     python3 -I design-system/check_contrast.py design-system/design-system-v3.html
 
+The app's generated tokens.css carries the Lime tokens too, so both files are checked as Lime.
+
 Resolves each semantic role to its primitive hex in both themes (dark is :root, light is
 [data-theme="light"] layered over it), then checks every text role against the surfaces text sits on,
 and every filled badge against its own text colour. AA for normal text is 4.5:1.
@@ -12,7 +14,7 @@ A file that carries the Lime tokens (design-system-v3.html) is checked as Lime: 
 [data-system="lime"], .lime block, dark is the dark block layered over light, and Errand's :where(.lime)
 extension block is merged into both. A dark block after the verbatim source (Errand's fix for two dark
 danger values) is layered over dark. Text pairs and filled pairs need 4.5:1, including the text on every
-stop of the glow gradients (rest, lit and pressed, both ends). Non-text pairs (a control outline, a status
+stop of the three glow gradients (accent, danger and success: rest, lit and pressed, both ends). Non-text pairs (a control outline, a status
 mark, a focus ring, the booked mark, the inferred edge) need 3:1 (WCAG 1.4.11).
 """
 import re
@@ -38,7 +40,11 @@ LIME_FILLS = [
     ("--fg", "--surface-2"), ("--fg-2", "--surface-2"), ("--fg-3", "--surface-2"), ("--fg", "--field"), ("--fg-3", "--field"),
 ]
 GLOW_STOPS = ["from", "to", "from-lit", "to-lit", "from-press", "to-press"]
-LIME_GLOW = [("--glow-accent-fg", "--glow-accent-" + s) for s in GLOW_STOPS] + [("--on-danger", "--glow-danger-" + s) for s in GLOW_STOPS]
+LIME_GLOW = (
+    [("--glow-accent-fg", "--glow-accent-" + s) for s in GLOW_STOPS]
+    + [("--on-danger", "--glow-danger-" + s) for s in GLOW_STOPS]
+    + [("--glow-success-fg", "--glow-success-" + s) for s in GLOW_STOPS]
+)
 LIME_NON_TEXT = [
     ("--control", "--page"), ("--control", "--surface"), ("--control", "--surface-2"),
     ("--accent-line", "--page"), ("--accent-line", "--surface"),

@@ -1,8 +1,6 @@
-import "@fontsource/geist/400.css";
-import "@fontsource/geist/500.css";
-import "@fontsource/geist/600.css";
-import "@fontsource/geist-mono/400.css";
-import "@fontsource/geist-mono/500.css";
+import "@fontsource/hanken-grotesk/400.css";
+import "@fontsource/hanken-grotesk/500.css";
+import "@fontsource/hanken-grotesk/600.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { themeInitScript } from "@/components/theme-init-script";
@@ -18,8 +16,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
-    // The head script sets data-theme before hydration, so React must not warn about it.
-    <html lang="en" suppressHydrationWarning>
+    // Light is rendered by the server, so first paint is light whatever the OS prefers. The head script
+    // switches to a saved dark choice before first paint, so React must not warn about data-theme.
+    <html lang="en" className="lime" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} id="theme-init" />
       </head>

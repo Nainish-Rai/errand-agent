@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { focusRing } from "./ui/button";
 
 const chipBase =
-  "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-label transition-colors disabled:cursor-not-allowed disabled:opacity-45";
+  "inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45";
 
 type FilterChipProps = Omit<ComponentProps<"button">, "value"> & {
   readonly icon?: ReactNode;
@@ -25,14 +25,14 @@ export function FilterChip({ icon, value, selected = false, className, ...props 
       className={cn(
         chipBase,
         focusRing,
-        "border-edge bg-surface-canvas text-fg-meta hover:border-edge-strong hover:text-fg-body",
-        "data-selected:border-interactive data-selected:bg-interactive-tint data-selected:text-fg-emph",
+        "border-line bg-page text-fg-3 hover:border-line-strong hover:text-fg-2",
+        "data-selected:border-accent-line data-selected:bg-accent-wash data-selected:text-fg",
         className,
       )}
       {...props}
     >
       {icon !== undefined && <span aria-hidden>{icon}</span>}
-      <span className="text-fg-emph">{value}</span>
+      <span className="text-fg">{value}</span>
       <span aria-hidden>⌄</span>
     </button>
   );
@@ -46,7 +46,7 @@ export function SuggestionChip({ className, ...props }: ComponentProps<"button">
       className={cn(
         chipBase,
         focusRing,
-        "rounded-full border-dashed border-edge-strong bg-surface-canvas px-2.5 text-fg-body hover:bg-surface-raised hover:text-fg-emph",
+        "rounded-full border-dashed border-line-strong bg-page px-2.5 text-fg-2 hover:bg-surface-2 hover:text-fg",
         className,
       )}
       {...props}
@@ -67,7 +67,7 @@ export function MemoryChip({ origin, className, ...props }: MemoryChipProps) {
       data-origin={origin}
       className={cn(
         chipBase,
-        origin === "inferred" ? "inferred bg-surface-canvas text-warn" : "border-edge bg-surface-canvas text-fg-body",
+        origin === "inferred" ? "inferred bg-page text-warn-text" : "border-line bg-page text-fg-2",
         className,
       )}
       {...props}

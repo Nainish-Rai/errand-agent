@@ -4,12 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done (PR #23)
 
-- [ ] The tokens package holds the Lime values for light and dark as its single source, plus the v3 additions; the generated CSS matches v3's token tables
-- [ ] The token check in `pnpm check` enforces the Lime rules that v3's `check_tokens.py --lime` enforces: no 700 weight, no uppercase or tracking, no gradient except the glow, no raw colour, duration, shadow, radius or font size, and no loop except the spinner. Show it failing once on a planted defect
-- [ ] The contrast check covers the Lime roles in both themes, including every glow stop, and passes
-- [ ] First load is light with OS dark emulated, and there is no flash; the toggle still switches to dark
-- [ ] Under reduced motion every duration except the spinner's is 0, including the vendored agents-ui components
-- [ ] Every screen (home, chat, memory, `/ops`, `/design`) renders in Lime with no leftover v2 colour, eyebrow label or uppercase text; screenshots before and after are attached
-- [ ] `design-system/DESIGN_SYSTEM.md` points to v3 as the source of truth
+- [x] The tokens package holds the Lime values for light and dark as its single source, plus the v3 additions; the generated CSS matches v3's token tables
+- [x] The token check in `pnpm check` enforces the Lime rules that v3's `check_tokens.py --lime` enforces: no 700 weight, no uppercase or tracking, no gradient except the glow, no raw colour, duration, shadow, radius or font size, and no loop except the spinner. Show it failing once on a planted defect
+- [x] The contrast check covers the Lime roles in both themes, including every glow stop, and passes
+- [x] First load is light with OS dark emulated, and there is no flash; the toggle still switches to dark
+- [x] Under reduced motion every duration except the spinner's is 0, including the vendored agents-ui components
+- [x] Every screen (home, chat, memory, `/ops`, `/design`) renders in Lime with no leftover v2 colour, eyebrow label or uppercase text; screenshots before and after are attached
+- [x] `design-system/DESIGN_SYSTEM.md` points to v3 as the source of truth
