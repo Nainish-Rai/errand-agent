@@ -72,6 +72,8 @@ A FAIL scenario keeps `failure.png`, the settled state when it stopped.
 | `run-budget.json` | a scripted model that loops forever stops at four model turns (three tool calls) and the chat shows the budget-exhausted message, with the `run budget_exhausted` outcome in the trace; a world search that throws ends the run failed with the failure message, the search shows as failed, and the errand is failed |
 | `approval-card.json` | choosing an option shows the fixed approval card (provider, time in IST, address, price, cancellation terms, hold countdown); Approve ₹399 books exactly one booking whose grant has the card's fingerprint and is consumed, with the receipt and the agent's reply giving the booking ID; Decline books nothing and frees the slot; a typed yes books nothing and shows the card again |
 | `design-system.json` | `/design` theme toggle persists across reload dark→light and light→dark against the system setting; every approval card state (declined included) renders in both panels |
+| `review-insight.json` | in the `review_injection` world, each option's insight card renders from the schema only (strengths, red flags, the flagged-review count, the reader) in both themes; no review sentence is on the page while the world holds the attacks; the errand is unchanged, the trace has the reader's spans, and only the seeded bookings exist |
+| `design-system.json` | `/design` theme toggle persists across reload dark→light and light→dark against the system setting; every approval card state renders in both panels |
 
 When a ticket adds UI, add its scenarios to the matching suite or a new one, and list it in the
 [feature map](../features/README.md).

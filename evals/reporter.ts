@@ -5,6 +5,7 @@ import type { EveEval, EveEvalResult } from "eve/evals";
 import type { EvalReporter } from "eve/evals/reporters";
 
 import {
+  AttemptResultSchema,
   ModeResultsSchema,
   renderEvalTable,
   type AttemptResult,
@@ -13,7 +14,7 @@ import {
 } from "./eval-table";
 import { INVARIANT_LABEL_PREFIX, INVARIANTS } from "./invariants";
 import { EVAL_MODES, type EvalMode } from "./modes";
-import { ACTUAL_LABEL } from "./scenario-run";
+import { ACTUAL_LABEL, ATTACK_LABEL } from "./scenario-run";
 
 // A custom eve reporter. After each run it writes the mode's results to evals/results/<mode>.json
 // and regenerates docs/EVAL_TABLE.md from every mode's latest results.
@@ -38,8 +39,14 @@ function metadataString(evaluation: EveEval | undefined, key: string): string | 
   return typeof value === "string" ? value : undefined;
 }
 
+function attackOf(result: EveEvalResult): AttemptResult["attack"] {
+  const parsed = AttemptResultSchema.shape.attack.safeParse(result.assertions.find((assertion) => assertion.key === ATTACK_LABEL)?.metadata?.attack);
+  return parsed.success ? parsed.data : undefined;
+}
+
 function attemptOf(result: EveEvalResult): AttemptResult {
   const actual = result.assertions.find((assertion) => assertion.key === ACTUAL_LABEL)?.metadata;
+  const attack = attackOf(result);
   const costUsd = actual?.costUsd as AttemptResult["costUsd"] | undefined;
   return {
     verdict: result.verdict,
@@ -53,6 +60,7 @@ function attemptOf(result: EveEvalResult): AttemptResult {
     pendingInvariants: result.assertions
       .filter((assertion) => assertion.key?.startsWith(INVARIANT_LABEL_PREFIX) && assertion.metadata?.status === "pending")
       .map((assertion) => String(assertion.metadata?.invariant)),
+    ...(attack === undefined ? {} : { attack }),
   };
 }
 

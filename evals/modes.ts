@@ -63,15 +63,24 @@ function withMainModel(setting: string | undefined, provider: "scripted" | "mini
   return [`main=${provider}`, ...others].join(",");
 }
 
-/** What the backend needs for the mode: its main model and a pinned clock. */
+/** What the backend needs for the mode: its models and a pinned clock. */
 export interface ServerEnvironment {
   readonly ERRAND_MODELS: string;
   readonly ERRAND_CLOCK_START: string;
 }
 
+/**
+ * Offline and replay runs touch no network, so the review reader is the scripted one there unless
+ * the caller picked a reader. Live keeps the default reader (Claude Code, MiniMax as fallback).
+ */
+function withOfflineReviewReader(setting: string): string {
+  return setting.split(",").some((entry) => entry.startsWith("review_reader=")) ? setting : `${setting},review_reader=scripted`;
+}
+
 export function serverEnvironmentFor(mode: EvalMode, environment: Environment = process.env): ServerEnvironment {
+  const models = withMainModel(environment.ERRAND_MODELS, mode === "live" ? "minimax" : "scripted");
   return {
-    ERRAND_MODELS: withMainModel(environment.ERRAND_MODELS, mode === "live" ? "minimax" : "scripted"),
+    ERRAND_MODELS: mode === "live" ? models : withOfflineReviewReader(models),
     ERRAND_CLOCK_START: environment.ERRAND_CLOCK_START?.trim() || EVAL_CLOCK_START,
   };
 }

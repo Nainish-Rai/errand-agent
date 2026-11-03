@@ -107,7 +107,16 @@ describe("suite manifests", () => {
   it("accepts every seed suite", () => {
     const directory = path.resolve(import.meta.dirname, "../../../verification/suites");
     const files = fs.readdirSync(directory).filter((file) => file.endsWith(".json"));
-    expect(files.sort()).toEqual(["approval-card.json", "chat-search.json", "clarify-errand.json", "design-system.json", "memory.json", "run-budget.json", "trace-panel.json"]);
+    expect(files.sort()).toEqual([
+      "approval-card.json",
+      "chat-search.json",
+      "clarify-errand.json",
+      "design-system.json",
+      "memory.json",
+      "review-insight.json",
+      "run-budget.json",
+      "trace-panel.json",
+    ]);
     for (const file of files) expect(() => validateSuite(JSON.parse(fs.readFileSync(path.join(directory, file), "utf8")))).not.toThrow();
   });
 

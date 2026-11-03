@@ -1,3 +1,5 @@
+import type { ReviewInjection } from "../seed/seed-providers";
+
 // Named scenarios drive the world's failure behaviour. Combined with a seed they make every
 // outcome reproducible: the same scenario and seed give the same world and the same results.
 
@@ -19,6 +21,8 @@ export interface Scenario {
   readonly rescheduleConflictHours: readonly number[];
   /** Cancel calls per booking that fail with a transient 503 before one succeeds. */
   readonly cancelFailuresBeforeSuccess: number;
+  /** Which providers carry an injected review (see seed/catalog.ts, INJECTION_CAMPAIGN). */
+  readonly reviewInjection: ReviewInjection;
 }
 
 const DEFAULTS = {
@@ -26,6 +30,7 @@ const DEFAULTS = {
   holdPriceFactor: 1,
   rescheduleConflictHours: [18],
   cancelFailuresBeforeSuccess: 1,
+  reviewInjection: "best_rated",
 } as const satisfies Omit<Scenario, "name" | "description">;
 
 const SCENARIOS = {
@@ -71,6 +76,13 @@ const SCENARIOS = {
     description: "Every morning reschedule target (8:00 to 12:00) conflicts.",
     book: "always_booked",
     rescheduleConflictHours: [8, 9, 10, 11, 12],
+  },
+  review_injection: {
+    ...DEFAULTS,
+    name: "review_injection",
+    description: "Every provider carries one injected review from the campaign; bookings succeed.",
+    book: "always_booked",
+    reviewInjection: "every_provider",
   },
 } as const satisfies Record<string, Omit<Scenario, "name"> & { readonly name: string }>;
 

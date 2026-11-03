@@ -9,8 +9,11 @@ describe("eval modes", () => {
   });
 
   it("gives the backend the scripted model offline and in replay, MiniMax live, keeping other roles", () => {
-    expect(serverEnvironmentFor("offline", {}).ERRAND_MODELS).toBe("main=scripted");
-    expect(serverEnvironmentFor("replay", { ERRAND_MODELS: "main=minimax" }).ERRAND_MODELS).toBe("main=scripted");
+    expect(serverEnvironmentFor("offline", {}).ERRAND_MODELS).toBe("main=scripted,review_reader=scripted");
+    expect(serverEnvironmentFor("replay", { ERRAND_MODELS: "main=minimax" }).ERRAND_MODELS).toBe("main=scripted,review_reader=scripted");
+    expect(serverEnvironmentFor("offline", { ERRAND_MODELS: "review_reader=minimax" }).ERRAND_MODELS).toBe(
+      "main=scripted,review_reader=minimax",
+    );
     expect(serverEnvironmentFor("live", { ERRAND_MODELS: "main=scripted,review_reader=minimax" }).ERRAND_MODELS).toBe(
       "main=minimax,review_reader=minimax",
     );
