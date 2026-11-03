@@ -61,7 +61,7 @@ export function HomeScreen() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-2 px-3 min-[560px]:grid-cols-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 px-3 min-[560px]:grid-cols-[repeat(2,minmax(0,1fr))]">
           <WorkingNow summary={summary} nowMs={nowMs} />
           <WaitingOnYou summary={summary} />
           <UpcomingBookings summary={summary} />

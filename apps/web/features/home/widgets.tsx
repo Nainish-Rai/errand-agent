@@ -36,7 +36,7 @@ function LoadingRows() {
 
 function Rows({ label, children }: { readonly label: string; readonly children: ReactNode }) {
   return (
-    <ul aria-label={label} className="m-0 grid list-none p-0">
+    <ul aria-label={label} className="m-0 grid list-none grid-cols-[minmax(0,1fr)] p-0">
       {children}
     </ul>
   );
@@ -224,8 +224,8 @@ function alertRow(alert: HomeAlertView, nowMs: number) {
         <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-raised">
           <ListRow
             lead={<StatusMark kind="cancelled" label="Failed" className="w-20 flex-none" />}
-            title={`${errandTitle(alert)} stopped`}
-            meta="something failed mid-run · nothing was booked by it"
+            title={alert.service === null ? "An errand stopped" : `${errandTitle(alert)} stopped`}
+            meta="a run failed · open the chat to see where it stopped"
             action={since}
           />
         </Link>

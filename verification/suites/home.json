@@ -240,15 +240,15 @@
           "options": {
             "expect": [
               {
-                "path": "events[0].name",
+                "path": "events.0.name",
                 "equals": "start → gathering"
               },
               {
-                "path": "events[1].name",
+                "path": "events.1.name",
                 "equals": "composer → errand: area, timeWindow, budget"
               },
               {
-                "path": "events[2].name",
+                "path": "events.2.name",
                 "equals": "memory context"
               },
               {

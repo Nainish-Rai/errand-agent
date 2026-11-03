@@ -158,7 +158,11 @@ function NotificationBell({ summary }: { readonly summary?: Summary }) {
           <ul className="m-0 grid list-none gap-1 p-0">
             {needing.map((alert) => (
               <li key={alert.kind === "provider_cancelled" ? alert.alertId : alert.errandId} className="text-fg-body">
-                {alert.kind === "provider_cancelled" ? `${alert.providerName} cancelled a booking` : `${errandTitle(alert)} stopped`}
+                {alert.kind === "provider_cancelled"
+                  ? `${alert.providerName} cancelled a booking`
+                  : alert.service === null
+                    ? "An errand stopped"
+                    : `${errandTitle(alert)} stopped`}
               </li>
             ))}
           </ul>

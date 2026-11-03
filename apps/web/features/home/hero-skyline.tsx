@@ -51,12 +51,12 @@ export function HeroSkyline() {
         ))}
       </g>
       <g className={night}>
-        <circle cx="610" cy="48" r="16" className="fill-(--hero-moon)" />
-        <circle cx="617" cy="43" r="14" className="fill-(--hero-sky-top)" />
+        <circle cx="600" cy="70" r="16" className="fill-(--hero-moon)" />
+        <circle cx="607" cy="65" r="14" className="fill-(--hero-sky-top)" />
       </g>
       <g className={`fill-(--hero-sun) ${day}`}>
-        <circle cx="610" cy="50" r="20" />
-        <circle cx="610" cy="50" r="30" opacity=".25" />
+        <circle cx="600" cy="72" r="20" />
+        <circle cx="600" cy="72" r="30" opacity=".25" />
       </g>
       <g className="fill-(--hero-cloud)" opacity=".6">
         {CLOUDS.map(([x, y, width, height]) => (

@@ -222,7 +222,7 @@ export function Composer({ summary, prompt, onPromptChange }: { readonly summary
         { value: "new", label: "New errand" },
         { value: "running", label: "Running", count: running },
       ]}
-      className="relative z-10 mx-auto -mt-1.5 w-[min(30rem,calc(100%-1.5rem))] rounded-lg border border-edge bg-surface-card pt-2 shadow-md [&>[role=tablist]]:border-b-0 [&>[role=tablist]]:px-3"
+      className="relative z-10 mx-auto -mt-1.5 w-[min(34rem,calc(100%-1.5rem))] rounded-lg border border-edge bg-surface-card pt-2 shadow-md [&>[role=tablist]]:border-b-0 [&>[role=tablist]]:px-3"
     >
       <TabPanel value="new" className="outline-none">
         <form onSubmit={(event) => void send(event)}>
