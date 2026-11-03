@@ -713,6 +713,23 @@
           ]
         },
         {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "dark is the app's toggle (light opens first whatever the OS prefers)"
+        },
+        {
           "command": "fill",
           "options": {
             "role": "textbox",
@@ -1024,6 +1041,16 @@
             ]
           },
           "note": "the link is on the backend"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "html"
+          ],
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "note": "the new chat keeps the dark choice"
         },
         {
           "command": "screenshot",
