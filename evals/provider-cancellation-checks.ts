@@ -34,10 +34,12 @@ export function providerUpdatesIn(turns: readonly ChatTurn[]): string[] {
   );
 }
 
-/** Every provider any search offered as an option, across the turns. */
+/** Every provider any search offered as an option or listed in its results, across the turns. */
 export function offeredProviderIds(turns: readonly ChatTurn[]): string[] {
   return turns.flatMap((turn) =>
-    searchesIn(turn).flatMap((search) => (search.kind === "found" ? search.options.map((option) => option.providerId) : [])),
+    searchesIn(turn).flatMap((search) =>
+      search.kind === "found" ? [...search.options.map((option) => option.providerId), ...search.providers.map((provider) => provider.id)] : [],
+    ),
   );
 }
 
