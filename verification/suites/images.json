@@ -1,0 +1,877 @@
+{
+  "version": 1,
+  "title": "Images in generative UI: registry photos, and nothing fetched for a URL or an unknown key",
+  "feature": "images",
+  "description": "Ticket 22. Provider choice cards, provider details, the approval card, the receipt, service choice cards, home tiles and suggestions show photos the app bundles, resolved from the world's image keys by a closed registry; every image request goes to /_next/static/media/. In the untrusted_images world every key is hostile (a URL, a data: URI, a path, a file name, prototype names, an unknown key), the reply smuggles markdown and raw HTML images and a CSS url(), and a service choice names URL ids: every surface shows its fallback, the page has no <img>, and the browser requests no image at all (the network guard would also fail the scenario on any request leaving the run).",
+  "scenarios": [
+    {
+      "id": "provider-photos-approval-and-receipt-thumbnails",
+      "title": "Provider choice cards carry job photos; the approval card and the receipt carry Shiva's thumbnail",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the booking script: search, then hold and propose, then execute"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=img[name=\"Two adjustable pipe wrenches\"]"
+          ],
+          "note": "Shiva's card shows its 4:3 job photo (work-plumbing-2), loaded from the registry"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "no card fell back"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the first turn finished"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Details\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 4
+          },
+          "args": [
+            "role=list[name=\"Photos of past work\"] >> role=img"
+          ],
+          "note": "Details shows four photos of past work"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Shiva Sanitary Solutions details\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "and Shiva's square thumbnail"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Choose\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Approve booking\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "the approval card shows the provider thumbnail"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the turn finished"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "bkg_0002"
+          },
+          "args": [
+            "role=region[name=\"Booked\"]"
+          ],
+          "note": "the receipt shows the verified booking"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Booked\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "the receipt shows the provider thumbnail"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "approval-and-receipt.png"
+          ]
+        },
+        {
+          "command": "network",
+          "options": {
+            "resourceType": "image",
+            "notPath": "/_next/static/media/*",
+            "expectCount": 0
+          },
+          "note": "every image the page requested is a bundled registry file (/_next/static/media/); nothing else was fetched"
+        }
+      ]
+    },
+    {
+      "id": "service-choice-cards",
+      "title": "Which AC service? shows a photo, the world's price and description per option, and a tap answers",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "ask_ui",
+                            "input": {
+                              "ui": "root = Stack([q])\nq = ServiceChoices(\"Which AC service?\", [ServiceChoice(\"ac_gas_refill\", \"Gas refill\"), ServiceChoice(\"ac_deep_clean\", \"Deep clean\"), ServiceChoice(\"ac_repair\", \"Repair\")])"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Which AC service do you need? Prices are for one split AC."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "text": "Deep clean it is."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "ask which AC service, then acknowledge"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "My AC needs servicing before the weekend"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"] >> role=img[name=\"Technician connecting a gas cylinder to an outdoor AC unit\"]"
+          ],
+          "note": "gas refill has its 4:3 photo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"] >> role=img[name=\"Hands lifting an AC filter grille to clean it\"]"
+          ],
+          "note": "deep clean has its photo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"] >> role=img[name=\"Hands working on the pipes of an AC unit\"]"
+          ],
+          "note": "repair has its photo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "from ₹599"
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"]"
+          ],
+          "note": "the world's price, not the model's"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Prices are for one split AC."
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the turn finished"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "service-choice.png"
+          ]
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Which AC service?\"] >> css=[data-option-id=ac_deep_clean]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Deep clean it is."
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the tap answered as the person and the agent went on"
+        },
+        {
+          "command": "network",
+          "options": {
+            "resourceType": "image",
+            "notPath": "/_next/static/media/*",
+            "expectCount": 0
+          },
+          "note": "every image the page requested is a bundled registry file (/_next/static/media/); nothing else was fetched"
+        }
+      ]
+    },
+    {
+      "id": "home-service-tiles",
+      "title": "Home: Book a service tiles and the suggestions carry service photos; a tile fills the composer",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 5
+          },
+          "args": [
+            "role=group[name=\"Services\"] >> role=img"
+          ],
+          "note": "five service tiles, each with its photo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=group[name=\"Services\"] >> role=img[name=\"Split AC outdoor unit on a wall bracket\"]"
+          ],
+          "note": "the AC servicing tile's photo loaded"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 3
+          },
+          "args": [
+            "role=group[name=\"Suggestions\"] >> role=img"
+          ],
+          "note": "each suggestion carries its service's photo"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "home-tiles.png"
+          ]
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=group[name=\"Services\"] >> role=button[name=\"AC servicing\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "AC servicing this week"
+          },
+          "note": "the tile puts its errand in the composer"
+        },
+        {
+          "command": "network",
+          "options": {
+            "resourceType": "image",
+            "notPath": "/_next/static/media/*",
+            "expectCount": 0
+          },
+          "note": "every image the page requested is a bundled registry file (/_next/static/media/); nothing else was fetched"
+        }
+      ]
+    },
+    {
+      "id": "hostile-images-fetch-nothing",
+      "title": "A world naming URLs, data: URIs, paths and unknown keys, and a reply smuggling markdown images: fallbacks everywhere and not one image request",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "untrusted_images",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: untrusted_images, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the plumbers in Koramangala this week. Which one should I book?\n\n![leak](https://images.example.com/md.png)\n\n<img src=\"/hostile/raw.webp\" alt=\"raw\">\n\n<picture><source srcset=\"/hostile/source.webp\"></picture>\n\n<span style=\"background-image:url(/hostile/css.webp)\">styled</span>"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "ask_ui",
+                            "input": {
+                              "ui": "root = Stack([q])\nq = ServiceChoices(\"Which AC service?\", [ServiceChoice(\"https://images.example.com/option.png\", \"Gas refill\"), ServiceChoice(\"data:image/png;base64,iVBORw0KGgo=\", \"Deep clean\"), ServiceChoice(\"ac_repair\", \"<img src=/hostile/label.webp> Repair\")])"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Which AC service do you need?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "search with a smuggling reply, a service choice naming URLs, then hold, propose and execute"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 5
+          },
+          "args": [
+            "role=group[name=\"Services\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "every tile shows its line icon"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "css=img"
+          ],
+          "note": "home has no <img> at all"
+        },
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the smuggling reply arrived"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 1
+          },
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "Shiva's card shows the fallback"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "styled"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the styled span's text is shown, its CSS url() is not"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "css=img"
+          ],
+          "note": "no markdown image, raw <img> or <picture> reached the page"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "And my AC needs servicing"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 3
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "every option shows its line icon: a URL id, a data: id, and a hostile key from the world"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "<img src=/hostile/label.webp> Repair"
+          },
+          "args": [
+            "role=region[name=\"Which AC service?\"]"
+          ],
+          "note": "markup in a label is text"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "hostile-service-choice.png"
+          ]
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Choose\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 1
+          },
+          "args": [
+            "role=region[name=\"Approve booking\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "the approval card shows Shiva's initials"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the turn finished"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 1
+          },
+          "args": [
+            "role=region[name=\"Booked\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "the receipt shows the initials"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "css=img"
+          ],
+          "note": "still no <img> anywhere"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "hostile-receipt.png"
+          ]
+        },
+        {
+          "command": "network",
+          "options": {
+            "resourceType": "image",
+            "expectCount": 0
+          },
+          "note": "the browser requested no image at all, from anywhere"
+        }
+      ]
+    }
+  ]
+}

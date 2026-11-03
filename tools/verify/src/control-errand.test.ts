@@ -123,6 +123,7 @@ describe("suite manifests", () => {
       "generated-ui.json",
       "home-memory-ops.json",
       "home.json",
+      "images.json",
       "lime-chat.json",
       "lime-foundations.json",
       "memory.json",
@@ -175,6 +176,13 @@ describe("suite manifests", () => {
     // The browser gets exactly the preference the step asked for.
     expect(parseMotion("reduce")).toBe("reduce");
     expect(parseMotion("no-preference")).toBe("no-preference");
+  });
+
+  it("counts a network step with an expected count as an assertion, and only then", () => {
+    const images = { command: "network", options: { resourceType: "image", notPath: "/_next/static/media/*", expectCount: 0 } };
+    expect(() => validateSuite(scenario([{ command: "goto", args: ["/"] }, images]))).not.toThrow();
+    expect(stepOptions(images)).toEqual({ "resource-type": "image", "not-path": "/_next/static/media/*", "expect-count": "0" });
+    expect(() => validateSuite(scenario([{ command: "goto", args: ["/"] }, { command: "network", options: { resourceType: "image" } }]))).toThrow(/no assertion/);
   });
 
   it("turns JSON options into command options", () => {
