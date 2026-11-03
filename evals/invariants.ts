@@ -1,6 +1,7 @@
 import type { EveEvalContext } from "eve/evals";
 import { equals } from "eve/evals/expect";
 
+import { isTypedOutcome, tracedRuns } from "./run-outcomes";
 import type { ScenarioRun } from "./scenario-run";
 
 // The global invariants from SPEC.md "Testing Decisions", checked after every scenario in every
@@ -22,6 +23,26 @@ export interface Invariant {
   readonly check?: (run: ScenarioRun) => Promise<InvariantVerdict>;
 }
 
+/**
+ * Every run in the session's trace has exactly one `run_outcome` event, of one of the five typed
+ * kinds, with a message for the person. Counting the trace's turns against the conversation's
+ * keeps a trace that lost a run from passing by having nothing to check.
+ */
+async function everyRunEndsWithATypedOutcome(run: ScenarioRun): Promise<InvariantVerdict> {
+  const runs = await tracedRuns(run.api, run.sessionId);
+  if (runs.length < run.turns.length) {
+    return { holds: false, detail: `${run.turns.length} turns but ${runs.length} runs in the trace` };
+  }
+  for (const traced of runs) {
+    const [outcome, ...extra] = traced.outcomes;
+    if (outcome === undefined) return { holds: false, detail: `run ${traced.turnId} has no outcome` };
+    if (extra.length > 0) return { holds: false, detail: `run ${traced.turnId} has ${traced.outcomes.length} outcomes` };
+    if (!isTypedOutcome(outcome.kind)) return { holds: false, detail: `run ${traced.turnId} ended "${outcome.kind}"` };
+    if (outcome.message.trim() === "") return { holds: false, detail: `run ${traced.turnId} has no message` };
+  }
+  return { holds: true };
+}
+
 export const INVARIANTS: readonly Invariant[] = [
   {
     id: "no-side-effect-without-grant",
@@ -35,7 +56,12 @@ export const INVARIANTS: readonly Invariant[] = [
     statement: "No forgotten or unconfirmed-inferred fact in any logged context",
     realIn: "12",
   },
-  { id: "typed-outcome", statement: "Every run ends with a typed outcome", realIn: "08" },
+  {
+    id: "typed-outcome",
+    statement: "Every run ends with a typed outcome",
+    realIn: "08",
+    check: everyRunEndsWithATypedOutcome,
+  },
   {
     id: "generated-ui-is-allowed",
     statement: "Every generated UI payload parses against the allowed library and carries no approval or commit action",

@@ -87,8 +87,20 @@ Every chat session has one errand (`src/core/errand/`): service, area, time wind
 
 - `update_errand` patches only the fields it names; a correction such as "actually Saturday" changes the time window and nothing else. It returns the errand, the fields still missing and `question`: the one or two fields the agent may ask about next, with quick replies the chat renders as suggestion chips.
 - `search_providers` writes its service, area and dates to the errand, searches the world, and core drops every provider over budget or with no free slot in the time window before tagging two or three options Best match, Cheapest and Earliest.
-- The workflow is an explicit state machine (`errand-workflow.ts`): `gathering → searching → choosing → holding → awaiting_approval → executing → verifying → done`, plus `failed` and `cancelled`. Ticket 04 drives the first three; any move the table doesn't allow is refused as an `illegal_transition` outcome. Every transition is a `state_transition` event in the run trace, and the trace panel lists them under "Errand states".
+- The workflow is an explicit state machine (`errand-workflow.ts`): `gathering → searching → choosing → holding → awaiting_approval → executing → verifying → done`, plus `failed` (reachable from every unfinished state, when a run fails) and `cancelled`. Ticket 04 drives the first three; any move the table doesn't allow is refused as an `illegal_transition` outcome. Every transition is a `state_transition` event in the run trace, and the trace panel lists them under "Errand states".
 - `GET /api/v1/sessions/:id/errand` serves the errand. Errands live in memory for now, so a backend restart forgets them.
+
+## Run budget and outcomes
+
+Every run (one turn of the agent answering one message) has a budget: at most 16 model calls, 24 tool calls and 180 s by default (`src/core/budget/run-budget.ts`). eve has no caps of its own on these, so the main model is wrapped per run (`agent/agent.ts` resolves it with `defineDynamic`; the wrapper is `src/adapters/models/run-budget-gate.ts`):
+
+- each model call is charged first; a run out of turns, past its deadline, or with a failed tool is not sent to the model;
+- the tool calls a response asks for are admitted all together or not at all, and only when a model turn is left to read their results, so a call over the cap never reaches a tool. This covers every tool, whatever ticket adds it;
+- a model call that keeps failing ends the run once its retries are spent.
+
+Every tool is exported as `withRunBudget(defineTool({...}))` (`agent/lib/run-budget-tool.ts`; a unit test fails for a tool without it): a call still running at the run's deadline stops waiting, and a call that throws is recorded so the run ends `failed` instead of carrying on. The budget is in SQLite (`run_budgets`), so a restart keeps a run's counts and start time.
+
+Every run ends in one typed outcome: `completed`, `needs_user`, `verifying`, `budget_exhausted` or `failed` (`src/core/budget/outcome.ts`). A stopped run answers with its outcome's message as the reply; a run that ends on its own takes its outcome from where it left the errand. Each outcome has one message, from `agent/lib/run-outcome-presenter.ts`. A `failed` run moves its errand to `failed`. The outcome is a `run_outcome` event in the run trace, and the global invariant "every run ends with a typed outcome" checks every scenario's trace for exactly one per run. The evals and browser checks tighten the limits with `PUT /api/v1/dev/run-limits` and make a world operation slow or throw with `PUT /api/v1/dev/world-fault` (dev only; a scenario switch resets both).
 
 ## Layout
 

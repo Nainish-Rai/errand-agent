@@ -29,10 +29,10 @@ export interface TraceSpan {
 }
 
 /**
- * A point in time worth explaining, attached to the trace rather than to one call. The slot is
- * reserved for errand state transitions (ticket 04) and the context sent to the model (ticket 12).
+ * A point in time worth explaining, attached to the trace rather than to one call: errand state
+ * transitions (ticket 04), how each run ended (ticket 08) and the context sent to the model (ticket 12).
  */
-export type TraceEventKind = "state_transition" | "context";
+export type TraceEventKind = "state_transition" | "context" | "run_outcome";
 
 export interface TraceEvent {
   readonly type: "event";

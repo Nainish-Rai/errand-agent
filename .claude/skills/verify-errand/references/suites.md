@@ -68,6 +68,7 @@ A FAIL scenario keeps `failure.png`, the settled state when it stopped.
 | `chat-search.json` | scripted search renders 8 providers from the world (Enter and Send), the reply follows, the trace holds one `search_providers` |
 | `trace-panel.json` | Hide/Show trace toggle and close button; the waterfall shows 2 model spans and 1 tool span, matching the backend trace; a panel open before the first message shows the turn |
 | `clarify-errand.json` | "I need a plumber this week" gets one area question with area chips; a chip answers it; two or three options tagged Best match / Cheapest / Earliest; the open trace panel lists the errand's state transitions, matching the backend errand and trace |
+| `run-budget.json` | a scripted model that loops forever stops at four model turns (three tool calls) and the chat shows the budget-exhausted message, with the `run budget_exhausted` outcome in the trace; a world search that throws ends the run failed with the failure message, the search shows as failed, and the errand is failed |
 | `design-system.json` | `/design` theme toggle persists across reload dark→light and light→dark against the system setting; every approval card state renders in both panels |
 
 When a ticket adds UI, add its scenarios to the matching suite or a new one, and list it in the

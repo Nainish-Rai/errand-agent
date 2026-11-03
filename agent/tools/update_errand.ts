@@ -6,6 +6,7 @@ import type { ErrandPatchRequest } from "../../src/core/use-cases/update-errand"
 import { updateErrand } from "../../src/core/use-cases/update-errand";
 import { presentUpdateOutcome } from "../lib/errand-presenter";
 import { tracePlaceOf } from "../lib/trace-place";
+import { withRunBudget } from "../lib/run-budget-tool";
 
 /** The wire's snake_case fields to a core patch. A null or absent field is not part of the patch. */
 function patchFrom(input: UpdateErrandInput): ErrandPatchRequest {
@@ -27,18 +28,20 @@ function patchFrom(input: UpdateErrandInput): ErrandPatchRequest {
   };
 }
 
-export default defineTool({
-  description:
-    "Save what the person told you about their errand: service, area, time window, budget and " +
-    "preferences. Send only the fields they gave or changed; every other field keeps its value. " +
-    "Returns the errand, the fields still missing, and `question`: the only fields you may ask about " +
-    "next, with quick replies the chat shows as tap-to-answer chips.",
-  label: { start: () => "Noting your errand" },
-  inputSchema: UpdateErrandInputSchema,
-  outputSchema: UpdateErrandOutputSchema,
-  async execute(input, ctx) {
-    const { errandDependencies, catalog } = container();
-    const outcome = await updateErrand(errandDependencies, { place: tracePlaceOf(ctx), patch: patchFrom(input) });
-    return presentUpdateOutcome(outcome, catalog);
-  },
-});
+export default withRunBudget(
+  defineTool({
+    description:
+      "Save what the person told you about their errand: service, area, time window, budget and " +
+      "preferences. Send only the fields they gave or changed; every other field keeps its value. " +
+      "Returns the errand, the fields still missing, and `question`: the only fields you may ask about " +
+      "next, with quick replies the chat shows as tap-to-answer chips.",
+    label: { start: () => "Noting your errand" },
+    inputSchema: UpdateErrandInputSchema,
+    outputSchema: UpdateErrandOutputSchema,
+    async execute(input, ctx) {
+      const { errandDependencies, catalog } = container();
+      const outcome = await updateErrand(errandDependencies, { place: tracePlaceOf(ctx), patch: patchFrom(input) });
+      return presentUpdateOutcome(outcome, catalog);
+    },
+  }),
+);

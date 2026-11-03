@@ -62,6 +62,11 @@ describe("the errand workflow", () => {
     for (const state of STATES) expect(canTransition(state, state)).toBe(false);
   });
 
+  it("a failed run can fail the errand from every state that isn't finished", () => {
+    const unfinished = STATES.filter((state) => !isFinished(state));
+    expect(unfinished.filter((state) => canTransition(state, "failed"))).toEqual(unfinished);
+  });
+
   it("done, failed and cancelled are final", () => {
     expect(STATES.filter(isFinished)).toEqual(["done", "failed", "cancelled"]);
   });

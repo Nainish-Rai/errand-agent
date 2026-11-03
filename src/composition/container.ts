@@ -2,21 +2,32 @@ import path from "node:path";
 
 import type { LanguageModel } from "ai";
 
+import { DEFAULT_RUN_LIMITS, type RunExit, type RunKey, type RunLimits } from "../core/budget/run-budget";
+import type { RunOutcome } from "../core/budget/outcome";
 import type { Clock } from "../core/ports/clock";
 import type { ErrandStore } from "../core/ports/errand-store";
 import type { ServiceCatalog } from "../core/ports/service-catalog";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
+import type { RunBudgetStore } from "../core/ports/run-budget-store";
 import type { TraceSink } from "../core/ports/trace-sink";
+import { admitToolCalls } from "../core/use-cases/admit-tool-calls";
+import { recordModelFailure } from "../core/use-cases/record-model-failure";
+import type { RunBudgetDependencies } from "../core/use-cases/run-budget-session";
+import type { SettleRunDependencies } from "../core/use-cases/settle-run";
+import { startModelTurn } from "../core/use-cases/start-model-turn";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
 import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
+import { gatedModel } from "../adapters/models/run-budget-gate";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
 import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
+import { SqliteRunBudgetStore } from "../adapters/sqlite/run-budget-store";
+import { faultyWorld, type WorldFault } from "../adapters/world/faulty-world";
 import { MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
@@ -25,6 +36,8 @@ import { worldCatalog } from "../adapters/world/world-catalog";
 // use-case dependencies and never import an adapter themselves.
 
 export const DEFAULT_WORLD_SEED = 42;
+
+export type { WorldFault } from "../adapters/world/faulty-world";
 
 const systemClock: Clock = { now: () => new Date() };
 
@@ -71,6 +84,10 @@ class Container {
   #world: MockProviderWorld;
   #settings: WorldSettings;
   #database: Database | undefined;
+  #runBudgets: RunBudgetStore | undefined;
+  /** Dev only: limits a scenario set for the runs that start after it, and a fault in the world. */
+  #runLimits: RunLimits = DEFAULT_RUN_LIMITS;
+  #worldFault: WorldFault | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -79,7 +96,7 @@ class Container {
   }
 
   get world(): ProviderWorld {
-    return this.#world;
+    return this.#worldFault === undefined ? this.#world : faultyWorld(this.#world, this.#worldFault);
   }
 
   /**
@@ -95,11 +112,65 @@ class Container {
     return this.#settings;
   }
 
-  /** Dev only: replace the world with a freshly seeded one for the named scenario. */
+  /**
+   * Dev only: replace the world with a freshly seeded one for the named scenario. A new scenario
+   * starts clean: default run limits and no world fault, whatever the last one set.
+   */
   switchScenario(settings: WorldSettings): WorldSettings {
     this.#settings = settings;
     this.#world = this.#buildWorld(settings);
+    this.#runLimits = DEFAULT_RUN_LIMITS;
+    this.#worldFault = undefined;
     return settings;
+  }
+
+  /** Persisted run budgets, so a restart keeps every run's counts (see src/core/budget). */
+  get runBudgets(): RunBudgetStore {
+    this.#runBudgets ??= new SqliteRunBudgetStore(this.database);
+    return this.#runBudgets;
+  }
+
+  get runLimits(): RunLimits {
+    return this.#runLimits;
+  }
+
+  /** Dev only: the limits runs start with from now on; `null` goes back to the defaults. */
+  setRunLimits(limits: Partial<RunLimits> | null): RunLimits {
+    this.#runLimits = limits === null ? DEFAULT_RUN_LIMITS : { ...DEFAULT_RUN_LIMITS, ...limits };
+    return this.#runLimits;
+  }
+
+  get worldFault(): WorldFault | null {
+    return this.#worldFault ?? null;
+  }
+
+  /** Dev only: make one world operation slow or throw, until a scenario switch or `null` clears it. */
+  injectWorldFault(fault: WorldFault | null): WorldFault | null {
+    this.#worldFault = fault ?? undefined;
+    return this.worldFault;
+  }
+
+  /** What the run-budget use cases need. Time is the wall clock: a pinned clock must not age a run. */
+  get runBudgetDependencies(): RunBudgetDependencies {
+    return { budgets: this.runBudgets, limits: this.#runLimits, clock: this.wallClock };
+  }
+
+  get settleRunDependencies(): SettleRunDependencies {
+    return { budgets: this.runBudgets, errands: this.errands, traceSink: this.traceSink, clock: this.wallClock };
+  }
+
+  /**
+   * The role's model held to one run's budget: every model call, and every tool call it asks for,
+   * is charged to `run` first (see src/adapters/models/run-budget-gate.ts).
+   */
+  budgetedModelFor(role: ModelRole, run: RunKey, describe: (outcome: RunOutcome) => string): LanguageModel {
+    const deps = this.runBudgetDependencies;
+    return gatedModel(this.modelFor(role), {
+      startModelTurn: () => startModelTurn(deps, run),
+      admitToolCalls: (count) => admitToolCalls(deps, { run, count }),
+      recordModelFailure: () => recordModelFailure(deps, run),
+      describe: (exit: RunExit) => describe(exit),
+    });
   }
 
   /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
@@ -118,10 +189,14 @@ class Container {
 }
 
 // One instance per process: the tools and the app API channel must read the same world, so the
-// dev scenario switch reaches the tools.
-let instance: Container | undefined;
+// dev scenario switch reaches the tools. It is kept on globalThis, not in a module variable,
+// because eve bundles the instrumentation apart from the tools and channels: a module variable gave
+// the run trace its own container, with an empty errand store, so it couldn't see the errand a run
+// left behind.
+const INSTANCE = Symbol.for("errand-agent.container");
 
 export function container(): Container {
-  instance ??= new Container({ scenario: "default", seed: DEFAULT_WORLD_SEED });
-  return instance;
+  const holder = globalThis as { [INSTANCE]?: Container };
+  holder[INSTANCE] ??= new Container({ scenario: "default", seed: DEFAULT_WORLD_SEED });
+  return holder[INSTANCE];
 }

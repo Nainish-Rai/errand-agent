@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T00:21:13.166Z",
+  "ranAt": "2026-11-03T00:57:41.212Z",
   "trials": 1,
   "scenarios": [
     {
@@ -21,7 +21,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
@@ -32,6 +31,58 @@
       "id": "scenarios/approval/approve-click-reaches-the-api",
       "description": "The scripted user's Approve click reaches the app API's approve endpoint, which is a stub until ticket 05.",
       "expected": "the Approve click reaches POST /api/v1/proposals/:id/approve with the card's fingerprint and gets 501 not_implemented; a click without a fingerprint gets 400",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/budget/tool-call-limit",
+      "description": "A model that loops forever stops at the tool-call cap, and the person sees the budget-exhausted message.",
+      "expected": "exactly 3 tool calls run, the next is refused; outcome budget_exhausted (tool_calls); the reply is the outcome's message",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/budget/turn-limit",
+      "description": "A model that loops forever stops at the model-turn cap, and the person sees the budget-exhausted message.",
+      "expected": "the run stops after 4 model calls and 3 tool calls; outcome budget_exhausted (model_turns); the reply is the outcome's message",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/budget/unexpected-tool-error",
+      "description": "A tool throws something unknown: the run ends failed with a message, the errand fails, and nothing else runs.",
+      "expected": "search_providers throws; the run ends failed (tool_error) with the outcome's message as the reply; the errand goes gathering → failed; no tool runs after the error",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/budget/wall-clock-timeout",
+      "description": "A slow tool stops the run within its wall-clock deadline, and the person sees the budget-exhausted message.",
+      "expected": "the slow search is cut off at the 1500 ms deadline; the run ends budget_exhausted (wall_clock) within 4000 ms; the reply is the outcome's message",
       "attempts": [
         {
           "verdict": "skipped",
@@ -59,7 +110,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
@@ -84,7 +134,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
@@ -109,7 +158,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
@@ -134,7 +182,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]
@@ -159,7 +206,6 @@
             "one-booking-per-grant",
             "no-unverified-booked-claim",
             "no-forgotten-fact-in-context",
-            "typed-outcome",
             "generated-ui-is-allowed",
             "generated-ui-matches-world"
           ]

@@ -1,5 +1,11 @@
 import { ApiClient, ApiRequestError } from "@errand/client";
-import { API_PREFIX, LoadModelScriptRequestSchema, SwitchScenarioRequestSchema } from "@errand/contracts";
+import {
+  API_PREFIX,
+  InjectWorldFaultRequestSchema,
+  LoadModelScriptRequestSchema,
+  SetRunLimitsRequestSchema,
+  SwitchScenarioRequestSchema,
+} from "@errand/contracts";
 
 // World state next to UI state: `api GET /api/v1/...` goes through packages/client, so every body
 // is parsed against its contract. Only routes the client knows are reachable; the tool never builds
@@ -75,6 +81,18 @@ const ROUTES: readonly Route[] = [
     pattern: /^\/dev\/model-script$/,
     route: "PUT /api/v1/dev/model-script",
     handle: async (client, _match, _url, body) => await client.loadModelScript(LoadModelScriptRequestSchema.parse(body)),
+  },
+  {
+    method: "PUT",
+    pattern: /^\/dev\/run-limits$/,
+    route: "PUT /api/v1/dev/run-limits",
+    handle: async (client, _match, _url, body) => await client.setRunLimits(SetRunLimitsRequestSchema.parse(body)),
+  },
+  {
+    method: "PUT",
+    pattern: /^\/dev\/world-fault$/,
+    route: "PUT /api/v1/dev/world-fault",
+    handle: async (client, _match, _url, body) => await client.injectWorldFault(InjectWorldFaultRequestSchema.parse(body)),
   },
 ];
 

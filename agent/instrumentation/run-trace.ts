@@ -7,6 +7,8 @@ import {
 
 import { container } from "../../src/composition/container";
 import type { TraceAttributes, TraceSpan, TraceValue } from "../../src/core/ports/trace-sink";
+import { settleRun } from "../../src/core/use-cases/settle-run";
+import { presentRunOutcome } from "../lib/run-outcome-presenter";
 import { toolSpanId } from "../lib/trace-place";
 
 // Writes every run to the JSONL trace: one `invoke_agent` span per turn, an `agent.step` span per
@@ -108,6 +110,29 @@ function close(ctx: InstrumentationContext, ending: SpanEnding): Promise<void> {
   });
 }
 
+/**
+ * Every run ends with a typed outcome (ticket 08), written to the trace as a `run_outcome` event
+ * before the turn's span closes, so a reader that waits for the turn sees the outcome too.
+ */
+async function settleTurn(event: InstrumentationEvent<"turn.settled">, ctx: InstrumentationContext): Promise<void> {
+  const place = {
+    traceId: opened(ctx)?.traceId ?? event.sessionId,
+    sessionId: event.sessionId,
+    spanId: turnSpanId(event.sessionId, event.turnId),
+  };
+  try {
+    await settleRun(container().settleRunDependencies, {
+      run: { sessionId: event.sessionId, turnId: event.turnId },
+      place,
+      ending: event.outcome,
+      describe: presentRunOutcome,
+    });
+  } catch (error) {
+    // The turn's span still closes; the typed-outcome invariant reports the run with no outcome.
+    console.error("run outcome not recorded", { sessionId: event.sessionId, turnId: event.turnId, error });
+  }
+}
+
 function closeModelCall(event: InstrumentationEvent<"model.call.settled">, ctx: InstrumentationContext): Promise<void> {
   if (event.outcome === "failed") {
     return close(ctx, {
@@ -177,15 +202,17 @@ export default defineInstrumentation({
       );
     },
 
-    "turn.settled": (event, ctx) =>
-      close(ctx, {
+    "turn.settled": async (event, ctx) => {
+      await settleTurn(event, ctx);
+      return close(ctx, {
         status: event.outcome === "failed" ? "error" : "ok",
         attributes: {
           "errand.turn.outcome": event.outcome,
           "error.type": event.outcome === "failed" ? errorType(event.error) : undefined,
           "errand.error.message": event.outcome === "failed" ? errorMessage(event.error) : undefined,
         },
-      }),
+      });
+    },
 
     "model.started": (event, ctx) => {
       const { scope } = event;
