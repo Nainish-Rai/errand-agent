@@ -28,6 +28,7 @@
     "operator-token": "tsx scripts/operator-token.ts",
     "observatory": "tsx scripts/export-observatory.ts",
     "images:fetch": "tsx scripts/fetch-stock-images.ts",
+    "demo:record": "tsx scripts/demo/record-demo.ts",
     "check:observatory": "python3 -I observatory/check_tokens.py observatory/dashboard.template.html && python3 -I observatory/test_harness_summary.py"
   },
   "dependencies": {
