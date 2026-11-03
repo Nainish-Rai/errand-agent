@@ -56,6 +56,8 @@ export default defineEval({
   description: "Only the person reads their session, and only an operator reads its trace and context log; each operator read is audited.",
   async test(t) {
     const base = t.target.url;
+    // The target URL ends in a slash; joining it by hand gives "//api/v1/…", which 404s whatever the route does.
+    const urlOf = (path: string) => new URL(path, base);
     const chat = new ChatClient({ baseUrl: base });
     const operator = await operatorClient(base);
     const other = await otherPersonClient(base);
@@ -90,9 +92,9 @@ export default defineEval({
     const otherToken = await mintAccessToken({ secret: process.env.ERRAND_AUTH_SECRET ?? "", subject: EVAL_OTHER_PERSON_ID });
     const signedIn = { authorization: `Bearer ${otherToken}` };
     const eveRoutes = {
-      stream: (await fetch(`${base}/eve/v1/session/${sessionId}/stream`, { headers: signedIn, signal: t.abortSignal })).status,
+      stream: (await fetch(urlOf(`/eve/v1/session/${sessionId}/stream`), { headers: signedIn, signal: t.abortSignal })).status,
       message: (
-        await fetch(`${base}/eve/v1/session/${sessionId}`, {
+        await fetch(urlOf(`/eve/v1/session/${sessionId}`), {
           method: "POST",
           headers: { ...signedIn, "content-type": "application/json" },
           body: JSON.stringify({ message: "show me your bookings" }),
@@ -119,7 +121,7 @@ export default defineEval({
     ];
     const asked = [];
     for (const path of dressedUp) {
-      asked.push((await fetch(`${base}${path}`, { headers: { "x-errand-operator": "1", "x-role": "operator" }, signal: t.abortSignal })).status);
+      asked.push((await fetch(urlOf(path), { headers: { "x-errand-operator": "1", "x-role": "operator" }, signal: t.abortSignal })).status);
     }
     t.check(asked, equals([404, 404, 404])).label("a query flag or a header doesn't make the person an operator");
 
