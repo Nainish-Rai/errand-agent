@@ -25,6 +25,8 @@ export interface Grant {
   readonly expiresAtMs: number;
   /** Set when the grant is used; a used grant can't be used again. */
   readonly consumedAtMs?: number;
+  /** Set when the terms it covered changed before it was used; a voided grant can never be used. */
+  readonly voidedAtMs?: number;
 }
 
 export function grantFor(proposal: Proposal, approval: UserApproval, grantId: string, nowMs: number): Grant {
@@ -45,6 +47,10 @@ export function isGrantExpired(grant: Grant, nowMs: number): boolean {
 
 export function isConsumed(grant: Grant): boolean {
   return grant.consumedAtMs !== undefined;
+}
+
+export function isVoided(grant: Grant): boolean {
+  return grant.voidedAtMs !== undefined;
 }
 
 /**

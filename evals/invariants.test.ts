@@ -48,7 +48,14 @@ function turn(reply: string, executions: readonly ExecuteProposalOutput[] = []):
   return { sessionId: "ses", events: [], messages: [], toolCalls, reply };
 }
 
-const BOOKED_OUTPUT: ExecuteProposalOutput = { kind: "booked", proposal: null, bookingId: "bkg_0002", message: "Booked." };
+const BOOKED_OUTPUT: ExecuteProposalOutput = {
+  kind: "booked",
+  proposal: null,
+  changes: [],
+  freshProposal: null,
+  bookingId: "bkg_0002",
+  message: "Booked.",
+};
 
 function runWith(after: readonly BookingView[], turns: readonly ChatTurn[] = [], before: readonly BookingView[] = [SEEDED]): ScenarioRun {
   return {

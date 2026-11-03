@@ -6,13 +6,16 @@ import type { Errand } from "../errand/errand";
 import type { TracePlace } from "../errand/errand-workflow";
 import { traceNewTransitions } from "./errand-session";
 import { moved, withoutHold, type ProposalDependencies } from "./proposal-session";
+import { reproposeExpiredHold, revalidateApproval, type ApprovalRevalidationOutcome } from "./revalidate-approval";
 
 // ExecuteProposal: carry out the session's proposal, if and only if the person approved it on the
 // card. The agent calls this after the person says to go ahead, however they say it; the check is
 // here, in code. With no grant it books nothing and hands the card back to be shown again.
 //
-// With a grant: the grant is used (once, atomically), `book` is called with a key derived from it,
-// and the result is checked with `get_booking_status` before anything is reported as booked.
+// With a grant: the live hold is re-read first, and any change to the approved terms voids the grant
+// (revalidate-approval). Then the grant is used (once, atomically), `book` is called with a key
+// derived from it, and the result is checked with `get_booking_status` before anything is reported
+// as booked.
 
 export type ExecuteProposalOutcome =
   /** Booked, and the world's status confirms this booking ID. */
@@ -34,7 +37,9 @@ export type ExecuteProposalOutcome =
   | { readonly kind: "slot_taken"; readonly proposal: Proposal }
   /** `book` timed out and the status can't confirm either way yet. Not booked, not failed. */
   | { readonly kind: "verifying"; readonly proposal: Proposal }
-  | { readonly kind: "booking_failed"; readonly proposal: Proposal; readonly reason: string };
+  | { readonly kind: "booking_failed"; readonly proposal: Proposal; readonly reason: string }
+  /** The live hold no longer matched the approval, or ran out. Nothing was booked; a fresh proposal may be on the card. */
+  | ApprovalRevalidationOutcome;
 
 interface Executed {
   readonly outcome: ExecuteProposalOutcome;
@@ -56,6 +61,7 @@ async function settled(
   deps: ProposalDependencies,
 ): Promise<Executed> {
   const { clock } = deps.errand;
+  if (verification.kind === "failed" && verification.reason === "hold_expired") return reproposeExpiredHold(errand, proposal, deps);
   switch (verification.kind) {
     case "verified": {
       const executed: Proposal = { ...proposal, status: "executed", bookingId: verification.bookingId };
@@ -108,6 +114,8 @@ async function executed(errand: Errand | undefined, deps: ProposalDependencies, 
       errand: moved(withoutHold(errand), "choosing", "hold_lost", deps.errand.clock),
     };
   }
+  const revalidated = await revalidateApproval(errand, proposal, grant, deps);
+  if (revalidated !== undefined) return revalidated;
   if (!(await deps.proposals.consumeGrant(grant.grantId, nowMs))) return { outcome: { kind: "grant_used", proposal } };
 
   const executing: Proposal = { ...proposal, status: "executing" };

@@ -1,6 +1,7 @@
 import type { Hasher } from "../ports/hasher";
 import type { Hold, ProviderDetails, ServiceKind, Slot } from "../ports/provider-world";
 import { fingerprintOf, type FingerprintedTerms } from "./fingerprint";
+import type { ProposalInvalidation } from "./invalidation";
 
 // A proposal is an action the agent wants to take, frozen with every material detail the person
 // will see on the approval card. The details come from the world (the live hold and the provider's
@@ -14,6 +15,8 @@ export type ProposalStatus =
   | "declined"
   /** The hold (and with it any grant) ran out before the booking was made. */
   | "expired"
+  /** The provider changed the price, slot or provider after the approval; its grant was voided. */
+  | "voided"
   /** The grant was used and `book` was called; the outcome isn't known yet. */
   | "executing"
   /** `book` returned and `get_booking_status` confirmed the booking. */
@@ -44,6 +47,8 @@ export interface Proposal {
   readonly createdAtMs: number;
   /** Set once the booking is verified. */
   readonly bookingId?: string;
+  /** Set when the live terms or an expired hold made the proposal void and a fresh one replaced it. */
+  readonly invalidation?: ProposalInvalidation;
 }
 
 /** The terms of booking a held slot, read from the hold and the provider, never from the model. */

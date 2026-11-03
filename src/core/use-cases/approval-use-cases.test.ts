@@ -12,6 +12,7 @@ import type { ProposalQuery, ProposalStore } from "../ports/proposal-store";
 import type {
   BookingStatusOutcome,
   BookOutcome,
+  GetHoldOutcome,
   Hold,
   ProviderDetails,
   ProviderWorld,
@@ -99,8 +100,14 @@ class MemoryProposals implements ProposalStore {
   }
   async consumeGrant(grantId: string, atMs: number) {
     const grant = [...this.grants.values()].find((g) => g.grantId === grantId);
-    if (grant === undefined || grant.consumedAtMs !== undefined) return false;
+    if (grant === undefined || grant.consumedAtMs !== undefined || grant.voidedAtMs !== undefined) return false;
     this.grants.set(grant.proposalId, { ...grant, consumedAtMs: atMs });
+    return true;
+  }
+  async voidGrant(grantId: string, atMs: number) {
+    const grant = [...this.grants.values()].find((g) => g.grantId === grantId);
+    if (grant === undefined || grant.consumedAtMs !== undefined || grant.voidedAtMs !== undefined) return false;
+    this.grants.set(grant.proposalId, { ...grant, voidedAtMs: atMs });
     return true;
   }
   async discardAll() {
@@ -124,11 +131,20 @@ const PROVIDER: ProviderDetails = {
   reviews: [],
 };
 
+const OTHER_PROVIDER: ProviderDetails = { ...PROVIDER, id: "prv_2", name: "Kumar Pipes", priceInr: 549 };
+
 /** A world with one provider, whose hold price and book reply each test can set. */
 class FakeWorld implements Partial<ProviderWorld> {
   holdPriceInr = 499;
   holdLifetimeMs = HOLD_LIFETIME_MS;
   bookReply: "booked" | "slot_taken" | "timeout_after_success" | "timeout_without_booking" = "booked";
+  /** Applied to the hold the next time it is re-read: the provider changing held terms. */
+  reviseHold: ((hold: Hold) => Hold) | undefined;
+  /** The next book call finds its hold lapsed. */
+  lapseHoldOnBook = false;
+  /** holdSlot refuses: someone else took the slot. */
+  slotGone = false;
+  readonly getHoldCalls: string[] = [];
   readonly holds = new Map<string, Hold & { released: boolean }>();
   readonly bookings: { bookingId: string; holdId: string; key: string }[] = [];
   readonly bookCalls: string[] = [];
@@ -140,10 +156,12 @@ class FakeWorld implements Partial<ProviderWorld> {
   }
 
   async getProvider(providerId: string) {
-    return providerId === PROVIDER.id ? { kind: "found" as const, provider: PROVIDER } : { kind: "provider_not_found" as const };
+    const provider = [PROVIDER, OTHER_PROVIDER].find((candidate) => candidate.id === providerId);
+    return provider === undefined ? { kind: "provider_not_found" as const } : { kind: "found" as const, provider };
   }
   async holdSlot(providerId: string, slot: Slot) {
-    if (providerId !== PROVIDER.id) return { kind: "provider_not_found" as const };
+    if (providerId !== PROVIDER.id && providerId !== OTHER_PROVIDER.id) return { kind: "provider_not_found" as const };
+    if (this.slotGone) return { kind: "slot_unavailable" as const };
     const hold = {
       holdId: `hold_${this.holds.size + 1}`,
       providerId,
@@ -161,8 +179,22 @@ class FakeWorld implements Partial<ProviderWorld> {
     hold.released = true;
     return { kind: "released" as const };
   }
+  async getHold(holdId: string): Promise<GetHoldOutcome> {
+    this.getHoldCalls.push(holdId);
+    const stored = this.holds.get(holdId);
+    if (stored === undefined || stored.released) return { kind: "hold_not_found" };
+    const hold = this.reviseHold === undefined ? stored : { ...this.reviseHold(stored), released: false };
+    this.reviseHold = undefined;
+    this.holds.set(holdId, hold);
+    const { released: _released, ...visible } = hold;
+    return this.#clock.now().getTime() > Date.parse(hold.expiresAt) ? { kind: "hold_expired", hold: visible } : { kind: "held", hold: visible };
+  }
   async book(holdId: string, key: string): Promise<BookOutcome> {
     this.bookCalls.push(key);
+    if (this.lapseHoldOnBook) {
+      this.lapseHoldOnBook = false;
+      return { kind: "hold_expired" };
+    }
     const recorded = this.#keys.get(key);
     if (recorded?.kind === "booked") return recorded;
     if (this.holds.get(holdId)?.released !== false) return { kind: "hold_not_found" };
@@ -450,5 +482,177 @@ describe("decline a proposal", () => {
     await approveProposal(setup.deps, click(proposal));
     await executeProposal(setup.deps, { place: PLACE });
     expect((await declineProposal(setup.deps, { proposalId: proposal.proposalId, userId: USER })).kind).toBe("too_late");
+  });
+});
+
+describe("approval invalidation: core re-reads the live hold before the grant is used", () => {
+  async function approved(setup: Setup) {
+    const proposal = await proposedBooking(setup);
+    const outcome = await approveProposal(setup.deps, click(proposal));
+    if (outcome.kind !== "approved") throw new Error(outcome.kind);
+    return { proposal, grant: outcome.grant };
+  }
+
+  const LATER_SLOT: Slot = { start: "2026-11-05T11:00:00+05:30", end: "2026-11-05T12:00:00+05:30" };
+
+  it("books when the live hold still has exactly the approved terms", async () => {
+    const setup = setUp();
+    const { proposal } = await approved(setup);
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("booked");
+    expect(setup.world.getHoldCalls).toEqual([proposal.terms.holdId]);
+  });
+
+  it("a changed price voids the grant, books nothing and proposes the live price", async () => {
+    const setup = setUp();
+    const { proposal, grant } = await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, quotedPriceInr: 599 });
+
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    if (outcome.kind !== "approval_invalidated") throw new Error(outcome.kind);
+    expect(outcome.changes).toEqual([{ field: "price", from: 499, to: 599 }]);
+    expect(setup.world.bookCalls).toEqual([]);
+    expect(setup.proposals.grants.get(proposal.proposalId)).toMatchObject({ voidedAtMs: START_MS });
+    expect(setup.proposals.grants.get(proposal.proposalId)?.consumedAtMs).toBeUndefined();
+    expect(await setup.deps.proposals.consumeGrant(grant.grantId, START_MS)).toBe(false);
+
+    const old = await setup.deps.proposals.findProposal(proposal.proposalId);
+    expect(old).toMatchObject({ status: "voided", invalidation: { replacedBy: outcome.freshProposal.proposalId } });
+    expect(outcome.freshProposal).toMatchObject({ status: "pending", terms: { priceInr: 599, holdId: proposal.terms.holdId } });
+    expect(outcome.freshProposal.fingerprint).not.toBe(proposal.fingerprint);
+    expect((await setup.deps.proposals.latestProposalOf(SESSION))?.proposalId).toBe(outcome.freshProposal.proposalId);
+    const errand = await setup.errands.find(SESSION);
+    expect(errand?.state).toBe("awaiting_approval");
+    expect(errand?.hold?.quotedPriceInr).toBe(599);
+    expect(errand?.transitions.slice(-2).map((t) => `${t.from}→${t.to}:${t.reason}`)).toEqual([
+      "awaiting_approval→holding:proposal_voided",
+      "holding→awaiting_approval:proposal_shown",
+    ]);
+  });
+
+  it("books only after a second approval, of the fresh proposal, and exactly once", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, quotedPriceInr: 599 });
+    const voided = await executeProposal(setup.deps, { place: PLACE });
+    if (voided.kind !== "approval_invalidated") throw new Error(voided.kind);
+
+    // Saying "go ahead" again without the second click books nothing.
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("not_approved");
+    expect(setup.world.bookCalls).toEqual([]);
+
+    const second = await approveProposal(setup.deps, click(voided.freshProposal));
+    if (second.kind !== "approved") throw new Error(second.kind);
+    const booked = await executeProposal(setup.deps, { place: PLACE });
+    expect(booked).toMatchObject({ kind: "booked", proposal: { proposalId: voided.freshProposal.proposalId, terms: { priceInr: 599 } } });
+    expect(setup.world.bookCalls).toEqual([`book:${second.grant.grantId}`]);
+    expect(setup.world.bookings).toHaveLength(1);
+  });
+
+  it("a moved slot voids the grant and proposes the live slot", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, slot: LATER_SLOT });
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    if (outcome.kind !== "approval_invalidated") throw new Error(outcome.kind);
+    expect(outcome.changes).toEqual([{ field: "slot", from: SLOT, to: LATER_SLOT }]);
+    expect(outcome.freshProposal.terms.slot).toEqual(LATER_SLOT);
+    expect(setup.world.bookCalls).toEqual([]);
+  });
+
+  it("a changed provider voids the grant and names both providers", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, providerId: OTHER_PROVIDER.id });
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    if (outcome.kind !== "approval_invalidated") throw new Error(outcome.kind);
+    expect(outcome.changes).toEqual([
+      {
+        field: "provider",
+        from: { providerId: PROVIDER.id, providerName: PROVIDER.name },
+        to: { providerId: OTHER_PROVIDER.id, providerName: OTHER_PROVIDER.name },
+      },
+    ]);
+    expect(outcome.freshProposal.terms.providerName).toBe(OTHER_PROVIDER.name);
+    expect(setup.world.bookCalls).toEqual([]);
+  });
+
+  it("lists every change when the price and the slot both moved", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, slot: LATER_SLOT, quotedPriceInr: 599 });
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    expect(outcome.kind === "approval_invalidated" ? outcome.changes.map((change) => change.field) : []).toEqual(["slot", "price"]);
+  });
+
+  it("refuses a second click on the voided card", async () => {
+    const setup = setUp();
+    const { proposal } = await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, quotedPriceInr: 599 });
+    await executeProposal(setup.deps, { place: PLACE });
+    expect(await approveProposal(setup.deps, click(proposal))).toMatchObject({ kind: "not_pending", status: "voided" });
+  });
+
+  it("won't release the hold the fresh proposal now stands on when the voided card is declined", async () => {
+    const setup = setUp();
+    const { proposal } = await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, quotedPriceInr: 599 });
+    await executeProposal(setup.deps, { place: PLACE });
+    expect(await declineProposal(setup.deps, { proposalId: proposal.proposalId, userId: USER })).toMatchObject({ kind: "too_late", status: "voided" });
+    expect(setup.world.holds.get(proposal.terms.holdId)?.released).toBe(false);
+  });
+
+  it("an expired live hold is held again and proposed again, and nothing is booked", async () => {
+    const setup = setUp();
+    const { proposal } = await approved(setup);
+    setup.world.reviseHold = (hold) => ({ ...hold, expiresAt: new Date(START_MS - 1).toISOString() });
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    if (outcome.kind !== "hold_reproposed") throw new Error(outcome.kind);
+    expect(outcome.changes).toEqual([]);
+    expect(outcome.freshProposal.terms.holdId).not.toBe(proposal.terms.holdId);
+    expect(outcome.proposal).toMatchObject({ status: "expired", invalidation: { replacedBy: outcome.freshProposal.proposalId } });
+    expect(setup.proposals.grants.get(proposal.proposalId)?.voidedAtMs).toBe(START_MS);
+    expect(setup.world.bookCalls).toEqual([]);
+    expect(await errandState(setup)).toBe("awaiting_approval");
+  });
+
+  it("book returning hold_expired holds again and proposes again; only a fresh approval books", async () => {
+    const setup = setUp();
+    const { proposal, grant } = await approved(setup);
+    setup.world.lapseHoldOnBook = true;
+
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    if (outcome.kind !== "hold_reproposed") throw new Error(outcome.kind);
+    expect(setup.world.bookings).toHaveLength(0);
+    expect(setup.world.bookCalls).toEqual([`book:${grant.grantId}`]);
+    expect(outcome.proposal.status).toBe("expired");
+    expect(outcome.freshProposal.terms.holdId).toBe("hold_2");
+    const errand = await setup.errands.find(SESSION);
+    expect(errand?.state).toBe("awaiting_approval");
+    expect(errand?.hold?.holdId).toBe("hold_2");
+    expect(errand?.transitions.slice(-3).map((t) => `${t.from}→${t.to}:${t.reason}`)).toEqual([
+      "awaiting_approval→executing:approved",
+      "executing→holding:slot_held",
+      "holding→awaiting_approval:proposal_shown",
+    ]);
+
+    expect((await executeProposal(setup.deps, { place: PLACE })).kind).toBe("not_approved");
+    expect(setup.world.bookings).toHaveLength(0);
+
+    const second = await approveProposal(setup.deps, click(outcome.freshProposal));
+    if (second.kind !== "approved") throw new Error(second.kind);
+    expect(await executeProposal(setup.deps, { place: PLACE })).toMatchObject({ kind: "booked" });
+    expect(setup.world.bookings).toEqual([expect.objectContaining({ holdId: "hold_2", key: `book:${second.grant.grantId}` })]);
+    expect(proposal.proposalId).not.toBe(outcome.freshProposal.proposalId);
+  });
+
+  it("an expired hold whose slot is gone books nothing and returns the errand to its options", async () => {
+    const setup = setUp();
+    await approved(setup);
+    setup.world.lapseHoldOnBook = true;
+    setup.world.slotGone = true;
+    const outcome = await executeProposal(setup.deps, { place: PLACE });
+    expect(outcome).toMatchObject({ kind: "hold_lost", proposal: { status: "expired" } });
+    expect(setup.world.bookings).toHaveLength(0);
+    expect(await errandState(setup)).toBe("choosing");
   });
 });

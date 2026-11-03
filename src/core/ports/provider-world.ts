@@ -83,6 +83,14 @@ export type HoldOutcome =
   | { readonly kind: "slot_unavailable" }
   | { readonly kind: "provider_not_found" };
 
+/** A hold as the provider has it now, which may differ from what it quoted when the slot was held. */
+export type GetHoldOutcome =
+  | { readonly kind: "held"; readonly hold: Hold }
+  /** The hold ran out (or the provider let it go early); the slot may still be free to hold again. */
+  | { readonly kind: "hold_expired"; readonly hold: Hold }
+  /** Booked, released, or never existed. */
+  | { readonly kind: "hold_not_found" };
+
 export type ReleaseHoldOutcome = { readonly kind: "released" } | { readonly kind: "hold_not_found" };
 
 export type BookOutcome =
@@ -117,6 +125,12 @@ export interface ProviderWorld {
   getProvider(providerId: string): Promise<GetProviderOutcome>;
   listBookings(userId: string): Promise<readonly Booking[]>;
   holdSlot(providerId: string, slot: Slot): Promise<HoldOutcome>;
+  /**
+   * Re-reads a hold's live terms. Not one of the assignment's eight tools, and never offered to the
+   * model: core calls it between the person's approval and the booking, because a provider can
+   * change a held price or slot after quoting it.
+   */
+  getHold(holdId: string): Promise<GetHoldOutcome>;
   /**
    * Gives a held slot back before it expires (the person declined). Not one of the assignment's
    * eight tools, and never offered to the model: only core calls it, when a proposal is declined.

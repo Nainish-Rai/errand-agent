@@ -14,7 +14,7 @@ export type ApproveProposalOutcome =
   | { readonly kind: "proposal_not_found" }
   /** The card's fingerprint isn't the proposal's: the terms changed, or the click was forged. */
   | { readonly kind: "fingerprint_mismatch"; readonly proposal: Proposal }
-  /** Declined, expired or already carried out without this approval. */
+  /** Declined, expired, voided or already carried out without this approval. */
   | { readonly kind: "not_pending"; readonly proposal: Proposal; readonly status: ProposalStatus }
   | { readonly kind: "hold_expired"; readonly proposal: Proposal };
 
@@ -25,7 +25,7 @@ export async function approveProposal(deps: ApproveDependencies, approval: UserA
   if (proposal === undefined || proposal.userId !== approval.userId) return { kind: "proposal_not_found" };
   if (approval.fingerprint !== proposal.fingerprint) return { kind: "fingerprint_mismatch", proposal };
 
-  if (proposal.status === "declined" || proposal.status === "expired") {
+  if (proposal.status === "declined" || proposal.status === "expired" || proposal.status === "voided") {
     return { kind: "not_pending", proposal, status: proposal.status };
   }
   const existing = await deps.proposals.grantOf(proposal.proposalId);

@@ -13,6 +13,7 @@ export const WORLD_OPERATIONS: readonly WorldOperation[] = [
   "listBookings",
   "holdSlot",
   "releaseHold",
+  "getHold",
   "book",
   "getBookingStatus",
   "cancel",

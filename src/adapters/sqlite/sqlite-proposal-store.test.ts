@@ -57,6 +57,34 @@ describe("sqlite proposal store", () => {
     expect(await store.consumeGrant("grt_missing", 2_600)).toBe(false);
   });
 
+  it("voids an unused grant once, and a voided grant can never be consumed", async () => {
+    const store = new SqliteProposalStore(openDatabase(":memory:"));
+    await store.saveProposal(proposal("prp_a"));
+    await store.issueGrant(grant("grt_1", "prp_a"));
+    expect(await store.voidGrant("grt_1", 2_500)).toBe(true);
+    expect(await store.voidGrant("grt_1", 2_600)).toBe(false);
+    expect(await store.consumeGrant("grt_1", 2_700)).toBe(false);
+    expect(await store.grantOf("prp_a")).toMatchObject({ voidedAtMs: 2_500 });
+    expect((await store.grantOf("prp_a"))?.consumedAtMs).toBeUndefined();
+  });
+
+  it("can't void a grant that was already used", async () => {
+    const store = new SqliteProposalStore(openDatabase(":memory:"));
+    await store.saveProposal(proposal("prp_a"));
+    await store.issueGrant(grant("grt_1", "prp_a"));
+    expect(await store.consumeGrant("grt_1", 2_500)).toBe(true);
+    expect(await store.voidGrant("grt_1", 2_600)).toBe(false);
+    expect((await store.grantOf("prp_a"))?.voidedAtMs).toBeUndefined();
+  });
+
+  it("keeps a voided proposal's changes and its replacement", async () => {
+    const store = new SqliteProposalStore(openDatabase(":memory:"));
+    await store.saveProposal(proposal("prp_a"));
+    const invalidation = { changes: [{ field: "price" as const, from: 499, to: 599 }], replacedBy: "prp_b", atMs: 2_500 };
+    await store.saveProposal({ ...proposal("prp_a"), status: "voided", invalidation });
+    expect(await store.findProposal("prp_a")).toMatchObject({ status: "voided", invalidation });
+  });
+
   it("finds the session's latest proposal and the proposal behind a booking", async () => {
     const store = new SqliteProposalStore(openDatabase(":memory:"));
     await store.saveProposal(proposal("prp_a"));

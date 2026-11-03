@@ -9,7 +9,20 @@ export type BookBehaviour =
   | "always_booked"
   | "always_slot_taken"
   | "timeout_after_success"
-  | "timeout_without_booking";
+  | "timeout_without_booking"
+  /** The first book call finds its hold already lapsed (the provider let it go early); every later one books. */
+  | "hold_expires_once";
+
+/**
+ * How a provider revises a hold after quoting it. The revision shows the first time the hold is
+ * re-read, which core does only after the person approved, just before booking.
+ */
+export type HoldRevision =
+  | "none"
+  /** The held price goes up by 20%. */
+  | "price_rises"
+  /** The held visit moves to the provider's next free slot. */
+  | "slot_moves";
 
 export interface Scenario {
   readonly name: ScenarioName;
@@ -17,6 +30,7 @@ export interface Scenario {
   readonly book: BookBehaviour;
   /** Multiplies the search price when a slot is held. 1 keeps the search price. */
   readonly holdPriceFactor: number;
+  readonly holdRevision: HoldRevision;
   /** Reschedule targets starting at these IST hours return slot_conflict. */
   readonly rescheduleConflictHours: readonly number[];
   /** Cancel calls per booking that fail with a transient 503 before one succeeds. */
@@ -28,6 +42,7 @@ export interface Scenario {
 const DEFAULTS = {
   book: "seeded",
   holdPriceFactor: 1,
+  holdRevision: "none",
   rescheduleConflictHours: [18],
   cancelFailuresBeforeSuccess: 1,
   reviewInjection: "best_rated",
@@ -66,9 +81,24 @@ const SCENARIOS = {
   price_changed_on_hold: {
     ...DEFAULTS,
     name: "price_changed_on_hold",
-    description: "Holding a slot quotes 20% above the search price.",
+    description:
+      "Holding a slot quotes 20% above the search price, and after the approval the provider raises the held price 20% more.",
     book: "always_booked",
     holdPriceFactor: 1.2,
+    holdRevision: "price_rises",
+  },
+  slot_changed_after_approval: {
+    ...DEFAULTS,
+    name: "slot_changed_after_approval",
+    description: "After the approval the provider moves the held visit to its next free slot.",
+    book: "always_booked",
+    holdRevision: "slot_moves",
+  },
+  hold_expired: {
+    ...DEFAULTS,
+    name: "hold_expired",
+    description: "The first book call finds the hold already expired; holding the slot again and booking then succeeds.",
+    book: "hold_expires_once",
   },
   reschedule_conflict: {
     ...DEFAULTS,

@@ -5,6 +5,7 @@ import type {
   BookingStatusOutcome,
   CancelOutcome,
   DateRange,
+  GetHoldOutcome,
   GetProviderOutcome,
   Hold,
   HoldOutcome,
@@ -27,6 +28,7 @@ export const DEV_USER_ID = "dev-user";
 const MAX_SEARCH_DAYS = 14;
 const MAX_SLOTS_PER_PROVIDER = 6;
 const DAY_MS = 24 * 60 * 60 * 1_000;
+const HOUR_MS = 60 * 60 * 1_000;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1_000;
 
 export interface MockWorldOptions {
@@ -37,6 +39,8 @@ export interface MockWorldOptions {
 
 interface HoldRecord extends Hold {
   consumed: boolean;
+  /** The scenario's revision of the held terms has been applied (it applies once per hold). */
+  revised?: boolean;
 }
 
 /** What one idempotency key committed, so a repeat returns it instead of acting again. */
@@ -85,6 +89,7 @@ export class MockProviderWorld implements ProviderWorld {
   readonly #bookAttempts = new Map<string, number>();
   readonly #cancelAttempts = new Map<string, number>();
   #nextId = 1;
+  #holdLapsed = false;
 
   constructor(options: MockWorldOptions) {
     this.#seed = options.seed;
@@ -156,12 +161,27 @@ export class MockProviderWorld implements ProviderWorld {
     return { kind: "released" };
   }
 
+  async getHold(holdId: string): Promise<GetHoldOutcome> {
+    const stored = this.#holds.get(holdId);
+    if (stored === undefined || stored.consumed) return { kind: "hold_not_found" };
+    const hold = this.#revised(stored);
+    const { consumed: _consumed, revised: _revised, ...visible } = hold;
+    return this.#clock.now().getTime() > Date.parse(hold.expiresAt) ? { kind: "hold_expired", hold: visible } : { kind: "held", hold: visible };
+  }
+
   async book(holdId: string, idempotencyKey: string): Promise<BookOutcome> {
     const recorded = this.#keys.get(idempotencyKey);
     if (recorded !== undefined) return this.#replayBook(recorded, holdId);
 
     const hold = this.#holds.get(holdId);
     if (hold === undefined || hold.consumed) return { kind: "hold_not_found" };
+    if (this.#scenario.book === "hold_expires_once" && !this.#holdLapsed) {
+      // The provider let the hold go just before this call arrived: the slot is free again and
+      // nothing was booked, so no key is recorded.
+      this.#holdLapsed = true;
+      this.#holds.set(holdId, { ...hold, expiresAt: new Date(this.#clock.now().getTime() - 1).toISOString() });
+      return { kind: "hold_expired" };
+    }
     if (this.#clock.now().getTime() > Date.parse(hold.expiresAt)) return { kind: "hold_expired" };
 
     const attempt = (this.#bookAttempts.get(idempotencyKey) ?? 0) + 1;
@@ -254,6 +274,7 @@ export class MockProviderWorld implements ProviderWorld {
   ): "booked" | "slot_taken" | "timeout_after_success" | "timeout_without_booking" {
     switch (this.#scenario.book) {
       case "always_booked":
+      case "hold_expires_once":
         return "booked";
       case "always_slot_taken":
         return "slot_taken";
@@ -268,6 +289,27 @@ export class MockProviderWorld implements ProviderWorld {
         return draw < 0.925 ? "timeout_after_success" : "timeout_without_booking";
       }
     }
+  }
+
+  /** The hold with the scenario's revision applied, the first time it is re-read. */
+  #revised(hold: HoldRecord): HoldRecord {
+    if (hold.revised === true || this.#scenario.holdRevision === "none") return hold;
+    const revised: HoldRecord =
+      this.#scenario.holdRevision === "price_rises"
+        ? { ...hold, quotedPriceInr: Math.round(hold.quotedPriceInr * 1.2), revised: true }
+        : { ...hold, slot: this.#nextFreeSlotAfter(hold.providerId, hold.slot), revised: true };
+    this.#holds.set(hold.holdId, revised);
+    return revised;
+  }
+
+  /** The provider's next offered, free slot after `slot` within a week, or the hour after it. */
+  #nextFreeSlotAfter(providerId: string, slot: Slot): Slot {
+    const start = Date.parse(slot.start);
+    const week = { from: istDateOf(slot), to: istDateAt(new Date(start + 6 * DAY_MS)) };
+    const later = datesIn(week)
+      .flatMap((date) => seededSlotsOn(this.#seed, providerId, date))
+      .find((open) => Date.parse(open.start) > start && !this.#isOccupied(providerId, open));
+    return later ?? { start: new Date(start + HOUR_MS).toISOString(), end: new Date(Date.parse(slot.end) + HOUR_MS).toISOString() };
   }
 
   #createBooking(hold: HoldRecord): Booking {

@@ -7,7 +7,17 @@ import { ServiceKindSchema, SlotSchema } from "./world";
 // execute_proposal tools, and the /api/v1 proposal and booking routes. Core keeps its own plain
 // types; the agent's approval presenter maps between the two.
 
-export const ProposalStatusSchema = z.enum(["pending", "approved", "declined", "expired", "executing", "executed", "verifying", "failed"]);
+export const ProposalStatusSchema = z.enum([
+  "pending",
+  "approved",
+  "declined",
+  "expired",
+  "voided",
+  "executing",
+  "executed",
+  "verifying",
+  "failed",
+]);
 
 /** Everything the approval card shows, as the world quoted it when the slot was held. */
 export const BookingTermsViewSchema = z.object({
@@ -36,6 +46,24 @@ export const GrantViewSchema = z.object({
   fingerprint: z.string(),
   expiresAt: z.string(),
   consumed: z.boolean(),
+  /** The terms it covered changed before it was used, so it can never book anything. */
+  voided: z.boolean(),
+});
+
+const ProviderRefSchema = z.object({ providerId: z.string(), providerName: z.string() });
+
+/** One approved term the provider changed before the booking: the old value beside the new one. */
+export const TermChangeViewSchema = z.discriminatedUnion("field", [
+  z.object({ field: z.literal("price"), from: z.number(), to: z.number() }),
+  z.object({ field: z.literal("slot"), from: SlotSchema, to: SlotSchema }),
+  z.object({ field: z.literal("provider"), from: ProviderRefSchema, to: ProviderRefSchema }),
+]);
+
+/** Why a proposal was replaced: what changed (nothing, when only the hold ran out) and by which proposal. */
+export const ProposalInvalidationViewSchema = z.object({
+  changes: z.array(TermChangeViewSchema),
+  replacedBy: z.string(),
+  at: z.string(),
 });
 
 /** A proposal as the app API serves it to the card: its fingerprint, live status and grant. */
@@ -47,6 +75,8 @@ export const ProposalViewSchema = ProposalCardSchema.extend({
   holdSecondsLeft: z.number().int().nonnegative(),
   bookingId: z.string().nullable(),
   grant: GrantViewSchema.nullable(),
+  /** Set when the proposal was voided or its hold ran out and a fresh proposal replaced it. */
+  invalidation: ProposalInvalidationViewSchema.nullable(),
 });
 
 // Tools.
@@ -97,12 +127,19 @@ export const ExecuteOutcomeKindSchema = z.enum([
   "slot_taken",
   "verifying",
   "booking_failed",
+  "approval_invalidated",
+  "hold_reproposed",
+  "hold_lost",
 ]);
 
 export const ExecuteProposalOutputSchema = z.object({
   kind: ExecuteOutcomeKindSchema,
   /** The proposal the outcome is about; on not_approved the chat shows its card again. */
   proposal: ProposalCardSchema.nullable(),
+  /** On approval_invalidated and hold_reproposed: what the provider changed, old value beside new. */
+  changes: z.array(TermChangeViewSchema),
+  /** On approval_invalidated and hold_reproposed: the fresh proposal on the live terms, shown as a new card. */
+  freshProposal: ProposalCardSchema.nullable(),
   /** Only on booked and already_booked: the ID get_booking_status confirmed. */
   bookingId: z.string().nullable(),
   /** What to tell the person, from the one outcome presenter. */
@@ -162,6 +199,8 @@ export type ProposalStatus = z.infer<typeof ProposalStatusSchema>;
 export type BookingTermsView = z.infer<typeof BookingTermsViewSchema>;
 export type ProposalCard = z.infer<typeof ProposalCardSchema>;
 export type GrantView = z.infer<typeof GrantViewSchema>;
+export type TermChangeView = z.infer<typeof TermChangeViewSchema>;
+export type ProposalInvalidationView = z.infer<typeof ProposalInvalidationViewSchema>;
 export type ProposalView = z.infer<typeof ProposalViewSchema>;
 export type HoldSlotInput = z.infer<typeof HoldSlotInputSchema>;
 export type HoldSlotOutput = z.infer<typeof HoldSlotOutputSchema>;

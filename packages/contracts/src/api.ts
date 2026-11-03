@@ -39,6 +39,8 @@ export const ScenarioNameSchema = z.enum([
   "timeout_after_success",
   "timeout_without_booking",
   "price_changed_on_hold",
+  "slot_changed_after_approval",
+  "hold_expired",
   "reschedule_conflict",
   "review_injection",
 ]);

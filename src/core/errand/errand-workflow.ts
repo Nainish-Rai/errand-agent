@@ -52,7 +52,8 @@ const ALLOWED: Readonly<Record<ErrandState, readonly ErrandState[]>> = {
   choosing: ["searching", "gathering", "holding", "cancelled", "failed"],
   holding: ["awaiting_approval", "choosing", "failed", "cancelled"],
   awaiting_approval: ["executing", "choosing", "holding", "cancelled", "failed"],
-  executing: ["verifying", "done", "failed"],
+  // A hold that ran out under `book` is held again (holding) or, if the slot is gone, lost (choosing).
+  executing: ["verifying", "done", "failed", "holding", "choosing"],
   verifying: ["done", "failed"],
   done: [],
   failed: [],
