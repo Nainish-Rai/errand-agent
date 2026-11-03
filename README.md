@@ -152,6 +152,14 @@ The agent remembers a person's usual area, budget, earliest start hour, favourit
 - Tools: `remember_fact`, `correct_fact`, `forget_fact`, `confirm_fact`, `list_memory`. Routes: `GET /api/v1/memory`, `PATCH /api/v1/memory/:key`, `DELETE /api/v1/memory/:key`, `POST /api/v1/memory/:id/confirm`, and dev only `PUT /api/v1/dev/memory` (replace the person's memory with seed facts; the evals use it per scenario).
 - The chat's `Show memory` toggle opens the Memory panel: current facts with explicit/inferred badges, Confirm, Correct and Forget, plus forgotten and replaced facts.
 
+## A different job in a booked chat (ticket 24)
+
+Each chat holds one errand. Once it is booked, a request for a different job ("she needs her AC repaired in HSR") is searched anyway, and the search is refused `not_editable`. The chat renders that refusal as a **New errand** card (`apps/web/features/chat/new-errand-card.tsx`): the job, area and dates from the search's own arguments and the booked errand's service and area, never model text, with one lime action, **Start in a new chat**, and **Not now**. Starting a new errand books and spends nothing, so the card needs no approval.
+
+- **Start in a new chat** starts a session, posts the search to `POST /api/v1/sessions/:id/handoffs` (core's StartNewErrand: the new chat's errand gets the service, area and dates the catalog knows, traced as `new errand card → errand: …`), then sends the person's own last message and navigates there. The draft carries the service too: the person's words may name only the place ("what about my mom's house in HSR"), and the new chat sees nothing of the old one. A short dynamic instruction (`agent/instructions/moved-errand.ts`, only while that errand is gathering) tells the first turn what the errand already holds.
+- **The link survives reloads and restarts.** SQLite table `errand_handoffs` (migration `2400_errand_handoffs`, port `ErrandHandoffStore`): one row per card, first tap wins, a chat can be started by one move only. The old chat shows "Moved to a new chat · Open", the new chat "Started from your Koramangala plumber chat · Open" (`GET /api/v1/sessions/:id/handoffs`). Not now (`POST …/handoffs/dismiss`) settles the card for good.
+- **The agent** searches the new job straight away, says one short line pointing at the card, and never asks the person to retype it (`agent/instructions.md`). Eval `scenarios/booking/new-job-after-booking`; browser suite `verification/suites/new-errand-handoff.json`.
+
 ## Home screen
 
 `/` is the home screen (`apps/web/features/home`, restyled on design system v3): the page title, the errand composer, and six widgets from one `GET /api/v1/home` (core's GetHomeSummary, `src/core/use-cases/get-home-summary.ts`). The chat lives at `/chat` (new) and `/chat/SESSION`, which replays the session and follows a turn still running.

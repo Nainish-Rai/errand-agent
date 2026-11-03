@@ -35,6 +35,9 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | GET | `/alerts` | ListAlerts |
   | GET | `/events` | Server-sent events: `proposal.created`, `booking.updated`, `errand.state_changed`, `alert.created` |
   | GET | `/sessions/:id/errand` | GetErrand: the session's errand, its workflow state and what is still missing |
+  | GET | `/sessions/:id/handoffs` | ListErrandHandoffs: how the chat's New errand cards were settled, and the chat it was started from (ticket 24) |
+  | POST | `/sessions/:id/handoffs` `{toolCallId, toSessionId, search}` | StartNewErrand: a booked chat's refused search moves to a new chat, drafted as its errand before the first turn. Books nothing |
+  | POST | `/sessions/:id/handoffs/dismiss` `{toolCallId}` | DismissNewErrand: "Not now" on a New errand card |
   | GET | `/sessions/:id/trace`, `/sessions/:id/context` | Operators only. Trace and context log for the operator console's trace panel; every read is recorded (RecordOperatorRead) |
   | GET | `/ops/sessions` | Operators only. ListOperatorSessions: every session, its owner and errand, newest first |
   | GET | `/ops/sessions/:id/transcript` | Operators only. The session's read-only transcript; the read is recorded |
