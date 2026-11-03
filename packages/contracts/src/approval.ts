@@ -181,6 +181,8 @@ export const BookingViewSchema = z.object({
   slot: SlotSchema,
   priceInr: z.number(),
   status: z.enum(["upcoming", "completed", "cancelled"]),
+  /** Who cancelled a cancelled booking, when the world knows (a provider's cancellation is ticket 14's). */
+  cancelledBy: z.enum(["provider", "person"]).nullable().optional(),
   /** Null when no approved proposal made it (the seeded history). */
   approval: BookingApprovalViewSchema.nullable(),
 });

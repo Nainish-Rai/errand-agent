@@ -94,6 +94,7 @@ function runWith(
     taps: [],
     uiTaps: [],
     steps: [],
+    worldEvents: [],
     mode: "offline",
     toolCalls: [],
     bookingsBefore: before,

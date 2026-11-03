@@ -116,6 +116,7 @@ export default defineEval({
         taps: [{ tap: "approve", proposalId: proposal.proposalId, status: 200, code: "approved" }],
         uiTaps: [],
         steps: [{ say: ASK_FOR_PLUMBER }, { say: CHOOSE_CHEAPEST }, { card: "approve" }],
+        worldEvents: [],
         mode: "offline",
         toolCalls: turns.flatMap((turn) => turn.toolCalls),
         api,

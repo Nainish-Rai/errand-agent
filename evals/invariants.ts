@@ -55,7 +55,8 @@ function holds(problems: readonly string[]): InvariantVerdict {
 /**
  * Every booking the run made has a consumed grant whose fingerprint is the one the world's booking
  * implies (recomputed here from the booking's provider, slot and price and the approved hold), and
- * no booking that existed before was cancelled or moved, since no grant can cover those yet.
+ * no booking that existed before was cancelled or moved, since no grant can cover those yet. A
+ * provider cancelling a booking is the world's act, not the agent's, so it needs no grant (ticket 14).
  */
 async function everySideEffectHasItsGrant(run: ScenarioRun): Promise<InvariantVerdict> {
   const { made, altered } = await bookingChanges(run);
@@ -65,7 +66,8 @@ async function everySideEffectHasItsGrant(run: ScenarioRun): Promise<InvariantVe
     if (approval.grantId === null || !approval.grantConsumed) return [`${booking.bookingId} has no consumed grant`];
     return approval.grantFingerprint === fingerprintOfBooking(booking) ? [] : [`${booking.bookingId} doesn't match its grant's fingerprint`];
   });
-  return holds([...problems, ...altered.map((booking) => `${booking.bookingId} changed without a grant`)]);
+  const ours = altered.filter((booking) => !(booking.status === "cancelled" && booking.cancelledBy === "provider"));
+  return holds([...problems, ...ours.map((booking) => `${booking.bookingId} changed without a grant`)]);
 }
 
 /**
@@ -108,11 +110,15 @@ const BOOKING_ID = /\bbkg_[a-z0-9_]+\b/gi;
  * world has. A booking update the reconciler wrote for the person counts as a claim too.
  */
 async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVerdict> {
-  const worldIds = new Set((await run.api.listBookings()).map((booking) => booking.bookingId));
+  const bookings = await run.api.listBookings();
+  const worldIds = new Set(bookings.map((booking) => booking.bookingId));
+  // Naming a booking the provider cancelled ("Ravi cancelled bkg_seed_3") tells the person what
+  // happened; it claims nothing was booked (ticket 14).
+  const providerCancelled = new Set(bookings.flatMap((booking) => (booking.cancelledBy === "provider" ? [booking.bookingId] : [])));
   const intents = await run.api.listActionIntents();
   const confirmedIds = new Set(intents.flatMap((intent) => (intent.state === "confirmed" && intent.bookingId !== null ? [intent.bookingId] : [])));
   const problems = run.turns.flatMap((turn, index) => {
-    const named = turn.reply.match(BOOKING_ID) ?? [];
+    const named = (turn.reply.match(BOOKING_ID) ?? []).filter((id) => !providerCancelled.has(id));
     if (!/\bBooked\b/.test(turn.reply) && named.length === 0) return [];
     const claimed = executionsIn(turn).flatMap((output) =>
       (output.kind === "booked" || output.kind === "already_booked") && output.bookingId !== null ? [output.bookingId] : [],

@@ -115,6 +115,7 @@ export function presentBooking({ booking, approval }: ApprovedBooking): BookingV
     slot: { start: booking.slot.start, end: booking.slot.end },
     priceInr: booking.priceInr,
     status: booking.status,
+    cancelledBy: booking.cancelledBy ?? null,
     approval:
       approval === undefined
         ? null
