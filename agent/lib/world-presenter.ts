@@ -1,4 +1,4 @@
-import type { ProviderDetails as WireProviderDetails } from "@errand/contracts";
+import { API_PREFIX, type ProviderDetails as WireProviderDetails } from "@errand/contracts";
 
 import type { ProviderDetails, ProviderSummary } from "../../src/core/ports/provider-world";
 
@@ -24,5 +24,6 @@ export function presentProviderDetails(provider: ProviderDetails): WireProviderD
     about: provider.about,
     cancellationTerms: provider.cancellationTerms,
     reviews: provider.reviews.map((review) => ({ ...review })),
+    photos: provider.photos.map((photo) => ({ src: `${API_PREFIX}/assets/providers/${photo.file}`, alt: photo.alt })),
   };
 }

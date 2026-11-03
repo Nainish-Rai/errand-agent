@@ -168,6 +168,7 @@ const PROVIDER: ProviderDetails = {
   reviewCount: 80,
   freeSlots: [SLOT],
   attributes: [],
+  photos: [],
   about: "",
   cancellationTerms: "Free until 2 hours before the visit.",
   reviews: [],

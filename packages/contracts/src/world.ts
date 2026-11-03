@@ -36,10 +36,18 @@ export const ReviewSchema = z.object({
   text: z.string(),
 });
 
+/** A photo of the provider's work, served by the backend: `src` is a path under the API, e.g. /api/v1/assets/providers/plumber-2.webp */
+export const ProviderPhotoSchema = z.object({
+  src: z.string(),
+  alt: z.string(),
+});
+
 export const ProviderDetailsSchema = ProviderSummarySchema.extend({
   about: z.string(),
   cancellationTerms: z.string(),
   reviews: z.array(ReviewSchema),
+  /** The cover first, then the gallery. */
+  photos: z.array(ProviderPhotoSchema),
 });
 
 export const SearchProvidersInputSchema = z.object({
@@ -59,5 +67,6 @@ export type ServiceKind = z.infer<typeof ServiceKindSchema>;
 export type Slot = z.infer<typeof SlotSchema>;
 export type ProviderSummary = z.infer<typeof ProviderSummarySchema>;
 export type ProviderDetails = z.infer<typeof ProviderDetailsSchema>;
+export type ProviderPhoto = z.infer<typeof ProviderPhotoSchema>;
 export type SearchProvidersInput = z.infer<typeof SearchProvidersInputSchema>;
 export type SearchProvidersOutput = z.infer<typeof SearchProvidersOutputSchema>;

@@ -25,6 +25,14 @@ export interface ProviderSummary {
   readonly reviewCount: number;
   readonly freeSlots: readonly Slot[];
   readonly attributes: readonly string[];
+  /** Photos of the provider's work, the cover first: asset files the backend serves, never fetched at runtime. */
+  readonly photos: readonly ProviderPhoto[];
+}
+
+export interface ProviderPhoto {
+  /** A file name among the provider-photo assets, such as plumber-2.webp */
+  readonly file: string;
+  readonly alt: string;
 }
 
 export interface Review {

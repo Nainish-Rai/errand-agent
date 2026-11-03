@@ -1,4 +1,5 @@
-import type { Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
+import type { ProviderPhoto, Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
+import { photosFor } from "../provider-photos";
 import {
   AREAS,
   ATTRIBUTES,
@@ -34,6 +35,7 @@ export interface SeededProvider {
   readonly about: string;
   readonly cancellationTerms: string;
   readonly reviews: readonly Review[];
+  readonly photos: readonly ProviderPhoto[];
 }
 
 const SLOT_FREE_PROBABILITY = 0.35;
@@ -95,6 +97,7 @@ function seedGroup(seed: number, service: ServiceKind, area: string, injection: 
   return drafts.map((draft, index) => ({
     ...draft,
     reviews: seedReviews(new SeededRandom(seed, "reviews", draft.id), injectedReview(injection, index, draft === best)),
+    photos: photosFor(draft.id, service),
   }));
 }
 
