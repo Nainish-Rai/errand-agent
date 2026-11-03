@@ -46,7 +46,8 @@ function ChoiceCard({ choice, onDetails, detailsOpen }: { readonly choice: Bound
           <img src={api.photoUrl(choice.photo.src)} alt={choice.photo.alt} className="size-full object-cover" loading="lazy" />
         )}
         {choice.highlight !== undefined && (
-          <div className="absolute top-2 left-2">
+          // The tag's tint is translucent; a solid card surface under it keeps it readable on a light photo.
+          <div className="absolute top-2 left-2 rounded-md bg-surface-card">
             <Tag text={choice.highlight} size="sm" variant="info" />
           </div>
         )}
