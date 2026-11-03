@@ -1,0 +1,132 @@
+{
+  "scenario": "scenarios/approval/slot-changed-after-approval",
+  "recordedAt": "2026-11-03T01:25:43.430Z",
+  "evalRunId": "bbc53d1e-1cff-44e4-9765-d48d66a8b5f7",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "slot_changed_after_approval",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber in Koramangala this week. Can you help?"
+    },
+    {
+      "say": "I'll go with the cheapest one. Book Shiva Sanitary Solutions please."
+    },
+    {
+      "card": "approve"
+    },
+    {
+      "card": "approve"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that sorted for you. Let me note down the details and find plumbers in Koramangala.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the two best options for plumbers in Koramangala this week:\n\n**Venkatesh Sanitary Solutions** — ₹499, rated 4.8 (241 reviews)\nBest match: rated 4.8 from 241 reviews · Earliest: Wed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — ₹399, rated 4.5 (133 reviews)\nCheapest: ₹399 · Earliest: Thu, 5 Nov, 8:00 am IST\n\nWhich one would you like me to hold for you?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_plumber_koramangala_5",
+                  "slot": {
+                    "start": "2026-11-05T08:00:00+05:30",
+                    "end": "2026-11-05T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "The approval card is on screen for Shiva Sanitary Solutions — please check the details and tap Approve if everything looks right. Nothing is booked until you do."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Nothing was booked — the provider changed the timing after you tapped. The slot moved from Thu, 5 Nov, 8:00 am IST to Thu, 5 Nov, 12:00 pm IST, and the price is still ₹399.\n\nA new card with the updated time is on screen — tap Approve ₹399 on it if noon still works for you."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Booked — Shiva Sanitary Solutions, Thu, 5 Nov, 12:00 pm IST, ₹399. Booking ID: bkg_0002."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.006965459999999999,
+    "simulatedUser": 0.10024560000000002
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "scenario": "scenarios/approval/hold-expired",
+  "recordedAt": "2026-11-03T01:24:41.750Z",
+  "evalRunId": "bbc53d1e-1cff-44e4-9765-d48d66a8b5f7",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "hold_expired",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber in Koramangala this week. Can you help me find one?"
+    },
+    {
+      "say": "I'll go with the cheapest one - Shiva Sanitary Solutions. Can you hold that slot for me?"
+    },
+    {
+      "card": "approve"
+    },
+    {
+      "card": "approve"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll help with that. Let me note what you've told me.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are two good options for a plumber in Koramangala this week:\n\n**Venkatesh Sanitary Solutions** — Best match + Earliest\n₹499 · rated 4.8 (241 reviews)\nWed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — Cheapest\n₹399 · rated 4.5 (133 reviews)\nThu, 5 Nov, 8:00 am IST\n\nWant me to hold one of these slots for you? Just say which one, or if you'd prefer a different day or time, let me know."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_plumber_koramangala_5",
+                  "slot": {
+                    "start": "2026-11-05T08:00:00+05:30",
+                    "end": "2026-11-05T09:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Slot's held. The approval card is on screen — please check the details and tap **Approve** if everything looks right. Nothing is booked until you tap it."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Nothing got booked — the hold on that slot ran out before the booking went through. The terms are unchanged (Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST, ₹399), and I've re-held the slot. A fresh card is on screen — please tap **Approve** on it to book."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "execute_proposal",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Booked — Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST, ₹399. Booking ID: **bkg_0003**."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.00812088,
+    "simulatedUser": 0.1026666
+  }
+}
