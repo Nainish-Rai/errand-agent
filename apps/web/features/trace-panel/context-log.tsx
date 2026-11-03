@@ -71,6 +71,10 @@ function turnsOf(calls: readonly ModelCallContext[]): TurnContext[] {
   return turns;
 }
 
+function keyOf(turn: TurnContext): string {
+  return `${turn.calls[0]?.sessionId}:${turn.turnId}`;
+}
+
 function TokenBar({ call }: { readonly call: ModelCallContext }) {
   const described = PARTS.map((part) => `${part.label} ${tokens(call.tokens[part.key])}`).join(", ");
   return (
@@ -183,13 +187,20 @@ function History({ call }: { readonly call: ModelCallContext }) {
   );
 }
 
-function Turn({ turn, position, open }: { readonly turn: TurnContext; readonly position: number; readonly open: boolean }) {
+interface TurnProps {
+  readonly turn: TurnContext;
+  readonly position: number;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+}
+
+function Turn({ turn, position, open, onOpenChange }: TurnProps) {
   const last = turn.calls.at(-1);
   if (last === undefined) return null;
   const { included, excluded } = last.memory;
   const name = `Turn ${position} context`;
   return (
-    <Collapsible defaultOpen={open} className="rounded-md border border-edge bg-surface-card">
+    <Collapsible open={open} onOpenChange={onOpenChange} className="rounded-md border border-edge bg-surface-card">
       <CollapsibleTrigger aria-label={name} className="group flex w-full items-center gap-2 px-2 py-1.5 text-left">
         <ChevronRight className="size-3.5 shrink-0 text-fg-meta transition-transform group-data-[state=open]:rotate-90" aria-hidden />
         <span className="flex-1 text-sm font-medium text-fg-emph">{name}</span>
@@ -231,6 +242,7 @@ function Turn({ turn, position, open }: { readonly turn: TurnContext; readonly p
 
 export function ContextLog({ api, sessionId, contextEvents }: { readonly api: ApiClient; readonly sessionId: string; readonly contextEvents: number }) {
   const context = useSessionContext(api, sessionId, contextEvents);
+  const [toggled, setToggled] = useState<Readonly<Record<string, boolean>>>({});
   const turns = turnsOf(context?.calls ?? []);
   const first = context?.calls[0];
   if (first === undefined) return null;
@@ -256,7 +268,14 @@ export function ContextLog({ api, sessionId, contextEvents }: { readonly api: Ap
       </div>
       <div className="flex flex-col gap-2">
         {turns.map((turn, index) => (
-          <Turn key={`${turn.calls[0]?.sessionId}:${turn.turnId}`} turn={turn} position={index + 1} open={index === turns.length - 1} />
+          <Turn
+            key={keyOf(turn)}
+            turn={turn}
+            position={index + 1}
+            // The newest turn is open until the person says otherwise; earlier ones stay as they left them.
+            open={toggled[keyOf(turn)] ?? index === turns.length - 1}
+            onOpenChange={(open) => setToggled((current) => ({ ...current, [keyOf(turn)]: open }))}
+          />
         ))}
       </div>
     </section>

@@ -317,16 +317,21 @@
               {
                 "path": "events[*].name",
                 "equals": [
+                  "model context",
                   "start → gathering",
+                  "model context",
                   "run needs_user",
+                  "model context",
+                  "model context",
                   "gathering → searching",
                   "searching → choosing",
+                  "model context",
                   "run needs_user"
                 ]
               }
             ]
           },
-          "note": "world state: every transition is in the trace, and each run ends with its typed outcome (ticket 08): both runs leave the next move to the person"
+          "note": "world state: every transition is in the trace, each run ends with its typed outcome (ticket 08), and every model call logged the context it was sent (ticket 12): both runs leave the next move to the person"
         },
         {
           "command": "api",
