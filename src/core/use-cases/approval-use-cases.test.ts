@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fingerprintOf, type FingerprintedTerms } from "../approval/fingerprint";
 import { GRANT_LIFETIME_MS, type Grant } from "../approval/grant";
-import type { Proposal } from "../approval/proposal";
+import type { BookingProposal, Proposal } from "../approval/proposal";
 import { bookingIntentFor, type ActionIntent } from "../booking/action-intent";
 import type { RunOutcome } from "../budget/outcome";
 import { openErrand, type Errand } from "../errand/errand";
@@ -125,9 +125,9 @@ class MemoryProposals implements ProposalStore {
 
 class MemoryLedger implements ActionLedger {
   readonly intents = new Map<string, ActionIntent>();
-  async record(intent: ActionIntent) {
+  async record<T extends ActionIntent>(intent: T): Promise<T> {
     const existing = this.intents.get(intent.idempotencyKey);
-    if (existing !== undefined) return existing;
+    if (existing !== undefined) return existing as T;
     this.intents.set(intent.idempotencyKey, intent);
     return intent;
   }
@@ -171,6 +171,7 @@ const PROVIDER: ProviderDetails = {
   photos: [],
   about: "",
   cancellationTerms: "Free until 2 hours before the visit.",
+  cancellationPolicy: { freeUntilHoursBefore: 2, lateFee: { kind: "flat", amountInr: 99 } },
   reviews: [],
 };
 
@@ -349,7 +350,7 @@ function setUp() {
 
 type Setup = ReturnType<typeof setUp>;
 
-async function proposedBooking(setup: Setup): Promise<Proposal> {
+async function proposedBooking(setup: Setup): Promise<BookingProposal> {
   const held = await holdSlot(setup.deps, { place: PLACE, providerId: PROVIDER.id, slot: SLOT });
   if (held.kind !== "held") throw new Error(`hold: ${held.kind}`);
   const proposed = await proposeBooking(setup.deps, { place: PLACE, userId: USER });

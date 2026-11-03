@@ -1,4 +1,5 @@
 import type { ChatTurn } from "@errand/client";
+import type { ProposalTermsView } from "@errand/contracts";
 import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
 
@@ -36,12 +37,32 @@ function instructionsFor(goal: string): string {
   ].join("\n");
 }
 
+/** The card as the person sees it, with the buttons the web app's card shows for its action. */
+function cardDescription(terms: ProposalTermsView): string {
+  switch (terms.action) {
+    case "book":
+      return (
+        `[Approval card on screen: ${terms.providerName}, ${terms.slot.start}, ₹${terms.priceInr}, ${terms.area}. ` +
+        `Buttons: "Approve ₹${terms.priceInr}", "Other options", "Decline"]`
+      );
+    case "cancel": {
+      const approve = terms.priceInr === 0 ? "Approve free cancellation" : `Approve ₹${terms.priceInr}`;
+      return (
+        `[Cancellation card on screen: ${terms.providerName}, booking ${terms.bookingId}, ${terms.slot.start}, ` +
+        `cancellation fee ₹${terms.priceInr}. Buttons: "${approve}" (approve), "Keep booking" (decline)]`
+      );
+    }
+    case "reschedule":
+      return (
+        `[Reschedule card on screen: ${terms.providerName}, booking ${terms.bookingId}, from ${terms.fromSlot.start} ` +
+        `to ${terms.slot.start}, ₹${terms.priceInr}. Buttons: "Approve ₹${terms.priceInr}" (approve), "Other times" (other_options), ` +
+        `"Keep current time" (decline)]`
+      );
+  }
+}
+
 function cardLine(turn: ChatTurn): string[] {
-  return cardsIn(turn).map(
-    ({ terms }) =>
-      `[Approval card on screen: ${terms.providerName}, ${terms.slot.start}, ₹${terms.priceInr}, ${terms.area}. ` +
-      `Buttons: "Approve ₹${terms.priceInr}", "Other options", "Decline"]`,
-  );
+  return cardsIn(turn).map(({ terms }) => cardDescription(terms));
 }
 
 function transcriptOf(turns: readonly ChatTurn[], said: readonly string[]): string {

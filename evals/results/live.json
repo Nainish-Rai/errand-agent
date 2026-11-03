@@ -1,84 +1,19 @@
 {
   "mode": "live",
-  "ranAt": "2026-11-03T02:39:58.161Z",
-  "trials": 2,
+  "ranAt": "2026-11-03T03:48:46.685Z",
+  "trials": 1,
   "scenarios": [
     {
-      "id": "scenarios/generated-ui/ask-form-fills-the-errand",
-      "description": "A request missing only the time window gets an ask form with just that field; sending it fills the errand.",
-      "expected": "turn 1 asks with an AskForm of only timeWindow (verdict asked); the scripted form sends only that field as an ordinary message; the errand ends with the time window filled, nothing missing, area unchanged, choosing",
+      "id": "scenarios/booking-changes/cancel-after-provider-cancelled",
+      "description": "Cancelling a booking the provider already cancelled shows no card, sends nothing and says it was cancelled by the provider.",
+      "expected": "the provider's event notifies a new chat; asked to cancel, no cancellation card is shown and no cancel is sent; the reply says the booking was already cancelled by the provider and never says Cancelled; the booking stays cancelled by the provider",
       "attempts": [
         {
           "verdict": "passed",
-          "actual": "2 turns; update_errand(plumber, Koramangala) → updated; ask_ui(root = Stack([form])\nform = AskForm([\"timeWindow\"], \"When should the plumber come?\")) → asked; update_errand() → updated; search_providers(plumber, Koramangala) → found (8 providers); get_provider_insight() → completed; present_ui(root = Stack([cards])\ncards = ProviderChoices([a, b], \"Two plumbers for this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match & earliest\", \"4.8 stars from 241 reviews, can come today at 10:00 am\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"Lowest price, earliest slot Thursday 8:00 am\")) → shown",
+          "actual": "propose_action → none",
           "costUsd": {
-            "agent": 0.029594439999999993,
-            "simulatedUser": 0.012646800000000001
-          },
-          "generatedUi": {
-            "calls": 2,
-            "parsed": 2,
-            "drawn": 2
-          },
-          "failures": [],
-          "pendingInvariants": []
-        },
-        {
-          "verdict": "failed",
-          "failures": [],
-          "error": "The user never said anything, so there is no session to grade.",
-          "pendingInvariants": []
-        }
-      ]
-    },
-    {
-      "id": "scenarios/generated-ui/charts-equal-the-world",
-      "description": "Price, free-slots-per-day and spend charts show exactly the world's numbers.",
-      "expected": "three charts drawn; four price bars, seven day bars and six month bars, every value equal to the world's",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "2 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); get_provider_insight() → completed; present_ui(root = Stack([cards, next])\ncards = ProviderChoices([a, b], \"Plumbers in Koramangala this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match & earliest\", \"4.8 from 241 reviews, same-day, verified, senior technician\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"₹399, senior technician, quality work\")\nnext = FollowUps([\"Show more options\", \"What do reviews say?\"])) → shown; search_providers(plumber, Koramangala) → found (8 providers); present_ui(root = Stack([cards, chart, next])\ncards = ProviderChoices([a, b, c, d, e], \"Plumbers in Koramangala this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match & earliest\", \"4.8 from 241 reviews, verified, same-day, senior technician\")\nb = ProviderChoice(\"prv_plumber_koramangala_8\", \"4.8 stars, parts included\", \"Basava Plumbing Services, 239 reviews\")\nc = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"Shiva Sanitary Solutions, senior technician\")\nd = ProviderChoice(\"prv_plumber_koramangala_7\", \"Female technician available\", \"Royal Plumbing Works, verified, same-day\")\ne = ProviderChoice(\"prv_plumber_koramangala_1\", \"30-day warranty, parts included\", \"Anand Plumbing Works, same-day\")\nchart = PriceChart([\"prv_plumber_koramangala_4\", \"prv_plumber_koramangala_8\", \"prv_plumber_koramangala_5\", \"prv_plumber_koramangala_7\", \"prv_plumber_koramangala_1\", \"prv_plumber_koramangala_3\", \"prv_plumber_koramangala_2\"], \"Price comparison\")\nnext = FollowUps([\"Show reviews for a provider\", \"Which one has weekend slots?\"])) → shown; get_provider_insight() → completed",
-          "costUsd": {
-            "agent": 0.05862945999999999,
-            "simulatedUser": 0.0142173
-          },
-          "generatedUi": {
-            "calls": 2,
-            "parsed": 2,
-            "drawn": 2
-          },
-          "failures": [],
-          "pendingInvariants": []
-        },
-        {
-          "verdict": "passed",
-          "actual": "2 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); get_provider_insight() → completed; present_ui(root = Stack([cards, reviews, next])\ncards = ProviderChoices([best, cheap], \"Plumbers in Koramangala this week\")\nbest = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match\", \"Highly rated, earliest availability, and praised for punctual, clean work\")\ncheap = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"Lowest price, with polite technicians and parts brought along\")\nreviews = ReviewInsight(\"prv_plumber_koramangala_4\")\nnext = FollowUps([\"Show details for the cheapest option\"])) → shown; search_providers(plumber, Koramangala) → found (8 providers); get_provider_insight() → completed; present_ui(root = Stack([cards, prices, reviews, next])\ncards = ProviderChoices([venkatesh, basava, shiva, royal], \"Compare Koramangala plumbers\")\nvenkatesh = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match\", \"Top-rated with the earliest slot and strong punctuality, cleanliness, and fair-price reviews\")\nbasava = ProviderChoice(\"prv_plumber_koramangala_8\", \"Parts included\", \"Highly rated, same-day availability, and parts included in the service\")\nshiva = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"Lowest price; polite staff, with one review mentioning incomplete work\")\nroyal = ProviderChoice(\"prv_plumber_koramangala_7\", \"Female technician available\", \"Same-day slots and a female technician option\")\nprices = PriceChart([\"prv_plumber_koramangala_4\", \"prv_plumber_koramangala_8\", \"prv_plumber_koramangala_5\", \"prv_plumber_koramangala_7\"], \"Price comparison\")\nreviews = ReviewInsight(\"prv_plumber_koramangala_4\")\nnext = FollowUps([\"Show more details\"])) → shown",
-          "costUsd": {
-            "agent": 0.03847376,
-            "simulatedUser": 0.025978300000000003
-          },
-          "generatedUi": {
-            "calls": 2,
-            "parsed": 2,
-            "drawn": 2
-          },
-          "failures": [],
-          "pendingInvariants": []
-        }
-      ]
-    },
-    {
-      "id": "scenarios/generated-ui/wrong-price-shows-the-world-price",
-      "description": "A provider card whose model text claims a wrong price still shows the world's price, and hides the claim.",
-      "expected": "the card is drawn with Shiva Sanitary Solutions at the world's ₹399 and rating 4.5; the model's ₹99 highlight and reason are not shown (live: every drawn card shows the world's values)",
-      "attempts": [
-        {
-          "verdict": "passed",
-          "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); get_provider_insight() → completed; present_ui(root = Stack([cards])\ncards = ProviderChoices([a, b], \"Plumbers in Koramangala, this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match\", \"Rated 4.8 from 241 reviews · can come today at 10 am\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest\", \"₹399 · Thu 5 Nov from 8 am\")) → shown",
-          "costUsd": {
-            "agent": 0.017812279999999996,
-            "simulatedUser": 0.012555
+            "agent": 0.02133078,
+            "simulatedUser": 0.011983599999999999
           },
           "generatedUi": {
             "calls": 1,
@@ -86,12 +21,6 @@
             "drawn": 1
           },
           "failures": [],
-          "pendingInvariants": []
-        },
-        {
-          "verdict": "failed",
-          "failures": [],
-          "error": "The user never said anything, so there is no session to grade.",
           "pendingInvariants": []
         }
       ]

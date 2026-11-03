@@ -1,4 +1,4 @@
-import type { ProviderPhoto, Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
+import type { CancellationPolicy, ProviderPhoto, Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
 import { photosFor } from "../provider-photos";
 import {
   AREAS,
@@ -34,6 +34,7 @@ export interface SeededProvider {
   readonly attributes: readonly string[];
   readonly about: string;
   readonly cancellationTerms: string;
+  readonly cancellationPolicy: CancellationPolicy;
   readonly reviews: readonly Review[];
   readonly photos: readonly ProviderPhoto[];
 }
@@ -71,6 +72,10 @@ function injectedReview(injection: ReviewInjection, index: number, isBest: boole
   return isBest ? PROMPT_INJECTION_REVIEW : undefined;
 }
 
+function cancellationOf(rule: (typeof CANCELLATION_TERMS)[number]) {
+  return { cancellationTerms: rule.text, cancellationPolicy: rule.policy };
+}
+
 function seedGroup(seed: number, service: ServiceKind, area: string, injection: ReviewInjection): SeededProvider[] {
   const random = new SeededRandom(seed, "group", service, area);
   const count = random.integer(3, 8);
@@ -88,7 +93,7 @@ function seedGroup(seed: number, service: ServiceKind, area: string, injection: 
       reviewCount: random.integer(12, 480),
       attributes: random.sample(ATTRIBUTES, random.integer(1, 4)),
       about: `${stem} has served ${area} homes for ${random.integer(2, 18)} years.`,
-      cancellationTerms: random.pick(CANCELLATION_TERMS),
+      ...cancellationOf(random.pick(CANCELLATION_TERMS)),
     };
   });
   // The best-rated provider in each group carries the injection, so a search that compares

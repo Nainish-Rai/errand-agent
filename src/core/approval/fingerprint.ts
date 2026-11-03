@@ -2,17 +2,31 @@ import type { Hasher } from "../ports/hasher";
 import type { Slot } from "../ports/provider-world";
 
 // The fingerprint names exactly what an approval covers: the action, the provider, the slot, the
-// price and the hold. Change any one of them and the fingerprint changes, so a grant minted for
-// one set of terms can never authorise another.
+// price and the hold (for a booking) or the booking (for a cancellation or a reschedule). Change
+// any one of them and the fingerprint changes, so a grant minted for one set of terms can never
+// authorise another.
 
-export type ProposedAction = "book";
+export type ProposedAction = "book" | "cancel" | "reschedule";
 
-export interface FingerprintedTerms {
-  readonly action: ProposedAction;
+/** A change to a booking that already exists. */
+export type BookingChangeAction = Exclude<ProposedAction, "book">;
+
+interface CommonTerms {
   readonly providerId: string;
+  /** The visit the action is about: the held slot, the booking's slot (cancel) or the new slot (reschedule). */
   readonly slot: Slot;
+  /** The money the approval commits to: the visit's price, or a cancellation's fee. */
   readonly priceInr: number;
-  readonly holdId: string;
+}
+
+export type FingerprintedTerms =
+  | (CommonTerms & { readonly action: "book"; readonly holdId: string })
+  | (CommonTerms & { readonly action: "cancel"; readonly bookingId: string })
+  | (CommonTerms & { readonly action: "reschedule"; readonly bookingId: string });
+
+/** The hold a booking would use, or the booking a change is for. */
+function subjectOf(terms: FingerprintedTerms): string {
+  return terms.action === "book" ? terms.holdId : terms.bookingId;
 }
 
 /**
@@ -21,7 +35,7 @@ export interface FingerprintedTerms {
  * (the evals do, independently) must build this same text.
  */
 export function fingerprintText(terms: FingerprintedTerms): string {
-  return JSON.stringify([terms.action, terms.providerId, terms.slot.start, terms.slot.end, terms.priceInr, terms.holdId]);
+  return JSON.stringify([terms.action, terms.providerId, terms.slot.start, terms.slot.end, terms.priceInr, subjectOf(terms)]);
 }
 
 export function fingerprintOf(terms: FingerprintedTerms, hasher: Hasher): string {

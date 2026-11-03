@@ -1,12 +1,13 @@
 import { isConsumed } from "../approval/grant";
-import { isExecutionStarted, type Proposal, type ProposalStatus } from "../approval/proposal";
+import { isBookingProposal, isExecutionStarted, type BookingProposal, type Proposal, type ProposalStatus } from "../approval/proposal";
 import type { Errand } from "../errand/errand";
 import { traceNewTransitions } from "./errand-session";
 import { moved, sessionPlace, withoutHold, type ProposalDependencies } from "./proposal-session";
 
 // DeclineProposal: the person clicked Decline (or Other options) on the card. Nothing is booked,
-// the held slot goes back to the provider, and the errand returns to its options. Declining twice
-// is the same as declining once.
+// the held slot goes back to the provider, and the errand returns to its options. Declining a
+// cancel or reschedule card leaves the booking exactly as it was. Declining twice is the same as
+// declining once.
 
 export type DeclineProposalOutcome =
   | { readonly kind: "declined"; readonly proposal: Proposal }
@@ -14,7 +15,7 @@ export type DeclineProposalOutcome =
   /** The booking was already under way (declining can't undo it), or the proposal was voided and replaced. */
   | { readonly kind: "too_late"; readonly proposal: Proposal; readonly status: ProposalStatus };
 
-function backToOptions(errand: Errand | undefined, proposal: Proposal, deps: ProposalDependencies): Errand | undefined {
+function backToOptions(errand: Errand | undefined, proposal: BookingProposal, deps: ProposalDependencies): Errand | undefined {
   if (errand === undefined || errand.hold?.holdId !== proposal.terms.holdId) return undefined;
   if (errand.state !== "awaiting_approval" && errand.state !== "holding") return undefined;
   return moved(withoutHold(errand), "choosing", "proposal_declined", deps.errand.clock);
@@ -33,6 +34,8 @@ async function declined(
   }
   const declinedProposal: Proposal = { ...proposal, status: "declined" };
   await deps.proposals.saveProposal(declinedProposal);
+  // A cancel or reschedule card holds nothing, and its booking stays as it is.
+  if (!isBookingProposal(proposal)) return { outcome: { kind: "declined", proposal: declinedProposal } };
   await deps.world.releaseHold(proposal.terms.holdId);
   return { outcome: { kind: "declined", proposal: declinedProposal }, errand: backToOptions(current, proposal, deps) };
 }

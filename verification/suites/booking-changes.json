@@ -1,0 +1,1109 @@
+{
+  "version": 1,
+  "title": "Booking changes: cancel and reschedule through the approval card, and the same provider as last time",
+  "feature": "booking-changes",
+  "description": "Ticket 10. Moving the AC service shows a fixed reschedule card with the old and new times and one tap moves it once; a refused new time moves nothing and puts the closest free time on a fresh card that needs its own tap; a cancellation card shows the fee, a 503 is retried and Cancelled appears only once the booking's status shows it; the last electrician is proposed with no slot before 10:00. Each checked against GET /api/v1/bookings and the ledger.",
+  "scenarios": [
+    {
+      "id": "reschedule-shows-old-and-new-then-moves-once",
+      "title": "Move my AC servicing to Saturday: the card shows Mon 9 Nov 11:00 → Sat 7 Nov 2:00 pm; Approve moves it once",
+      "theme": "dark",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42 (the person's AC service bkg_seed_3 is on Mon 9 Nov at 11:00)"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with empty memory"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "list_bookings",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "find_reschedule_slots",
+                            "input": {
+                              "booking_id": "bkg_seed_3",
+                              "from": "2026-11-07",
+                              "to": "2026-11-07"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Your AC service with Ravi Aircon Experts is on Mon 9 Nov at 11:00 am. On Saturday they're free at 8 am, 2 pm, 3 pm and 6 pm. Which works?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "reschedule",
+                              "booking_id": "bkg_seed_3",
+                              "slot": {
+                                "start": "2026-11-07T14:00:00+05:30",
+                                "end": "2026-11-07T15:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Check the card: it moves the visit from Mon 9 Nov 11:00 am to Sat 7 Nov 2:00 pm. Tap Approve if that's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Moved: Ravi Aircon Experts, now Sat 7 Nov at 2:00 pm IST. Booking ID bkg_seed_3."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the reschedule conversation into the scripted model"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Move my AC servicing to Saturday"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which works?"
+          },
+          "note": "the agent found the booking and Saturday's free times"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "2 pm works."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Tap Approve if that's right."
+          },
+          "note": "the reschedule card turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "Mon, 9 Nov, 11:00 am IST"
+          },
+          "note": "the card shows the old time"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "Sat, 7 Nov, 2:00 pm IST"
+          },
+          "note": "and the new time"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "bkg_seed_3"
+          },
+          "note": "and the booking it moves"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "Valid"
+          },
+          "note": "the card's countdown is its own window: a move holds no slot"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": {
+              "path": "bookings[*].slot.start",
+              "includes": "2026-11-09T11:00:00+05:30"
+            }
+          },
+          "note": "world state: nothing moved before the tap"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "reschedule-card.png"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve move"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Moved",
+            "text": "Sat, 7 Nov, 2:00 pm IST",
+            "timeoutMs": 20000
+          },
+          "note": "the receipt shows the move the booking's status confirmed"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "You approved the move."
+          },
+          "note": "the approved card names what was approved, not a charge"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Moved: Ravi Aircon Experts"
+          },
+          "note": "the agent's reply relays it"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings[*].slot.start",
+                "includes": "2026-11-07T14:00:00+05:30"
+              },
+              {
+                "path": "bookings[*].status",
+                "equals": [
+                  "completed",
+                  "completed",
+                  "upcoming"
+                ]
+              },
+              {
+                "path": "bookings[*].changes[*].action",
+                "equals": [
+                  "reschedule"
+                ]
+              },
+              {
+                "path": "bookings[*].changes[*].grantConsumed",
+                "equals": [
+                  true
+                ]
+              }
+            ]
+          },
+          "note": "world state: the booking is on Saturday 2 pm, its one reschedule grant consumed"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/action-intents"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "intents[*].action",
+                "equals": [
+                  "reschedule"
+                ]
+              },
+              {
+                "path": "intents[*].state",
+                "equals": [
+                  "confirmed"
+                ]
+              },
+              {
+                "path": "intents[*].attempts",
+                "equals": [
+                  1
+                ]
+              }
+            ]
+          },
+          "note": "world state: one reschedule intent, confirmed after one attempt"
+        }
+      ]
+    },
+    {
+      "id": "reschedule-conflict-moves-nothing-fresh-card-needs-its-tap",
+      "title": "The provider refuses 8 am: Not moved, the 2 pm card is fresh and pending; only its own tap moves the booking",
+      "theme": "light",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "reschedule_conflict",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: reschedule_conflict, seed 42 (the person's AC service bkg_seed_3 is on Mon 9 Nov at 11:00)"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with empty memory"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "list_bookings",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "find_reschedule_slots",
+                            "input": {
+                              "booking_id": "bkg_seed_3",
+                              "from": "2026-11-07",
+                              "to": "2026-11-07"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "reschedule",
+                              "booking_id": "bkg_seed_3",
+                              "slot": {
+                                "start": "2026-11-07T08:00:00+05:30",
+                                "end": "2026-11-07T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "On Saturday morning they're free at 8 am. Check the card: Mon 9 Nov 11:00 am → Sat 7 Nov 8:00 am. Tap Approve if that's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Ravi Aircon Experts can't do 8 am after all, so nothing moved. The new card for 2 pm needs your tap."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Moved: Ravi Aircon Experts, now Sat 7 Nov at 2:00 pm IST. Booking ID bkg_seed_3."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the refused-move conversation into the scripted model"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Move my AC servicing to Saturday morning"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Tap Approve if that's right."
+          },
+          "note": "the card for 8 am is up"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "text": "Sat, 7 Nov, 8:00 am IST"
+          },
+          "note": "the card is for Saturday 8 am"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve move"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Not changed",
+            "text": "Not moved",
+            "timeoutMs": 20000
+          },
+          "note": "the provider refused 8 am: the receipt says it was not moved"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Not changed",
+            "text": "nothing was moved"
+          },
+          "note": "and why, from the presenter"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve move",
+            "count": 1
+          },
+          "note": "exactly one card can still be approved: the fresh one"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "nth": 1,
+            "text": "Sat, 7 Nov, 2:00 pm IST"
+          },
+          "note": "the fresh card, under the refused one, offers the closest free time, 2 pm"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve reschedule",
+            "nth": 0,
+            "text": "Approved"
+          },
+          "note": "the refused card stays approved, not approvable again"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings[*].slot.start",
+                "includes": "2026-11-09T11:00:00+05:30"
+              },
+              {
+                "path": "bookings[*].changes[*].status",
+                "equals": [
+                  "failed"
+                ]
+              }
+            ]
+          },
+          "note": "world state: nothing moved; the refused move used its grant and failed"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/proposals"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "proposals[*].status",
+                "equals": [
+                  "pending",
+                  "failed"
+                ]
+              }
+            ]
+          },
+          "note": "world state: the fresh card is its own pending proposal (newest first)"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "reschedule-conflict.png"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve move"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Moved",
+            "text": "Sat, 7 Nov, 2:00 pm IST",
+            "timeoutMs": 20000
+          },
+          "note": "the tap on the fresh card moved it"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings[*].slot.start",
+                "includes": "2026-11-07T14:00:00+05:30"
+              },
+              {
+                "path": "bookings[*].changes[*].status",
+                "equals": [
+                  "failed",
+                  "executed"
+                ]
+              },
+              {
+                "path": "bookings[*].changes[*].grantConsumed",
+                "equals": [
+                  true,
+                  true
+                ]
+              }
+            ]
+          },
+          "note": "world state: the booking is at 2 pm; each move had its own consumed grant"
+        }
+      ]
+    },
+    {
+      "id": "cancel-shows-fee-retries-503-and-confirms",
+      "title": "Cancel my AC servicing: the card says no fee; a 503 is retried with the same key; Cancelled only after the status",
+      "theme": "dark",
+      "viewport": "phone",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42 (the person's AC service bkg_seed_3 is on Mon 9 Nov at 11:00)"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with empty memory"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "list_bookings",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "cancel",
+                              "booking_id": "bkg_seed_3"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Your AC service with Ravi Aircon Experts on Mon 9 Nov at 11:00 am can be cancelled free. Tap the button on the card to cancel it."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Cancelled: Ravi Aircon Experts, Mon 9 Nov at 11:00 am, no fee. Booking ID bkg_seed_3."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the cancellation conversation into the scripted model"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Close the trace"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "complementary",
+            "name": "Run trace",
+            "count": 0
+          },
+          "note": "on a phone the trace rail covers the chat: close it"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Cancel my AC servicing booking"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Tap the button on the card to cancel it."
+          },
+          "note": "the cancellation card turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve cancellation",
+            "text": "No fee"
+          },
+          "note": "the card shows the fee: none, five days ahead"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve cancellation",
+            "text": "Free cancellation up to 4 hours before the visit"
+          },
+          "note": "with the provider's terms it comes from"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Other options",
+            "count": 0
+          },
+          "note": "a cancellation offers no other options"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "cancel-card.png"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve free cancellation"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Cancelled",
+            "text": "bkg_seed_3",
+            "timeoutMs": 20000
+          },
+          "note": "the receipt appears once the booking's status shows it cancelled"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/bookings"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "bookings[*].status",
+                "equals": [
+                  "completed",
+                  "completed",
+                  "cancelled"
+                ]
+              },
+              {
+                "path": "bookings[*].changes[*].action",
+                "equals": [
+                  "cancel"
+                ]
+              },
+              {
+                "path": "bookings[*].changes[*].grantConsumed",
+                "equals": [
+                  true
+                ]
+              }
+            ]
+          },
+          "note": "world state: the booking is cancelled, by its one consumed grant"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/action-intents"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "intents[*].state",
+                "equals": [
+                  "confirmed"
+                ]
+              },
+              {
+                "path": "intents[*].attempts",
+                "equals": [
+                  2
+                ]
+              }
+            ]
+          },
+          "note": "world state: confirmed after two attempts (the first got a 503)"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/trace"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "spans[*].name",
+                "includes": "execute_tool cancel"
+              },
+              {
+                "path": "spans[*].name",
+                "includes": "execute_tool list_bookings"
+              }
+            ]
+          },
+          "note": "the trace has the cancel calls and the status reads"
+        }
+      ]
+    },
+    {
+      "id": "same-electrician-from-ten",
+      "title": "Book the same electrician as last time, not before 10: Lakshmi Wiring Services at 11:00 am on the card",
+      "theme": "light",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42 (the person's AC service bkg_seed_3 is on Mon 9 Nov at 11:00)"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with empty memory"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "list_bookings",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "update_errand",
+                            "input": {
+                              "service": "electrician",
+                              "area": "Koramangala",
+                              "time_window": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10",
+                                "earliest_hour": 10
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "electrician",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_electrician_koramangala_1",
+                              "slot": {
+                                "start": "2026-11-04T11:00:00+05:30",
+                                "end": "2026-11-04T12:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Lakshmi Wiring Services did your last electrical job. Their first time from 10 am is today at 11:00 am. Tap Approve ₹999 on the card if that's right."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the same-electrician conversation into the scripted model"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Book the same electrician as last time, this week, but not before 10 a.m."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Tap Approve ₹999 on the card"
+          },
+          "note": "the turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Lakshmi Wiring Services"
+          },
+          "note": "the card proposes the last electrician"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Approve booking",
+            "text": "Wed, 4 Nov, 11:00 am IST"
+          },
+          "note": "at a time from 10:00"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/errand"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "errand.timeWindow.earliestHour",
+                "equals": 10
+              }
+            ]
+          },
+          "note": "world state: the errand starts no earlier than 10"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "same-electrician.png"
+          ]
+        }
+      ]
+    }
+  ]
+}

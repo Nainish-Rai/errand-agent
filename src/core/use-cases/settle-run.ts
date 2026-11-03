@@ -47,7 +47,7 @@ async function releaseAbandonedHold(deps: SettleRunDependencies, errand: Errand)
   const { hold } = errand;
   if (hold === undefined || !HOLDING.includes(errand.state)) return;
   const latest = await deps.proposals.latestProposalOf(errand.sessionId);
-  const proposal = latest?.terms.holdId === hold.holdId ? latest : undefined;
+  const proposal = latest?.terms.action === "book" && latest.terms.holdId === hold.holdId ? latest : undefined;
   // `book` was (or is being) sent on this hold; the ledger settles it, and releasing could undo it.
   if (proposal !== undefined && isExecutionStarted(proposal)) return;
   await deps.world.releaseHold(hold.holdId);

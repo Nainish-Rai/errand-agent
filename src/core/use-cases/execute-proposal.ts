@@ -1,9 +1,10 @@
 import { matchesFingerprint } from "../approval/fingerprint";
 import { isConsumed, isGrantExpired } from "../approval/grant";
-import type { Proposal } from "../approval/proposal";
+import { isBookingChangeProposal, type BookingProposal } from "../approval/proposal";
 import type { Errand } from "../errand/errand";
 import type { TracePlace } from "../errand/errand-workflow";
 import { bookApprovedProposal, bookingOfUsedGrant, type BookingDependencies, type BookingOutcome } from "./book-approved-proposal";
+import { executeBookingChange, type ExecuteBookingChangeOutcome } from "./change-approved-booking";
 import { traceNewTransitions } from "./errand-session";
 import { moved, withoutHold } from "./proposal-session";
 import { revalidateApproval, type ApprovalRevalidationOutcome } from "./revalidate-approval";
@@ -18,6 +19,9 @@ import { revalidateApproval, type ApprovalRevalidationOutcome } from "./revalida
 // `get_booking_status` before anything is reported as booked (see book-approved-proposal.ts).
 // Asking again, however often, never books twice: a used grant is answered from the ledger, and an
 // unsettled intent is settled with the same key.
+//
+// When the card is a cancellation or a reschedule, the same rules run on the booking it changes
+// (change-approved-booking.ts); the errand, which is about booking something new, isn't touched.
 
 export type ExecuteProposalOutcome =
   /**
@@ -26,17 +30,19 @@ export type ExecuteProposalOutcome =
    */
   | BookingOutcome
   /** Carried out earlier; nothing new was done. */
-  | { readonly kind: "already_booked"; readonly proposal: Proposal; readonly bookingId: string }
+  | { readonly kind: "already_booked"; readonly proposal: BookingProposal; readonly bookingId: string }
   /** Nobody clicked Approve. Nothing was booked; the card is shown again. */
-  | { readonly kind: "not_approved"; readonly proposal: Proposal }
+  | { readonly kind: "not_approved"; readonly proposal: BookingProposal }
   | { readonly kind: "no_proposal" }
-  | { readonly kind: "declined"; readonly proposal: Proposal }
+  | { readonly kind: "declined"; readonly proposal: BookingProposal }
   /** The grant or the hold ran out first. Nothing was booked. */
-  | { readonly kind: "approval_expired"; readonly proposal: Proposal }
+  | { readonly kind: "approval_expired"; readonly proposal: BookingProposal }
   /** The grant doesn't cover this proposal's terms. Nothing was booked. */
-  | { readonly kind: "fingerprint_mismatch"; readonly proposal: Proposal }
+  | { readonly kind: "fingerprint_mismatch"; readonly proposal: BookingProposal }
   /** The errand is no longer waiting on this approval: it moved on, or a restart lost it. */
-  | { readonly kind: "out_of_step"; readonly proposal: Proposal }
+  | { readonly kind: "out_of_step"; readonly proposal: BookingProposal }
+  /** The card was a cancellation or a reschedule: what became of it. */
+  | ExecuteBookingChangeOutcome
   /** The live hold no longer matched the approval, or ran out. Nothing was booked; a fresh proposal may be on the card. */
   | ApprovalRevalidationOutcome;
 
@@ -49,6 +55,7 @@ async function executed(errand: Errand | undefined, deps: BookingDependencies, p
   const { sessionId } = place;
   const proposal = await deps.proposals.latestProposalOf(sessionId);
   if (proposal === undefined) return { outcome: { kind: "no_proposal" } };
+  if (isBookingChangeProposal(proposal)) return { outcome: await executeBookingChange(deps, { proposal, place }) };
   if (proposal.status === "executed" && proposal.bookingId !== undefined) {
     return { outcome: { kind: "already_booked", proposal, bookingId: proposal.bookingId } };
   }
@@ -64,7 +71,7 @@ async function executed(errand: Errand | undefined, deps: BookingDependencies, p
 
   const nowMs = deps.worldClock.now().getTime();
   if (proposal.status === "expired" || isGrantExpired(grant, nowMs)) {
-    const expired: Proposal = { ...proposal, status: "expired" };
+    const expired: BookingProposal = { ...proposal, status: "expired" };
     await deps.proposals.saveProposal(expired);
     return {
       outcome: { kind: "approval_expired", proposal: expired },

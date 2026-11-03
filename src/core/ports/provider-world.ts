@@ -43,9 +43,23 @@ export interface Review {
   readonly text: string;
 }
 
+/** A late cancellation's fee: a flat amount, or a share of the visit's price. */
+export type CancellationFee =
+  | { readonly kind: "flat"; readonly amountInr: number }
+  | { readonly kind: "percent_of_price"; readonly percent: number };
+
+/** The provider's cancellation rule as data: free until some hours before the visit, the fee after that. */
+export interface CancellationPolicy {
+  readonly freeUntilHoursBefore: number;
+  readonly lateFee: CancellationFee;
+}
+
 export interface ProviderDetails extends ProviderSummary {
   readonly about: string;
+  /** The rule in the provider's own words, as the card shows it. */
   readonly cancellationTerms: string;
+  /** The same rule as data, which the cancellation fee is worked out from. */
+  readonly cancellationPolicy: CancellationPolicy;
   readonly reviews: readonly Review[];
 }
 

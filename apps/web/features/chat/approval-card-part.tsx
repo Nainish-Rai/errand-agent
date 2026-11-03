@@ -11,11 +11,11 @@ import {
   type ProposalView,
   type TermChangeView,
 } from "@errand/contracts";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import type { MonogramTone } from "@/components/monogram";
 import { Spinner } from "@/components/ui/spinner";
-import { ApprovalCard, BookingReceipt, type ApprovalChange, type ApprovalProposal, type ApprovalState } from "@/features/trust";
+import { ApprovalCard, BookingReceipt, ChangeReceipt, type ApprovalChange, type ApprovalProposal, type ApprovalState } from "@/features/trust";
 
 import { appApi } from "./backend";
 import { NextOptions, RunningExecution, VerifyingExecution } from "./booking-progress";
@@ -111,9 +111,14 @@ function changeOf(change: TermChangeView): ApprovalChange {
   }
 }
 
+/** When the card stops being approvable: the hold's expiry, or a cancel or reschedule card's own window. */
+function deadlineOf(terms: ProposalCard["terms"]): string {
+  return terms.action === "book" ? terms.holdExpiresAt : terms.expiresAt;
+}
+
 /** When the hold ran out: when core found it lapsed, if it did, else the hold's own expiry. */
 function expiredAtOf(proposal: ProposalView): string {
-  return clockFormat.format(new Date(proposal.invalidation?.at ?? proposal.terms.holdExpiresAt));
+  return clockFormat.format(new Date(proposal.invalidation?.at ?? deadlineOf(proposal.terms)));
 }
 
 function stateOf(proposal: ProposalView, busy: boolean, holdLeft: string | undefined): ApprovalState {
@@ -141,14 +146,36 @@ function stateOf(proposal: ProposalView, busy: boolean, holdLeft: string | undef
 
 function proposalOf(view: ProposalCard): ApprovalProposal {
   const { terms } = view;
-  return {
-    kind: "book",
-    service: SERVICE_LABELS[terms.service],
-    slot: slotLabel(terms.slot.start),
-    price: terms.priceInr,
-    address: `${terms.area}, Bengaluru`,
-    cancellationTerms: terms.cancellationTerms,
-  };
+  const service = SERVICE_LABELS[terms.service];
+  switch (terms.action) {
+    case "book":
+      return {
+        kind: "book",
+        service,
+        slot: slotLabel(terms.slot.start),
+        price: terms.priceInr,
+        address: `${terms.area}, Bengaluru`,
+        cancellationTerms: terms.cancellationTerms,
+      };
+    case "cancel":
+      return {
+        kind: "cancel",
+        service,
+        slot: slotLabel(terms.slot.start),
+        bookingId: terms.bookingId,
+        fee: terms.priceInr,
+        cancellationTerms: terms.cancellationTerms,
+      };
+    case "reschedule":
+      return {
+        kind: "reschedule",
+        service,
+        bookingId: terms.bookingId,
+        fromSlot: slotLabel(terms.fromSlot.start),
+        toSlot: slotLabel(terms.slot.start),
+        price: terms.priceInr,
+      };
+  }
 }
 
 function cardElementId(proposalId: string): string {
@@ -232,6 +259,28 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
   );
 }
 
+/** The receipt for a cancel or reschedule card once execute_proposal settled it, or undefined for anything else. */
+function changeReceiptOf(output: ExecuteProposalOutput): ReactNode {
+  const terms = output.proposal?.terms;
+  if (terms === undefined || terms.action === "book") return undefined;
+  const fromSlot = terms.action === "cancel" ? terms.slot : terms.fromSlot;
+  const booking = { bookingId: terms.bookingId, provider: terms.providerName, slot: slotLabel(fromSlot.start) };
+  switch (output.kind) {
+    case "cancelled":
+      return <ChangeReceipt booking={booking} state={{ status: "cancelled", fee: terms.priceInr }} />;
+    case "rescheduled":
+      return <ChangeReceipt booking={booking} state={{ status: "moved", toSlot: slotLabel(terms.slot.start) }} />;
+    case "change_verifying":
+      return <ChangeReceipt booking={booking} state={{ status: "checking", action: terms.action }} />;
+    case "change_failed":
+    case "booking_unavailable":
+    case "reschedule_conflict":
+      return <ChangeReceipt booking={booking} state={{ status: "failed", action: terms.action, reason: output.message }} />;
+    default:
+      return undefined;
+  }
+}
+
 /** propose_action: the card for the proposal core made from the hold. */
 export const ProposalCardPart: ToolCallMessagePartComponent = ({ result }) => {
   const parsed = ProposeActionOutputSchema.safeParse(result);
@@ -264,6 +313,16 @@ export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   const output = parsed.data;
   const booking = receiptOf(output);
   if (output.kind === "not_approved" && output.proposal !== null) return <LiveApprovalCard card={output.proposal} />;
+  const change = changeReceiptOf(output);
+  if (change !== undefined) {
+    // A refused move: nothing moved, and under it the fresh card for the closest free time.
+    return (
+      <div className="my-3 flex flex-col gap-3">
+        {change}
+        {output.kind === "reschedule_conflict" && output.freshProposal !== null && <LiveApprovalCard card={output.freshProposal} />}
+      </div>
+    );
+  }
   if (output.freshProposal !== null && output.proposal !== null) {
     // The terms changed or the hold ran out: the old card (voided or expired, old value beside new)
     // and right under it the fresh card, which needs its own tap.

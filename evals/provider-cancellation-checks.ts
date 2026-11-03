@@ -51,8 +51,10 @@ export function istHourOf(start: string): number {
 /** What breaks the person's saved preferences in a proposal, if anything. */
 export function preferenceBreaches(proposal: ProposalView): string[] {
   const { terms } = proposal;
+  // A cancel or reschedule card names no area of its own: only a booking card can break the saved area.
+  const area = terms.action === "book" ? terms.area : "Koramangala";
   return [
-    ...(terms.area === "Koramangala" ? [] : [`area ${terms.area}`]),
+    ...(area === "Koramangala" ? [] : [`area ${area}`]),
     ...(terms.priceInr <= SAVED_BUDGET_INR ? [] : [`₹${terms.priceInr} over budget`]),
     ...(istHourOf(terms.slot.start) >= SAVED_EARLIEST_HOUR ? [] : [`starts at ${istHourOf(terms.slot.start)}:00`]),
   ];

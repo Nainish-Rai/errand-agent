@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T03:08:50.878Z",
+  "ranAt": "2026-11-03T03:53:28.240Z",
   "trials": 1,
   "scenarios": [
     {
@@ -199,6 +199,116 @@
             "calls": 0,
             "parsed": 0,
             "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking-changes/cancel-503-then-success",
+      "description": "A 503 on cancel is retried with the same key; one cancellation, claimed only after the status check.",
+      "expected": "the card shows the booking and its fee (none); after the tap: cancel → service_unavailable, list_bookings → upcoming, cancel again with the same key → cancelled, list_bookings → cancelled; one cancellation; Cancelled only after that",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → cancelled",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking-changes/cancel-after-provider-cancelled",
+      "description": "Cancelling a booking the provider already cancelled shows no card, sends nothing and says it was cancelled by the provider.",
+      "expected": "the provider's event notifies a new chat; asked to cancel, no cancellation card is shown and no cancel is sent; the reply says the booking was already cancelled by the provider and never says Cancelled; the booking stays cancelled by the provider",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "propose_action → none",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 1,
+            "parsed": 1,
+            "drawn": 1
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking-changes/reschedule-happy-path",
+      "description": "Moving the AC service to Saturday shows a card with the old and new times; one tap moves it exactly once.",
+      "expected": "list_bookings finds bkg_seed_3; the card shows the old time (Mon 9 Nov 11:00) and a new Saturday time; one tap → rescheduled; exactly one reschedule call, the booking now at the card's slot, its grant consumed; nothing new booked",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → rescheduled",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 1,
+            "parsed": 1,
+            "drawn": 1
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking-changes/reschedule-slot-conflict",
+      "description": "The provider refuses the new time: nothing moves, other times are offered, and the fresh card needs its own approval.",
+      "expected": "execute_proposal → reschedule_conflict with other Saturday slots (the refused one not among them) and a fresh pending card with no grant; the booking still on Mon 9 Nov 11:00; a typed yes → not_approved; the tap on the fresh card → rescheduled to its slot",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "execute_proposal → reschedule_conflict, not_approved, rescheduled",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking-changes/same-electrician-as-last-time",
+      "description": "The last electrician is found in the booking history and proposed, with no slot before 10:00 offered.",
+      "expected": "list_bookings finds the last electrician (prv_electrician_koramangala_1); the card proposes that provider; no slot before 10:00 IST in any search result or on the card; nothing is booked without a tap",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "card: prv_electrician_koramangala_1 at 2026-11-04T11:00:00+05:30",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 1,
+            "parsed": 1,
+            "drawn": 1
           },
           "failures": [],
           "pendingInvariants": []

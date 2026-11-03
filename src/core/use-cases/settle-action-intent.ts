@@ -6,6 +6,7 @@ import {
   ledgerEvent,
   unknownAfterTimeout,
   type ActionIntent,
+  type BookingIntent,
   type ResolvedBy,
 } from "../booking/action-intent";
 import { readBookReply, settleFromStatus, type Settlement } from "../booking/reconciliation";
@@ -34,28 +35,40 @@ export interface LedgerDependencies {
   readonly worldClock: Clock;
 }
 
-export interface SettleActionIntentRequest {
-  readonly intent: ActionIntent;
+export interface SettleActionIntentRequest<T extends ActionIntent = BookingIntent> {
+  readonly intent: T;
   readonly place: TracePlace;
   readonly by: ResolvedBy;
 }
 
-type WorldCall = "book" | "get_booking_status";
+/** The world calls an intent is carried out and checked with. */
+export type WorldCall = "book" | "get_booking_status" | "cancel" | "reschedule" | "list_bookings";
 
-interface Step {
-  intent: ActionIntent;
+/** One intent being driven through the world: the intent as last stored, and the calls made so far. */
+export interface LedgerStep<T extends ActionIntent> {
+  intent: T;
   readonly deps: LedgerDependencies;
-  readonly request: SettleActionIntentRequest;
+  readonly request: SettleActionIntentRequest<T>;
   calls: number;
 }
+
+type Step = LedgerStep<BookingIntent>;
 
 function nowMs(deps: LedgerDependencies): number {
   return deps.clock.now().getTime();
 }
 
-/** The world call as an `execute_tool` span under the tool call, the shape the observatory reads retries from. */
-async function traced<T extends BookOutcome | BookingStatusOutcome>(
-  step: Step,
+/** Whether the call carries out the intent (as opposed to reading its status). */
+function isEffectCall(call: WorldCall): boolean {
+  return call === "book" || call === "cancel" || call === "reschedule";
+}
+
+/**
+ * The world call as an `execute_tool` span under the tool call, the shape the observatory reads
+ * retries from. A `timeout` or a 503 reply is an error span: the call didn't do its job.
+ */
+export async function tracedWorldCall<T extends { readonly kind: string }>(
+  step: LedgerStep<ActionIntent>,
   call: WorldCall,
   args: Record<string, string>,
   run: () => Promise<T>,
@@ -64,7 +77,7 @@ async function traced<T extends BookOutcome | BookingStatusOutcome>(
   step.calls += 1;
   const startTimeMs = nowMs(deps);
   const spanId = `world:${intent.idempotencyKey}:${call}:${startTimeMs}:${step.calls}`;
-  const retry = call === "book" && intent.attempts > 1;
+  const retry = isEffectCall(call) && intent.attempts > 1;
   const attributes: TraceAttributes = {
     "gen_ai.operation.name": "execute_tool",
     "gen_ai.tool.name": call,
@@ -95,11 +108,11 @@ async function traced<T extends BookOutcome | BookingStatusOutcome>(
   };
   try {
     const result = await run();
-    const timedOut = result.kind === "timeout";
-    await end(timedOut ? "error" : "ok", {
-      "gen_ai.tool.call.result": { ...result },
-      "errand.tool.outcome": timedOut ? "failed" : "completed",
-      ...(timedOut ? { "error.type": "timeout", "errand.error.message": "the provider did not answer in time" } : {}),
+    const failure = TRANSIENT_FAILURES[result.kind];
+    await end(failure === undefined ? "ok" : "error", {
+      "gen_ai.tool.call.result": { ...result } as Record<string, TraceValue>,
+      "errand.tool.outcome": failure === undefined ? "completed" : "failed",
+      ...(failure === undefined ? {} : { "error.type": result.kind, "errand.error.message": failure }),
     });
     return result;
   } catch (error) {
@@ -112,8 +125,14 @@ async function traced<T extends BookOutcome | BookingStatusOutcome>(
   }
 }
 
+/** Replies that say the call didn't get through, with what the trace says about them. */
+const TRANSIENT_FAILURES: Readonly<Record<string, string>> = {
+  timeout: "the provider did not answer in time",
+  service_unavailable: "the provider answered 503 (service unavailable)",
+};
+
 /** Saves the change over the version it was made from and traces it. False when someone else changed the intent first. */
-async function advanced(step: Step, next: ActionIntent): Promise<boolean> {
+export async function advanced<T extends ActionIntent>(step: LedgerStep<T>, next: T): Promise<boolean> {
   if (!(await step.deps.ledger.advance(next))) return false;
   await step.deps.traceSink.record(ledgerEvent(step.intent, next, step.request.place));
   step.intent = next;
@@ -121,23 +140,25 @@ async function advanced(step: Step, next: ActionIntent): Promise<boolean> {
 }
 
 /** What the ledger holds now, after another writer got there first. */
-async function reread(step: Step): Promise<ActionIntent> {
+export async function reread<T extends ActionIntent>(step: LedgerStep<T>): Promise<T> {
   const stored = await step.deps.ledger.find(step.intent.idempotencyKey);
   if (stored === undefined) throw new Error(`Intent ${step.intent.idempotencyKey} vanished from the ledger.`);
-  step.intent = stored;
-  return stored;
+  // The key names the action (`book:…`, `cancel:…`), so the stored intent is the same kind.
+  if (stored.action !== step.intent.action) throw new Error(`Intent ${stored.idempotencyKey} changed its action.`);
+  step.intent = stored as T;
+  return step.intent;
 }
 
 function readStatus(step: Step): Promise<BookingStatusOutcome> {
   const key = step.intent.idempotencyKey;
-  return traced(step, "get_booking_status", { idempotency_key: key }, () => step.deps.world.getBookingStatus(key));
+  return tracedWorldCall(step, "get_booking_status", { idempotency_key: key }, () => step.deps.world.getBookingStatus(key));
 }
 
 /** Counts the attempt, sends `book` with the intent's key, and settles from the status (never from the reply alone). */
 async function attempt(step: Step): Promise<Settlement | "taken_over"> {
   if (!(await advanced(step, attemptStarted(step.intent, nowMs(step.deps))))) return "taken_over";
   const { holdId, idempotencyKey } = step.intent;
-  const reply = await traced(step, "book", { hold_id: holdId, idempotency_key: idempotencyKey }, () =>
+  const reply = await tracedWorldCall(step, "book", { hold_id: holdId, idempotency_key: idempotencyKey }, () =>
     step.deps.world.book(holdId, idempotencyKey),
   );
   // A timeout says nothing about whether it booked: the intent is unknown until the status says,
@@ -150,7 +171,7 @@ async function attempt(step: Step): Promise<Settlement | "taken_over"> {
   return settleFromStatus(step.intent, status, { worldNowMs: step.deps.worldClock.now().getTime(), reply });
 }
 
-function resolution(intent: ActionIntent, settlement: Settlement, by: ResolvedBy, atMs: number): ActionIntent | undefined {
+function resolution(intent: BookingIntent, settlement: Settlement, by: ResolvedBy, atMs: number): BookingIntent | undefined {
   switch (settlement.kind) {
     case "confirm":
       return confirmedAs(intent, settlement.bookingId, by, atMs);
@@ -164,7 +185,7 @@ function resolution(intent: ActionIntent, settlement: Settlement, by: ResolvedBy
 }
 
 /** Records the settlement. The world's answer is the truth, so a confirmation or a failure wins over any unresolved state. */
-async function recorded(step: Step, settlement: Settlement): Promise<ActionIntent> {
+async function recorded(step: Step, settlement: Settlement): Promise<BookingIntent> {
   for (;;) {
     if (isResolved(step.intent)) return step.intent;
     const next = resolution(step.intent, settlement, step.request.by, nowMs(step.deps));
@@ -175,7 +196,7 @@ async function recorded(step: Step, settlement: Settlement): Promise<ActionInten
   }
 }
 
-export async function settleActionIntent(deps: LedgerDependencies, request: SettleActionIntentRequest): Promise<ActionIntent> {
+export async function settleActionIntent(deps: LedgerDependencies, request: SettleActionIntentRequest): Promise<BookingIntent> {
   const step: Step = { intent: request.intent, deps, request, calls: 0 };
   if (isResolved(step.intent)) return step.intent;
 

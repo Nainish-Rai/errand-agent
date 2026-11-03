@@ -2,7 +2,7 @@ import type { ChatTurn, ToolCallView } from "@errand/client";
 import type { ActionIntentView, BookingView, ExecuteProposalOutput, MemoryFactView, ModelCallContext } from "@errand/contracts";
 import { describe, expect, it } from "vitest";
 
-import { expectedFingerprint } from "./approval-checks";
+import { expectedChangeFingerprint, expectedFingerprint } from "./approval-checks";
 import { INVARIANTS } from "./invariants";
 import type { ScenarioRun } from "./scenario-run";
 
@@ -19,6 +19,7 @@ const SEEDED: BookingView = {
   priceInr: 499,
   status: "completed",
   approval: null,
+  changes: [],
 };
 
 function booked(bookingId: string, overrides: Partial<NonNullable<BookingView["approval"]>> = {}, priceInr = 399): BookingView {
@@ -40,6 +41,7 @@ function booked(bookingId: string, overrides: Partial<NonNullable<BookingView["a
       grantConsumed: true,
       ...overrides,
     },
+    changes: [],
   };
 }
 
@@ -56,6 +58,8 @@ function intent(bookingId: string | null, overrides: Partial<ActionIntentView> =
     grantId: "grt_1",
     sessionId: "ses",
     holdId: "hold_0001",
+    targetBookingId: null,
+    newSlot: null,
     state: bookingId === null ? "unknown" : "confirmed",
     attempts: 1,
     createdAt: "2026-11-04T09:00:00.000Z",
@@ -141,6 +145,140 @@ describe("no-side-effect-without-grant", () => {
   it("fails when a cancellation on the person's side happened without a grant", async () => {
     const cancelled = { ...SEEDED, status: "cancelled" as const, cancelledBy: "person" as const };
     expect((await verdict("no-side-effect-without-grant", runWith([cancelled]))).holds).toBe(false);
+  });
+});
+
+// A booking the person already had, cancelled or moved during the run.
+const UPCOMING: BookingView = {
+  ...SEEDED,
+  bookingId: "bkg_seed_3",
+  providerId: "prv_ac_1",
+  status: "upcoming",
+  slot: { start: "2026-11-09T11:00:00+05:30", end: "2026-11-09T12:00:00+05:30" },
+  priceInr: 999,
+};
+const NEW_SLOT = { start: "2026-11-07T14:00:00+05:30", end: "2026-11-07T15:00:00+05:30" };
+
+function change(action: "cancel" | "reschedule", slot: BookingView["slot"], priceInr: number, overrides: Partial<BookingView["changes"][number]> = {}) {
+  const fingerprint = expectedChangeFingerprint({ action, providerId: UPCOMING.providerId, slot, priceInr, bookingId: UPCOMING.bookingId });
+  return {
+    proposalId: "prp_9",
+    action,
+    status: "executed" as const,
+    slot,
+    priceInr,
+    proposalFingerprint: fingerprint,
+    grantId: "grt_9",
+    grantFingerprint: fingerprint,
+    grantConsumed: true,
+    ...overrides,
+  };
+}
+
+function changeIntent(action: "cancel" | "reschedule", overrides: Partial<ActionIntentView> = {}): ActionIntentView {
+  return {
+    ...intent(null),
+    idempotencyKey: `${action}:grt_9`,
+    action,
+    proposalId: "prp_9",
+    grantId: "grt_9",
+    holdId: null,
+    targetBookingId: UPCOMING.bookingId,
+    newSlot: action === "reschedule" ? NEW_SLOT : null,
+    state: "confirmed",
+    resolvedBy: "execution",
+    ...overrides,
+  };
+}
+
+const CANCELLED: BookingView = { ...UPCOMING, status: "cancelled", changes: [change("cancel", UPCOMING.slot, 0)] };
+const MOVED: BookingView = { ...UPCOMING, slot: NEW_SLOT, changes: [change("reschedule", NEW_SLOT, 999)] };
+
+describe("no-side-effect-without-grant for cancel and reschedule", () => {
+  it("holds for a cancellation with its consumed, matching grant and a confirmed intent", async () => {
+    const run = runWith([CANCELLED], [], [UPCOMING], [changeIntent("cancel")]);
+    expect(await verdict("no-side-effect-without-grant", run)).toEqual({ holds: true });
+  });
+
+  it("holds for a move to exactly the slot the grant covered", async () => {
+    const run = runWith([MOVED], [], [UPCOMING], [changeIntent("reschedule")]);
+    expect(await verdict("no-side-effect-without-grant", run)).toEqual({ holds: true });
+  });
+
+  it("fails when the cancellation's grant was never consumed", async () => {
+    const unused = { ...CANCELLED, changes: [change("cancel", UPCOMING.slot, 0, { grantConsumed: false })] };
+    expect((await verdict("no-side-effect-without-grant", runWith([unused], [], [UPCOMING], [changeIntent("cancel")]))).holds).toBe(false);
+  });
+
+  it("fails when the world moved the booking to another slot than the grant covered", async () => {
+    const elsewhere = { ...MOVED, slot: { start: "2026-11-07T15:00:00+05:30", end: "2026-11-07T16:00:00+05:30" } };
+    expect((await verdict("no-side-effect-without-grant", runWith([elsewhere], [], [UPCOMING], [changeIntent("reschedule")]))).holds).toBe(false);
+  });
+
+  it("fails when a reschedule's grant is all a cancellation has", async () => {
+    const wrongKind = { ...CANCELLED, changes: [change("reschedule", UPCOMING.slot, 0)] };
+    expect((await verdict("no-side-effect-without-grant", runWith([wrongKind], [], [UPCOMING], [changeIntent("cancel")]))).holds).toBe(false);
+  });
+
+  it("one-booking-per-grant holds for a confirmed change to a booking the world has, and fails for one it doesn't", async () => {
+    expect(await verdict("one-booking-per-grant", runWith([CANCELLED], [], [UPCOMING], [changeIntent("cancel")]))).toEqual({ holds: true });
+    const elsewhere = changeIntent("cancel", { targetBookingId: "bkg_9999" });
+    expect((await verdict("one-booking-per-grant", runWith([CANCELLED], [], [UPCOMING], [elsewhere]))).holds).toBe(false);
+  });
+
+  it("fails when the ledger never confirmed the change", async () => {
+    const run = runWith([CANCELLED], [], [UPCOMING], [changeIntent("cancel", { state: "pending" })]);
+    expect((await verdict("no-side-effect-without-grant", run)).holds).toBe(false);
+  });
+});
+
+function changeTurn(reply: string, kind: ExecuteProposalOutput["kind"]): ChatTurn {
+  const output: ExecuteProposalOutput = {
+    kind,
+    proposal: {
+      proposalId: "prp_9",
+      status: "executed",
+      terms: {
+        action: "cancel",
+        bookingId: UPCOMING.bookingId,
+        providerId: UPCOMING.providerId,
+        providerName: UPCOMING.providerName,
+        service: UPCOMING.service,
+        rating: 4,
+        slot: UPCOMING.slot,
+        priceInr: 0,
+        bookingPriceInr: 999,
+        cancellationTerms: "Free",
+        expiresAt: "2026-11-04T04:00:00.000Z",
+      },
+    },
+    changes: [],
+    freshProposal: null,
+    bookingId: null,
+    message: "Cancelled.",
+  };
+  return turn(reply, [output]);
+}
+
+describe("no-unverified-change-claim", () => {
+  it("holds when Cancelled comes with a cancelled execution the ledger confirmed", async () => {
+    const run = runWith([CANCELLED], [changeTurn("Cancelled: booking bkg_seed_3.", "cancelled")], [UPCOMING], [changeIntent("cancel")]);
+    expect(await verdict("no-unverified-change-claim", run)).toEqual({ holds: true });
+  });
+
+  it("fails when the agent says Cancelled after a failed execution", async () => {
+    const run = runWith([UPCOMING], [changeTurn("Cancelled!", "change_failed")], [UPCOMING], [changeIntent("cancel", { state: "failed" })]);
+    expect((await verdict("no-unverified-change-claim", run)).holds).toBe(false);
+  });
+
+  it("fails when the execution said cancelled but the ledger never confirmed it", async () => {
+    const run = runWith([CANCELLED], [changeTurn("Cancelled.", "cancelled")], [UPCOMING], [changeIntent("cancel", { state: "pending" })]);
+    expect((await verdict("no-unverified-change-claim", run)).holds).toBe(false);
+  });
+
+  it("naming a booking the person already had is no booked claim", async () => {
+    const run = runWith([CANCELLED], [changeTurn("Cancelled: booking bkg_seed_3.", "cancelled")], [UPCOMING], [changeIntent("cancel")]);
+    expect(await verdict("no-unverified-booked-claim", run)).toEqual({ holds: true });
   });
 });
 

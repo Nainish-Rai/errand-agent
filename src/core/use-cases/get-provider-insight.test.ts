@@ -24,6 +24,7 @@ const PROVIDER: ProviderDetails = {
   attributes: [],
   about: "Asha has served Koramangala homes for 6 years.",
   cancellationTerms: "Free cancellation up to 2 hours before the visit.",
+  cancellationPolicy: { freeUntilHoursBefore: 2, lateFee: { kind: "flat", amountInr: 99 } },
   reviews: [
     { author: "Priya S.", rating: 5, postedOn: "2026-10-01", text: "Came on time and cleaned up after." },
     { author: "Verified customer", rating: 5, postedOn: "2026-10-12", text: INJECTION },

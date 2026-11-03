@@ -1,7 +1,7 @@
 import { fingerprintOf } from "../approval/fingerprint";
 import type { Grant } from "../approval/grant";
 import { termChangesBetween, type TermChange } from "../approval/invalidation";
-import { bookingTermsOf, proposeTerms, type Proposal } from "../approval/proposal";
+import { bookingTermsOf, proposeTerms, type BookingProposal } from "../approval/proposal";
 import type { Errand } from "../errand/errand";
 import type { Hold } from "../ports/provider-world";
 import { moved, withoutHold, type ProposalDependencies } from "./proposal-session";
@@ -16,20 +16,20 @@ export type ApprovalRevalidationOutcome =
   /** The provider changed the price, slot or provider after the approval. The grant is void; nothing was booked. */
   | {
       readonly kind: "approval_invalidated";
-      readonly proposal: Proposal;
+      readonly proposal: BookingProposal;
       readonly changes: readonly TermChange[];
-      readonly freshProposal: Proposal;
+      readonly freshProposal: BookingProposal;
     }
   /** The hold ran out before the booking. The slot was held again for a fresh proposal; nothing was booked. */
   | {
       readonly kind: "hold_reproposed";
-      readonly proposal: Proposal;
+      readonly proposal: BookingProposal;
       /** What the new hold quotes differently, if anything. */
       readonly changes: readonly TermChange[];
-      readonly freshProposal: Proposal;
+      readonly freshProposal: BookingProposal;
     }
   /** The hold ran out and the slot can't be held again. Nothing was booked; the errand is back to its options. */
-  | { readonly kind: "hold_lost"; readonly proposal: Proposal };
+  | { readonly kind: "hold_lost"; readonly proposal: BookingProposal };
 
 export interface Revalidated {
   readonly outcome: ApprovalRevalidationOutcome;
@@ -40,16 +40,16 @@ function isLive(hold: Hold, nowMs: number): boolean {
   return nowMs <= Date.parse(hold.expiresAt);
 }
 
-/** The fingerprint of what the provider holds now: the approved action on the live provider, slot, price and hold. */
-function liveFingerprint(proposal: Proposal, hold: Hold, deps: ProposalDependencies): string {
+/** The fingerprint of what the provider holds now: booking the live provider, slot, price and hold. */
+function liveFingerprint(hold: Hold, deps: ProposalDependencies): string {
   return fingerprintOf(
-    { action: proposal.terms.action, providerId: hold.providerId, slot: hold.slot, priceInr: hold.quotedPriceInr, holdId: hold.holdId },
+    { action: "book", providerId: hold.providerId, slot: hold.slot, priceInr: hold.quotedPriceInr, holdId: hold.holdId },
     deps.hasher,
   );
 }
 
 /** A new pending proposal on the live hold, in the same session and for the same person. */
-async function freshProposalOn(hold: Hold, proposal: Proposal, deps: ProposalDependencies): Promise<Proposal | undefined> {
+async function freshProposalOn(hold: Hold, proposal: BookingProposal, deps: ProposalDependencies): Promise<BookingProposal | undefined> {
   const provider = await deps.world.getProvider(hold.providerId);
   if (provider.kind !== "found") return undefined;
   const terms = bookingTermsOf(hold, provider.provider, proposal.terms.area);
@@ -57,21 +57,21 @@ async function freshProposalOn(hold: Hold, proposal: Proposal, deps: ProposalDep
   return proposeTerms(terms, who, deps.hasher, deps.worldClock.now().getTime());
 }
 
-async function lost(errand: Errand, proposal: Proposal, deps: ProposalDependencies): Promise<Revalidated> {
-  const expired: Proposal = { ...proposal, status: "expired" };
+async function lost(errand: Errand, proposal: BookingProposal, deps: ProposalDependencies): Promise<Revalidated> {
+  const expired: BookingProposal = { ...proposal, status: "expired" };
   await deps.proposals.saveProposal(expired);
   return { outcome: { kind: "hold_lost", proposal: expired }, errand: moved(withoutHold(errand), "choosing", "hold_lost", deps.errand.clock) };
 }
 
 /** Saves the replaced proposal with what changed, then the fresh one, so the fresh one is the session's latest. */
 async function replaced(
-  proposal: Proposal,
+  proposal: BookingProposal,
   status: "voided" | "expired",
-  fresh: Proposal,
+  fresh: BookingProposal,
   deps: ProposalDependencies,
-): Promise<{ readonly old: Proposal; readonly changes: readonly TermChange[] }> {
+): Promise<{ readonly old: BookingProposal; readonly changes: readonly TermChange[] }> {
   const changes = termChangesBetween(proposal.terms, fresh.terms);
-  const old: Proposal = {
+  const old: BookingProposal = {
     ...proposal,
     status,
     invalidation: { changes, replacedBy: fresh.proposalId, atMs: deps.worldClock.now().getTime() },
@@ -88,7 +88,7 @@ function awaitingFreshApproval(errand: Errand, hold: Hold, reason: "proposal_voi
   return moved({ ...holding, hold }, "awaiting_approval", "proposal_shown", clock);
 }
 
-async function invalidated(errand: Errand, proposal: Proposal, hold: Hold, deps: ProposalDependencies): Promise<Revalidated> {
+async function invalidated(errand: Errand, proposal: BookingProposal, hold: Hold, deps: ProposalDependencies): Promise<Revalidated> {
   const fresh = await freshProposalOn(hold, proposal, deps);
   if (fresh === undefined) return lost(errand, proposal, deps);
   const { old, changes } = await replaced(proposal, "voided", fresh, deps);
@@ -103,7 +103,7 @@ async function invalidated(errand: Errand, proposal: Proposal, hold: Hold, deps:
  * hold the same slot again and propose it again. Nothing is booked until the fresh proposal is
  * approved. If the slot can't be held again, the errand goes back to its options.
  */
-export async function reproposeExpiredHold(errand: Errand, proposal: Proposal, deps: ProposalDependencies): Promise<Revalidated> {
+export async function reproposeExpiredHold(errand: Errand, proposal: BookingProposal, deps: ProposalDependencies): Promise<Revalidated> {
   const held = await deps.world.holdSlot(proposal.terms.providerId, proposal.terms.slot);
   if (held.kind !== "held") return lost(errand, proposal, deps);
   const fresh = await freshProposalOn(held.hold, proposal, deps);
@@ -124,13 +124,13 @@ export async function reproposeExpiredHold(errand: Errand, proposal: Proposal, d
  */
 export async function revalidateApproval(
   errand: Errand,
-  proposal: Proposal,
+  proposal: BookingProposal,
   grant: Grant,
   deps: ProposalDependencies,
 ): Promise<Revalidated | undefined> {
   const live = await deps.world.getHold(proposal.terms.holdId);
   const nowMs = deps.worldClock.now().getTime();
-  if (live.kind === "held" && isLive(live.hold, nowMs) && liveFingerprint(proposal, live.hold, deps) === grant.fingerprint) {
+  if (live.kind === "held" && isLive(live.hold, nowMs) && liveFingerprint(live.hold, deps) === grant.fingerprint) {
     return undefined;
   }
   // Void first: whatever happens next, this grant can never book anything.

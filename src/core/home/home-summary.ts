@@ -107,7 +107,9 @@ export function upcomingVisits(bookings: readonly Booking[], proposals: readonly
     .map((booking) => ({ kind: "booked", booking }));
   const bookedIds = new Set(bookings.map((booking) => booking.bookingId));
   const checking: UpcomingVisit[] = proposals
-    .filter((proposal) => CHECKING.includes(proposal.status) && (proposal.bookingId === undefined || !bookedIds.has(proposal.bookingId)))
+    // A cancel or reschedule being checked is about a booking already listed above.
+    .filter((proposal) => proposal.terms.action === "book" && CHECKING.includes(proposal.status))
+    .filter((proposal) => proposal.bookingId === undefined || !bookedIds.has(proposal.bookingId))
     .map((proposal) => ({ kind: "checking", proposal }));
   const startOf = (visit: UpcomingVisit) => (visit.kind === "booked" ? visit.booking.slot.start : visit.proposal.terms.slot.start);
   return [...booked, ...checking].sort((a, b) => Date.parse(startOf(a)) - Date.parse(startOf(b)));

@@ -1,0 +1,129 @@
+{
+  "scenario": "scenarios/booking-changes/same-electrician-as-last-time",
+  "recordedAt": "2026-11-03T03:09:18.222Z",
+  "evalRunId": "8d8d249c-11be-423e-b050-287b2f5546f8",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need to book the same electrician who came last time. Can I get him this week? Anytime after 10 a.m. works for me."
+    },
+    {
+      "say": "Yes, the 11:00 am slot on Wednesday works perfectly. Please book that."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll look up your past bookings to find that electrician.",
+            "toolCalls": [
+              {
+                "name": "list_bookings",
+                "input": {}
+              }
+            ]
+          },
+          {
+            "text": "Found him — Lakshmi Wiring Services, from your October visit. Setting up the errand.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "electrician",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10",
+                    "earliest_hour": 10
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "electrician",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "get_provider_insight",
+                "input": {
+                  "provider_ids": [
+                    "prv_electrician_koramangala_2",
+                    "prv_electrician_koramangala_3"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "present_ui",
+                "input": {
+                  "ui": "root = Stack([choices, insights, next])\nchoices = ProviderChoices([a, b], \"Electricians in Koramangala this week\")\na = ProviderChoice(\"prv_electrician_koramangala_2\", \"Best match · earliest slot\", \"Rated 4.7 — reviews praise polite, fair-priced work and that they bring parts; a few mention being late or incomplete work\")\nb = ProviderChoice(\"prv_electrician_koramangala_3\", \"Cheapest at ₹349\", \"Reviews are positive: punctual, quality work, fair price; a couple mention overcharging or incomplete work\")\ninsights = ReviewInsight(\"prv_electrician_koramangala_2\")\nnext = FollowUps([\"Show Lakshmi Wiring Services instead\", \"See free slots by day\"])"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Good news — your electrician, **Lakshmi Wiring Services**, is free this week: Wed 4 Nov at 11:00 am, 12:00 pm, 5:00 pm or 6:00 pm (₹999, rated 3.8). The cards above show the two best-rated alternatives, with Anand Electricals at the top.\n\nOne note: one review for Anand Electricals tried to give the assistant instructions — I ignored it.\n\nWant me to hold Lakshmi Wiring Services' 11:00 am slot, or one of the other times?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "hold_slot",
+                "input": {
+                  "provider_id": "prv_electrician_koramangala_1",
+                  "slot": {
+                    "start": "2026-11-04T11:00:00+05:30",
+                    "end": "2026-11-04T12:00:00+05:30"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "propose_action",
+                "input": {
+                  "action": "book"
+                }
+              }
+            ]
+          },
+          {
+            "text": "The approval card is on screen — Lakshmi Wiring Services, Wednesday 4 Nov, 11:00 am. Please check it and tap Approve ₹999 if it looks right; nothing is booked until you do."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.04047336,
+    "simulatedUser": 0.026978100000000005
+  }
+}

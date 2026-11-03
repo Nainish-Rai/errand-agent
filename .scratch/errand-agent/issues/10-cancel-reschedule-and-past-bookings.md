@@ -4,10 +4,10 @@
 
 **Blocked by:** 05, 07
 
-**Status:** ready-for-agent
+**Status:** done (PR #19)
 
-- [ ] Eval "reschedule happy path": a card with old and new times, the click, then exactly one reschedule
-- [ ] Eval "reschedule slot conflict": no change, alternatives offered, and a new approval needed
-- [ ] Eval "cancel 503 then success": the retry uses the same key, there is one cancellation, and the success claim comes only after the status check
-- [ ] Eval "same electrician as last time": the right provider is proposed and no slot before 10:00 is offered
-- [ ] No cancel or reschedule happens without a consumed matching grant (global invariant)
+- [x] Eval "reschedule happy path": a card with old and new times, the click, then exactly one reschedule
+- [x] Eval "reschedule slot conflict": no change, alternatives offered, and a new approval needed
+- [x] Eval "cancel 503 then success": the retry uses the same key, there is one cancellation, and the success claim comes only after the status check
+- [x] Eval "same electrician as last time": the right provider is proposed and no slot before 10:00 is offered
+- [x] No cancel or reschedule happens without a consumed matching grant (global invariant)

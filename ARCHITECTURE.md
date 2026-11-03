@@ -114,7 +114,7 @@ errand-agent/
 │   │   ├── hold-slot.ts
 │   │   ├── propose-action.ts             # book | cancel | reschedule → fixed approval card
 │   │   ├── execute-proposal.ts           # refuses without a valid grant
-│   │   ├── list-bookings.ts
+│   │   ├── list-bookings.ts · find-reschedule-slots.ts
 │   │   ├── remember-fact.ts · correct-fact.ts · forget-fact.ts
 │   │   └── present-ui.ts · ask-ui.ts     # OpenUI generative surfaces
 │   ├── memory/preferences.ts             # eve memory provider → BuildModelContext
@@ -125,12 +125,13 @@ errand-agent/
 │   ├── core/
 │   │   ├── errand/            errand.ts · errand-workflow.ts
 │   │   ├── approval/          proposal.ts · grant.ts · fingerprint.ts
-│   │   ├── booking/           action-intent.ts · reconciliation.ts
+│   │   ├── booking/           action-intent.ts · reconciliation.ts · booking-change.ts · cancellation-fee.ts
 │   │   ├── budget/            run-budget.ts · outcome.ts
 │   │   ├── memory/            memory-fact.ts · context-selection.ts
 │   │   ├── review/            provider-insight.ts (the insight schema and the gate the reader's answer passes)
 │   │   ├── use-cases/         one file per operation, verb-noun:
 │   │   │                      propose-action · approve-proposal · decline-proposal · execute-proposal
+│   │   │                      propose-booking-change · change-approved-booking · settle-booking-change · find-reschedule-slots
 │   │   │                      reconcile-pending-actions · handle-provider-cancelled
 │   │   │                      remember-fact · correct-memory-fact · forget-memory-fact · confirm-inferred-fact
 │   │   │                      build-model-context · get-home-summary · get-availability · get-spend

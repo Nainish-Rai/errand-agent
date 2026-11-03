@@ -110,6 +110,7 @@ describe("suite manifests", () => {
     expect(files.sort()).toEqual([
       "approval-card.json",
       "approval-invalidation.json",
+      "booking-changes.json",
       "chat-search.json",
       "clarify-errand.json",
       "context-budget.json",

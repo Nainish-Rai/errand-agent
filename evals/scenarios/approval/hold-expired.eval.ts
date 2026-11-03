@@ -1,5 +1,6 @@
 import { equals } from "eve/evals/expect";
 
+import { holdIdOf } from "../../approval-checks";
 import { ASK_FOR_PLUMBER, CHOOSE_CHEAPEST, executeTurn, HOLD_AND_PROPOSE_TURN, SEARCH_TURN } from "../../booking-conversation";
 import { expectBookedOnlyAfterFreshApproval } from "../../invalidation-checks";
 import { defineScenario } from "../../scenario";
@@ -38,13 +39,13 @@ export default defineScenario({
     // The first grant reached `book`, which refused: used, but it made nothing.
     t.check(first.grant?.consumed, equals(true)).label("the first grant reached book");
     t.check(first.bookingId, equals(null)).label("the first proposal booked nothing");
-    t.check(fresh.terms.holdId === first.terms.holdId, equals(false)).label("the slot was held again on a new hold");
+    t.check(holdIdOf(fresh) === holdIdOf(first), equals(false)).label("the slot was held again on a new hold");
     t.check([fresh.terms.providerId, fresh.terms.slot.start, fresh.terms.priceInr], equals([
       first.terms.providerId,
       first.terms.slot.start,
       first.terms.priceInr,
     ])).label("the same slot at the same price was proposed again");
     t.check(refusal.message.includes("ran out"), equals(true)).label("the message says the hold ran out");
-    if (run.mode === "offline") t.check([first.terms.holdId, fresh.terms.holdId], equals(["hold_0001", "hold_0002"]));
+    if (run.mode === "offline") t.check([holdIdOf(first), holdIdOf(fresh)], equals(["hold_0001", "hold_0002"]));
   },
 });
