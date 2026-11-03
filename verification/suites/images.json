@@ -265,7 +265,272 @@
           },
           "note": "every image the page requested is a bundled registry file (/_next/static/media/); nothing else was fetched"
         }
-      ]
+      ],
+      "theme": "light"
+    },
+    {
+      "id": "provider-photos-approval-and-receipt-thumbnails-dark",
+      "title": "Provider choice cards carry job photos; the approval card and the receipt carry Shiva's thumbnail, in dark",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": []
+            }
+          },
+          "note": "start with nothing remembered"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the booking script: search, then hold and propose, then execute"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=img[name=\"Two adjustable pipe wrenches\"]"
+          ],
+          "note": "Shiva's card shows its 4:3 job photo (work-plumbing-2), loaded from the registry"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 0
+          },
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> css=[data-image-state=fallback]"
+          ],
+          "note": "no card fell back"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the first turn finished"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Details\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "count": 4
+          },
+          "args": [
+            "role=list[name=\"Photos of past work\"] >> role=img"
+          ],
+          "note": "Details shows four photos of past work"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Shiva Sanitary Solutions details\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "and Shiva's square thumbnail"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Options for plumber in Koramangala\"] >> role=article[name=\"Shiva Sanitary Solutions\"] >> role=button[name=\"Choose\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Approve booking\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "the approval card shows the provider thumbnail"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "args": [
+            "body"
+          ],
+          "note": "the turn finished"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "text": "bkg_0002"
+          },
+          "args": [
+            "role=region[name=\"Booked\"]"
+          ],
+          "note": "the receipt shows the verified booking"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Booked\"] >> role=img[name=\"Spanners and screwdrivers from a plumber's kit\"]"
+          ],
+          "note": "the receipt shows the provider thumbnail"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "approval-and-receipt-dark.png"
+          ]
+        },
+        {
+          "command": "network",
+          "options": {
+            "resourceType": "image",
+            "notPath": "/_next/static/media/*",
+            "expectCount": 0
+          },
+          "note": "every image the page requested is a bundled registry file (/_next/static/media/); nothing else was fetched"
+        }
+      ],
+      "theme": "dark"
     },
     {
       "id": "service-choice-cards",
@@ -813,12 +1078,22 @@
         {
           "command": "assert",
           "options": {
-            "count": 1
+            "count": 0
           },
           "args": [
-            "role=region[name=\"Approve booking\"] >> css=[data-image-state=fallback]"
+            "role=region[name=\"Approve booking\"] >> css=[data-image-state]"
           ],
-          "note": "the approval card shows Shiva's initials"
+          "note": "the approval card's media slot got no photo for a hostile key"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Approve booking\"] >> text=\"SS\""
+          ],
+          "note": "so the card shows Shiva's initials"
         },
         {
           "command": "assert",
@@ -840,10 +1115,20 @@
         {
           "command": "assert",
           "options": {
-            "count": 1
+            "count": 0
           },
           "args": [
-            "role=region[name=\"Booked\"] >> css=[data-image-state=fallback]"
+            "role=region[name=\"Booked\"] >> css=[data-image-state]"
+          ],
+          "note": "the receipt's media slot got no photo either"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "state": "visible"
+          },
+          "args": [
+            "role=region[name=\"Booked\"] >> text=\"SS\""
           ],
           "note": "the receipt shows the initials"
         },
