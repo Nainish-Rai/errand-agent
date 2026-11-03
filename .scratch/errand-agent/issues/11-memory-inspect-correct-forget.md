@@ -4,7 +4,7 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done (PR #12)
 
 - [x] Eval "memory across sessions": the area saved in session 1 is used, and said aloud, in session 2 without asking
 - [x] Eval "memory correction": after a correction only the new value is used; the old one is superseded, not edited in place
