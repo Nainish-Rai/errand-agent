@@ -127,6 +127,7 @@ describe("suite manifests", () => {
       "lime-chat.json",
       "lime-foundations.json",
       "memory.json",
+      "new-errand-handoff.json",
       "operator-only-traces.json",
       "provider-cancellation.json",
       "review-insight.json",

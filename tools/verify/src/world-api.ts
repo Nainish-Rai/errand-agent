@@ -8,6 +8,8 @@ import {
   SimulateProviderCancellationRequestSchema,
   CorrectMemoryFactRequestSchema,
   DraftErrandRequestSchema,
+  DismissNewErrandRequestSchema,
+  StartNewErrandRequestSchema,
   MemoryKeySchema,
   SeedMemoryRequestSchema,
   SwitchScenarioRequestSchema,
@@ -112,6 +114,27 @@ const ROUTES: readonly Route[] = [
     route: "POST /api/v1/sessions/:id/errand",
     handle: async (client, match, _url, body) => ({
       errand: await client.draftErrand(decodeURIComponent(match[1] ?? ""), DraftErrandRequestSchema.parse(body)),
+    }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/sessions\/([^/]+)\/handoffs$/,
+    route: "GET /api/v1/sessions/:id/handoffs",
+    handle: async (client, match) => await client.getErrandHandoffs(decodeURIComponent(match[1] ?? "")),
+  },
+  {
+    method: "POST",
+    pattern: /^\/sessions\/([^/]+)\/handoffs$/,
+    route: "POST /api/v1/sessions/:id/handoffs",
+    handle: async (client, match, _url, body) =>
+      await client.startNewErrand(decodeURIComponent(match[1] ?? ""), StartNewErrandRequestSchema.parse(body)),
+  },
+  {
+    method: "POST",
+    pattern: /^\/sessions\/([^/]+)\/handoffs\/dismiss$/,
+    route: "POST /api/v1/sessions/:id/handoffs/dismiss",
+    handle: async (client, match, _url, body) => ({
+      handoff: await client.dismissNewErrand(decodeURIComponent(match[1] ?? ""), DismissNewErrandRequestSchema.parse(body)),
     }),
   },
   {
