@@ -1,16 +1,20 @@
-// The receipt for a change to a booking: what the provider's booking list now shows. Fixed, never
-// generated. "Cancelled" and "Moved" appear only once the booking's status confirmed the change.
-import { Money } from "@/components/money";
-import { StatusMark } from "@/components/status-mark";
-import { Badge } from "@/components/ui/badge";
+// The receipt for a change to a booking, as v3's ActionReceipt: what the provider's booking list now
+// shows. Fixed, never generated. "Cancelled" and "Moved" appear only once the booking's status
+// confirmed the change.
+import type { ReactNode } from "react";
 
-import { DetailTable, Notice, TrustCard, TrustHeader, type DetailRow } from "./trust-surface";
+import { formatRupees } from "@/components/money";
+import { Status } from "@/components/status";
+
+import { ActionReceipt, initialsOf, RequestMedia } from "./trust-surface";
 
 export type ChangedBooking = {
   readonly bookingId: string;
   readonly provider: string;
   /** The visit as it was booked. */
   readonly slot: string;
+  /** The provider's thumbnail (ticket 22). Without it the receipt shows their initials. */
+  readonly media?: ReactNode;
 };
 
 export type ChangeReceiptState =
@@ -24,67 +28,86 @@ type ChangeReceiptProps = {
   readonly state: ChangeReceiptState;
 };
 
-function baseRows(booking: ChangedBooking): DetailRow[] {
-  return [
-    { label: "Booking", value: booking.bookingId, mono: true },
-    { label: "Provider", value: booking.provider },
-  ];
+function Head({ booking, sentence, status }: { readonly booking: ChangedBooking; readonly sentence: string; readonly status: ReactNode }) {
+  return (
+    <>
+      <RequestMedia media={booking.media} initials={initialsOf(booking.provider)} />
+      <p className="m-0 min-w-0 flex-1 text-base text-fg">{sentence}</p>
+      {status}
+    </>
+  );
+}
+
+function bookingIdOf(booking: ChangedBooking) {
+  return <span className="font-mono">{booking.bookingId}</span>;
 }
 
 export function ChangeReceipt({ booking, state }: ChangeReceiptProps) {
   switch (state.status) {
     case "cancelled":
       return (
-        <TrustCard label="Cancelled">
-          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Cancelled" status={<Badge variant="verified">verified</Badge>} />
-          <DetailTable
-            rows={[
-              ...baseRows(booking),
-              { label: "When", value: <s className="text-fg-3">{booking.slot}</s>, mono: true },
-              { label: "Fee", value: state.fee === 0 ? "No fee" : <Money amount={state.fee} /> },
-            ]}
-          />
-        </TrustCard>
+        <ActionReceipt
+          label="Cancelled"
+          state="cancelled"
+          head={<Head booking={booking} sentence={`${booking.provider} visit cancelled.`} status={<Status state="done" label="Cancelled" />} />}
+          lines={[
+            { label: `Cancelled ${booking.slot}`, detail: bookingIdOf(booking) },
+            { label: state.fee === 0 ? "No fee" : `Paid a ${formatRupees(state.fee)} fee` },
+            { label: "Confirmed with the provider", detail: "verified" },
+          ]}
+        />
       );
     case "moved":
       return (
-        <TrustCard label="Moved">
-          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Moved" status={<Badge variant="verified">verified</Badge>} />
-          <DetailTable
-            rows={[
-              ...baseRows(booking),
-              {
-                label: "When",
-                value: (
-                  <>
-                    <s className="text-fg-3">{booking.slot}</s>
-                    <span aria-hidden>→</span>
-                    <span className="sr-only">moved to</span>
-                    {state.toSlot}
-                  </>
-                ),
-                mono: true,
-              },
-            ]}
-          />
-        </TrustCard>
+        <ActionReceipt
+          label="Moved"
+          state="moved"
+          head={<Head booking={booking} sentence={`${booking.provider} now comes ${state.toSlot}.`} status={<Status state="done" label="Moved" />} />}
+          lines={[
+            {
+              label: `Moved to ${state.toSlot}`,
+              detail: (
+                <>
+                  <span className="sr-only">was </span>
+                  <s>{booking.slot}</s>
+                </>
+              ),
+            },
+            { label: "Kept the same booking", detail: bookingIdOf(booking) },
+            { label: "Confirmed with the provider", detail: "verified" },
+          ]}
+        />
       );
     case "checking":
       return (
-        <TrustCard label="Checking the change" busy>
-          <TrustHeader title={state.action === "cancel" ? "Cancelling" : "Moving"} status={<StatusMark kind="checking" label="Checking" />} />
-          <DetailTable rows={[...baseRows(booking), { label: "When", value: booking.slot, mono: true }]} />
-        </TrustCard>
+        <ActionReceipt
+          label="Checking the change"
+          state="checking"
+          busy
+          head={
+            <Head
+              booking={booking}
+              sentence={state.action === "cancel" ? `Cancelling ${booking.provider} visit.` : `Moving ${booking.provider} visit.`}
+              status={<Status state="running" label="Checking with provider" />}
+            />
+          }
+          lines={[{ label: state.action === "cancel" ? `Asked to cancel ${booking.slot}` : `Asked to move ${booking.slot}`, detail: bookingIdOf(booking) }]}
+        />
       );
     case "failed":
       return (
-        <TrustCard label="Not changed" tone="voided">
-          <TrustHeader title={state.action === "cancel" ? "Not cancelled" : "Not moved"} status={<StatusMark kind="cancelled" label="Failed" />} />
-          <Notice tone="err" lead={<span aria-hidden className="text-danger-text">✕</span>}>
-            {state.reason}
-          </Notice>
-          <DetailTable faded rows={[...baseRows(booking), { label: "When", value: booking.slot, mono: true }]} />
-        </TrustCard>
+        <ActionReceipt
+          label="Not changed"
+          state="failed"
+          head={
+            <Head
+              booking={booking}
+              sentence={`${booking.provider} still comes ${booking.slot}.`}
+              status={<Status state="failed" label={state.action === "cancel" ? "Not cancelled" : "Not moved"} />}
+            />
+          }
+          lines={[{ label: state.reason, failed: true, detail: bookingIdOf(booking) }]}
+        />
       );
   }
 }

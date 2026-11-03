@@ -26,6 +26,8 @@ const buttonVariants = cva(
         // Lime's primary: the lit lime body (the glow), one per view.
         primary: "glow glow-accent border-transparent text-on-accent",
         secondary: "border-transparent bg-surface-2 text-fg hover:bg-surface-3",
+        // Lime's solid ink: a strong action that is not the view's one lime (the composer's Stop).
+        solid: "border-transparent bg-ink text-fg-inverse hover:bg-ink-hover active:bg-ink-active",
         ghost: "border-transparent bg-transparent text-fg-2 hover:bg-surface-2 hover:text-fg",
         danger: "border-transparent bg-danger-tint text-danger-text hover:bg-danger hover:text-on-danger",
         link: "border-transparent text-fg underline-offset-4 hover:underline",

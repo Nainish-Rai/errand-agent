@@ -1,0 +1,500 @@
+{
+  "version": 1,
+  "title": "Lime chat: a paced, per-word streaming reveal; the ApprovalRequest as the one lime action; the tracker and the ActionReceipt",
+  "feature": "lime-chat",
+  "description": "Ticket 21. A streamed answer reveals whole words that blur in, is aria-busy while it streams and unwraps to plain text at the end (on /design, fed by the seeded bursty fake model the unit tests use, in normal and reduced motion). In the chat, the provider cards' Choose is not lime; while the approval card waits, its Approve is the only lit lime (Send stays ink even with text); after Approve the card's footer becomes Approved, the tracker rows show the provider being asked, and the ActionReceipt shows Booked with the booking ID, Reschedule and Cancel booking, and no Undo.",
+  "scenarios": [
+    {
+      "id": "streaming-reveal-blurs-words-in-and-unwraps",
+      "title": "/design: Replay streams the answer word by word (aria-busy, word spans), then unwraps to plain text; the reduced-motion panel streams too",
+      "theme": "light",
+      "setup": [],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Replay streaming answer",
+            "nth": 0
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0 >> [data-slot=\"stream\"][data-phase=\"streaming\"]"
+          ],
+          "options": {
+            "state": "visible"
+          },
+          "note": "mid-stream: the answer is still arriving (the screenshot shows words blurring in)"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0 >> [data-slot=\"stream\"]"
+          ],
+          "options": {
+            "attr": "aria-busy=true"
+          },
+          "note": "screen readers wait: the answer is aria-busy while it streams"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0 >> [data-slot=\"stream\"][data-phase=\"done\"]"
+          ],
+          "options": {
+            "state": "visible",
+            "timeoutMs": 30000
+          },
+          "note": "the stream ended and the last word settled"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0 >> [data-stream-word]"
+          ],
+          "options": {
+            "count": 0
+          },
+          "note": "the word spans unwrapped to plain text"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0 >> [data-slot=\"stream\"][aria-busy]"
+          ],
+          "options": {
+            "count": 0
+          },
+          "note": "aria-busy is gone, so the answer is read once, whole"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer\"] >> nth=0"
+          ],
+          "options": {
+            "text": "or ask me for other times."
+          },
+          "note": "the whole answer is there"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Replay streaming answer, reduced motion",
+            "nth": 0
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer, reduced motion\"] >> nth=0 >> [data-slot=\"stream\"][data-phase=\"streaming\"]"
+          ],
+          "options": {
+            "state": "visible"
+          },
+          "note": "reduced motion still paces the reveal (the screenshot shows words with no blur)"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "figure[aria-label=\"Streaming answer, reduced motion\"] >> nth=0 >> [data-slot=\"stream\"][data-phase=\"done\"]"
+          ],
+          "options": {
+            "state": "visible",
+            "timeoutMs": 30000
+          },
+          "note": "and settles the same way"
+        }
+      ]
+    },
+    {
+      "id": "approval-is-the-one-lime-then-tracker-and-receipt",
+      "title": "Choose is not lime; the waiting card's Approve is the only lit lime (Send stays ink); Approve: the footer says Approved, the tracker asks the provider, the receipt shows Booked, Reschedule and Cancel booking, no Undo",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "happy_path",
+              "seed": 42
+            }
+          },
+          "note": "seed the world: happy_path, seed 42"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week. Which one should I book?"
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "hold_slot",
+                            "input": {
+                              "provider_id": "prv_plumber_koramangala_5",
+                              "slot": {
+                                "start": "2026-11-05T08:00:00+05:30",
+                                "end": "2026-11-05T09:00:00+05:30"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "propose_action",
+                            "input": {
+                              "action": "book"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "I've held the slot. Check the card and tap Approve ₹399 if it's right."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "execute_proposal",
+                            "input": {}
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Booked: Shiva Sanitary Solutions, Thu 5 Nov at 8:00 am IST, ₹399. Booking ID bkg_0002."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "load the happy-booking conversation into the scripted model"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/world-fault"
+          ],
+          "options": {
+            "body": {
+              "fault": {
+                "kind": "slow",
+                "operation": "book",
+                "delayMs": 3000
+              }
+            }
+          },
+          "note": "world fault: a slow book, so the tracker is on screen long enough to see"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Which one should I book?"
+          },
+          "note": "the search turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Choose",
+            "nth": 0,
+            "attr": "data-variant=outline"
+          },
+          "note": "a provider card's Choose is not lime"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "The cheapest one, please."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "state": "visible"
+          },
+          "note": "the ApprovalRequest is up"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "Check the card and tap Approve"
+          },
+          "note": "the turn finished"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "attr": "data-variant=primary"
+          },
+          "note": "Approve is the glowing primary"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".glow:not(:disabled)"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "and the only lit lime on the screen"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "hello"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Send",
+            "attr": "data-variant=solid"
+          },
+          "note": "with text in the composer, Send is ink while the card waits"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".glow:not(:disabled)"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "still exactly one lime"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": ""
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "section[aria-label=\"Approve booking\"][data-state=\"approved\"]"
+          ],
+          "options": {
+            "state": "visible"
+          },
+          "note": "the outcome cross-fades into the footer"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "section[aria-label=\"Approve booking\"] [data-slot=\"status\"]"
+          ],
+          "options": {
+            "text": "Approved"
+          },
+          "note": "the footer's Status says Approved"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "[data-slot=\"tool-call\"]:has-text(\"Asking the provider\")"
+          ],
+          "options": {
+            "state": "visible"
+          },
+          "note": "the tracker: a running ToolCall row while the provider answers"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Booked",
+            "text": "bkg_0002",
+            "timeoutMs": 30000
+          },
+          "note": "the ActionReceipt with the provider's booking ID"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "section[aria-label=\"Booked\"] [data-slot=\"status\"]"
+          ],
+          "options": {
+            "text": "Booked"
+          },
+          "note": "Booked, on the solid booked mark"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "section[aria-label=\"Booked\"] >> role=button[name=\"Reschedule\"]"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the receipt offers Reschedule"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "section[aria-label=\"Booked\"] >> role=button[name=\"Cancel booking\"]"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "and Cancel booking"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=button[name=/undo/i]"
+          ],
+          "options": {
+            "count": 0
+          },
+          "note": "a booking cannot be undone: no Undo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Approve ₹399",
+            "count": 0
+          },
+          "note": "nothing left to approve"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/world-fault"
+          ],
+          "options": {
+            "body": {
+              "fault": null
+            },
+            "expect": {
+              "path": "fault",
+              "equals": null
+            }
+          },
+          "note": "clear the fault"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": null
+            },
+            "expect": {
+              "path": "loaded",
+              "equals": false
+            }
+          },
+          "note": "unload the script so later suites get the default search responder"
+        }
+      ]
+    }
+  ]
+}

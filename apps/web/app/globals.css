@@ -134,6 +134,12 @@
   /* A popup arrives from --scale-enter over --dur-base and leaves over --dur-fast (Lime's motion section). */
   --animate-enter: lime-enter var(--dur-base) var(--ease-out);
   --animate-leave: lime-leave var(--dur-fast) var(--ease-in) forwards;
+  /* Chat arrivals (v3 Message, Tracker, Receipt): a 4px rise over --dur-base; a mark that changes pops in from
+   * --scale-enter over --dur-fast; a label that changes cross-fades over --dur-fast; a panel opens its height. */
+  --animate-rise: errand-rise var(--dur-base) var(--ease-out) backwards;
+  --animate-pop: errand-pop var(--dur-fast) var(--ease-out) backwards;
+  --animate-fade: errand-fade var(--dur-fast) var(--ease-out) backwards;
+  --animate-open: errand-open var(--dur-base) var(--ease-out) backwards;
 }
 
 @keyframes lime-enter {
@@ -147,6 +153,71 @@
   to {
     opacity: 0;
   }
+}
+
+@keyframes errand-rise {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+@keyframes errand-pop {
+  from {
+    opacity: 0;
+    scale: var(--scale-enter);
+  }
+}
+
+@keyframes errand-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* On a grid whose one row is 1fr and whose child has min-height 0: the panel opens from no height. */
+@keyframes errand-open {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+/* A streamed answer's words (features/chat/streaming). Each word mounts whole and blurs in once, from opacity 0,
+ * blur(4px) and a 2px drop to rest, over --dur-stream-word (v3 Streaming answers). Under reduced motion the token is
+ * 0 and the keyframes are opacity only, so a word appears at once with no blur or rise. */
+[data-stream-word] {
+  display: inline-block;
+  animation: stream-word-in var(--dur-stream-word) var(--ease-out) backwards;
+}
+
+@keyframes stream-word-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    translate: 0 2px;
+  }
+}
+
+@keyframes stream-word-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-stream-word] {
+    animation-name: stream-word-fade;
+  }
+}
+
+/* The forced wrapper (the /design gallery's reduced-motion panel) gets the same: no word duration, opacity only. */
+[data-force-reduced-motion] {
+  --dur-stream-word: 0ms;
+}
+
+[data-force-reduced-motion] [data-stream-word] {
+  animation-name: stream-word-fade;
 }
 
 /* Lime's scope rule gives its element --text-sm. The scope is <html> here (as in v3), where that would make 1rem

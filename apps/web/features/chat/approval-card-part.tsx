@@ -11,14 +11,14 @@ import {
   type ProposalView,
   type TermChangeView,
 } from "@errand/contracts";
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import type { MonogramTone } from "@/components/monogram";
-import { Spinner } from "@/components/ui/spinner";
+import { ToolCall } from "@/components/tool-call";
 import { ApprovalCard, BookingReceipt, ChangeReceipt, type ApprovalChange, type ApprovalProposal, type ApprovalState } from "@/features/trust";
 
 import { appApi } from "./backend";
-import { NextOptions, RunningExecution, VerifyingExecution } from "./booking-progress";
+import { NextOptions, receiptActions, RunningExecution, VerifyingExecution } from "./booking-progress";
 import { useSendText } from "./send-text";
 
 // The fixed approval card inside the assistant-ui thread. The tool result only says which
@@ -80,6 +80,46 @@ function useProposal(proposalId: string): ProposalView | undefined {
     },
     () => proposals.get(proposalId),
     () => undefined,
+  );
+}
+
+// The pending cards on screen, in the order they mounted. Only the newest holds the view's one lime
+// action: when the agent shows a card again, the earlier copy's Approve still works but does not glow.
+const pendingCards: string[] = [];
+const pendingListeners = new Set<() => void>();
+
+function subscribePending(listener: () => void) {
+  pendingListeners.add(listener);
+  return () => pendingListeners.delete(listener);
+}
+
+function setPending(cardId: string, isPending: boolean) {
+  const index = pendingCards.indexOf(cardId);
+  if (isPending && index === -1) pendingCards.push(cardId);
+  if (!isPending && index !== -1) pendingCards.splice(index, 1);
+  for (const listener of pendingListeners) listener();
+}
+
+/** Whether this card is the newest pending one, and so the one whose Approve glows. */
+function useIsLeadCard(isPending: boolean): boolean {
+  const cardId = useId();
+  useEffect(() => {
+    setPending(cardId, isPending);
+    return () => setPending(cardId, false);
+  }, [cardId, isPending]);
+  return useSyncExternalStore(
+    subscribePending,
+    () => pendingCards.at(-1) === cardId,
+    () => true,
+  );
+}
+
+/** Whether an approval card is waiting on the person: the composer's Send then stays quiet, not lime. */
+export function useHasPendingApproval(): boolean {
+  return useSyncExternalStore(
+    subscribePending,
+    () => pendingCards.length > 0,
+    () => false,
   );
 }
 
@@ -194,6 +234,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
   const holdLeft = useHoldLeft(proposal);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>();
+  const isLead = useIsLeadCard(proposal?.status === "pending" && proposal.holdSecondsLeft > 0);
 
   // Read on mount and again whenever a turn ends, so the card follows the booking's progress.
   useEffect(() => {
@@ -227,9 +268,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
       className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-panel outline-none focus:outline-2 focus:outline-offset-4 focus:outline-ring"
     >
       {proposal === undefined ? (
-        <div className="flex items-center gap-2 text-xs text-fg-3">
-          <Spinner /> Loading the approval card…
-        </div>
+        <ToolCall state="running" label="Loading the approval card" />
       ) : (
         <ApprovalCard
           proposal={proposalOf(proposal)}
@@ -240,6 +279,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
             rating: proposal.terms.rating,
           }}
           state={stateOf(proposal, busy, holdLeft)}
+          emphasis={isLead ? "lead" : "quiet"}
           onApprove={() => void act(() => appApi.approveProposal(proposal.proposalId, { fingerprint: proposal.fingerprint }), CARD_FOLLOW_UPS.approved)}
           onDecline={() => void act(() => appApi.declineProposal(proposal.proposalId), CARD_FOLLOW_UPS.declined)}
           onOtherOptions={() =>
@@ -286,8 +326,8 @@ export const ProposalCardPart: ToolCallMessagePartComponent = ({ result }) => {
   const parsed = ProposeActionOutputSchema.safeParse(result);
   if (result === undefined) {
     return (
-      <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
-        <Spinner /> Preparing the approval card…
+      <div className="my-2">
+        <ToolCall state="running" label="Preparing the approval card" />
       </div>
     );
   }
@@ -308,6 +348,7 @@ function receiptOf(output: ExecuteProposalOutput) {
  * changed the terms or the hold ran out.
  */
 export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
+  const send = useSendText();
   const parsed = ExecuteProposalOutputSchema.safeParse(result);
   if (result === undefined || !parsed.success) return <RunningExecution />;
   const output = parsed.data;
@@ -336,7 +377,7 @@ export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   if (booking !== undefined && output.bookingId !== null && (output.kind === "booked" || output.kind === "already_booked")) {
     return (
       <div className="my-3">
-        <BookingReceipt booking={booking} state={{ status: "booked", bookingId: output.bookingId }} />
+        <BookingReceipt booking={booking} state={{ status: "booked", bookingId: output.bookingId }} {...receiptActions(send, output.bookingId)} />
       </div>
     );
   }

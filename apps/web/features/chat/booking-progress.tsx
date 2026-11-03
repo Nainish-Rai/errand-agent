@@ -3,12 +3,13 @@
 import { VERIFYING_PROMISE, type ActionIntentView, type ErrandOption, type ExecuteProposalOutput } from "@errand/contracts";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { Spinner } from "@/components/ui/spinner";
+import { ToolCall } from "@/components/tool-call";
 import { ProviderChoiceCards } from "@/features/generated-ui";
 import { BookingReceipt, VerificationBanner, type ReceiptBooking } from "@/features/trust";
 
 import { appApi } from "./backend";
 import { choiceFromOption } from "./provider-results";
+import { useSendText } from "./send-text";
 
 // A booking's progress from the action ledger (GET /sessions/:id/action-intents): while `book` is
 // in flight and after it timed out, the chat shows "Checking with the provider…" until the world's
@@ -58,14 +59,48 @@ function isBeingChecked(intent: ActionIntentView): boolean {
   return intent.state === "unknown" || (intent.state === "pending" && intent.attempts > 1);
 }
 
-/** execute_proposal while it runs: a spinner, or the verification banner once `book` timed out. */
+/**
+ * A booking cannot be undone; the receipt's Reschedule and Cancel booking ask the agent, which answers
+ * with a fresh approval card. Neither changes anything by itself.
+ */
+export function receiptActions(send: (text: string) => Promise<void> | void, bookingId: string) {
+  return {
+    onReschedule: () => void send(`I'd like to move booking ${bookingId} to another time.`),
+    onCancelBooking: () => void send(`Please cancel booking ${bookingId}.`),
+  };
+}
+
+/** The tracker's steps after Approve (v3 "After approval: checking with provider"), present tense while running. */
+function ApprovedStep() {
+  return <ToolCall state="done" label="Checked your approval" detail="Step 1 of 2" />;
+}
+
+/**
+ * execute_proposal while it runs: the tracker's rows, the approval checked and the provider being
+ * asked; once `book` timed out, the verification banner with the same steps, taking longer.
+ */
 export function RunningExecution() {
   const intents = useSessionIntents(true);
   const inFlight = intents?.filter(isUnresolved).at(-1);
-  if (inFlight !== undefined && isBeingChecked(inFlight)) return <VerificationBanner promise={VERIFYING_PROMISE} />;
+  if (inFlight !== undefined && isBeingChecked(inFlight)) {
+    return (
+      <div className="my-3">
+        <VerificationBanner
+          promise={VERIFYING_PROMISE}
+          steps={
+            <>
+              <ApprovedStep />
+              <ToolCall state="running" label="Checking with provider" detail="Taking longer than usual" />
+            </>
+          }
+        />
+      </div>
+    );
+  }
   return (
-    <div className="my-2 flex items-center gap-2 text-xs text-fg-3">
-      <Spinner /> Checking the approval…
+    <div className="my-3 flex flex-col gap-1.5" aria-live="polite">
+      <ApprovedStep />
+      <ToolCall state="running" label="Asking the provider" detail="Step 2 of 2" />
     </div>
   );
 }
@@ -75,6 +110,7 @@ export function RunningExecution() {
  * reconciler asks the world with the same key), then the receipt, or why nothing was booked.
  */
 export function VerifyingExecution({ output, booking }: { readonly output: ExecuteProposalOutput; readonly booking: ReceiptBooking }) {
+  const send = useSendText();
   const proposalId = output.proposal?.proposalId;
   const [settled, setSettled] = useState(false);
   const intents = useSessionIntents(!settled);
@@ -87,7 +123,7 @@ export function VerifyingExecution({ output, booking }: { readonly output: Execu
   if (intent?.state === "confirmed" && intent.bookingId !== null) {
     return (
       <div className="my-3">
-        <BookingReceipt booking={booking} state={{ status: "booked", bookingId: intent.bookingId }} />
+        <BookingReceipt booking={booking} state={{ status: "booked", bookingId: intent.bookingId }} {...receiptActions(send, intent.bookingId)} />
       </div>
     );
   }
@@ -100,7 +136,15 @@ export function VerifyingExecution({ output, booking }: { readonly output: Execu
   }
   return (
     <div className="my-3">
-      <VerificationBanner promise={VERIFYING_PROMISE} />
+      <VerificationBanner
+        promise={VERIFYING_PROMISE}
+        steps={
+          <>
+            <ApprovedStep />
+            <ToolCall state="running" label="Checking with provider" detail="Taking longer than usual" />
+          </>
+        }
+      />
     </div>
   );
 }

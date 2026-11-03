@@ -1,16 +1,22 @@
-// The booking receipt: what the provider confirmed. Fixed, never generated. A booking ID is shown
-// only once the provider has verified it; until then the row says "checking…", never a blank.
-import { Money } from "@/components/money";
-import { StatusMark } from "@/components/status-mark";
-import { Badge } from "@/components/ui/badge";
+// The booking receipt: what the provider confirmed, as v3's ActionReceipt. Fixed, never generated.
+// "Booked" appears only once the provider has verified the booking ID, on the solid booked mark. A
+// booking cannot be undone, so there is no Undo: the receipt says so and offers Reschedule and Cancel
+// booking, which each lead to a fresh approval.
+import { Clock, X } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { formatRupees } from "@/components/money";
+import { Status } from "@/components/status";
 import { Button } from "@/components/ui/button";
 
-import { DetailTable, Notice, TrustActions, TrustCard, TrustHeader } from "./trust-surface";
+import { ActionReceipt, initialsOf, RequestMedia } from "./trust-surface";
 
 export type ReceiptBooking = {
   readonly provider: string;
   readonly slot: string;
   readonly price: number;
+  /** The provider's thumbnail (ticket 22). Without it the receipt shows their initials. */
+  readonly media?: ReactNode;
 };
 
 export type ReceiptState =
@@ -23,47 +29,83 @@ type BookingReceiptProps = {
   readonly state: ReceiptState;
   /** Failed: show alternatives. */
   readonly onSeeOptions?: () => void;
+  /** Booked: ask for a new time, which leads to a fresh approval. */
+  readonly onReschedule?: () => void;
+  /** Booked: ask to cancel, which leads to a fresh approval. */
+  readonly onCancelBooking?: () => void;
 };
 
-export function BookingReceipt({ booking, state, onSeeOptions }: BookingReceiptProps) {
-  const rows = (bookingId: string, priceLabel: string) => [
-    { label: "Booking", value: bookingId, mono: true },
-    { label: "Provider", value: booking.provider },
-    { label: "When", value: booking.slot, mono: true },
-    { label: priceLabel, value: <Money amount={booking.price} /> },
-  ];
+function Head({ booking, sentence, status }: { readonly booking: ReceiptBooking; readonly sentence: string; readonly status: ReactNode }) {
+  return (
+    <>
+      <RequestMedia media={booking.media} initials={initialsOf(booking.provider)} />
+      <p className="m-0 min-w-0 flex-1 text-base text-fg">{sentence}</p>
+      {status}
+    </>
+  );
+}
 
+export function BookingReceipt({ booking, state, onSeeOptions, onReschedule, onCancelBooking }: BookingReceiptProps) {
   switch (state.status) {
     case "booked":
       return (
-        <TrustCard label="Booked">
-          <TrustHeader lead={<span aria-hidden className="text-success-text">✓</span>} title="Booked" status={<Badge variant="verified">verified</Badge>} />
-          <DetailTable rows={rows(state.bookingId, "Paid")} />
-        </TrustCard>
+        <ActionReceipt
+          label="Booked"
+          state="booked"
+          head={<Head booking={booking} sentence={`${booking.provider} comes ${booking.slot}.`} status={<Status state="done" label="Booked" booked />} />}
+          lines={[
+            { label: `Booked ${booking.provider} for ${formatRupees(booking.price)}`, detail: <span className="font-mono">{state.bookingId}</span> },
+            { label: `Held ${booking.slot}` },
+            { label: "Confirmed with the provider", detail: "verified" },
+          ]}
+          note="A booking cannot be undone. You can reschedule it or cancel it, and I'll ask you to approve either first."
+          actions={
+            onReschedule === undefined && onCancelBooking === undefined ? undefined : (
+              <>
+                {onReschedule !== undefined && (
+                  <Button size="sm" variant="ghost" onClick={onReschedule}>
+                    <Clock />
+                    Reschedule
+                  </Button>
+                )}
+                {onCancelBooking !== undefined && (
+                  <Button size="sm" variant="ghost" onClick={onCancelBooking}>
+                    <X />
+                    Cancel booking
+                  </Button>
+                )}
+              </>
+            )
+          }
+        />
       );
     case "checking":
       return (
-        <TrustCard label="Booking" busy>
-          <TrustHeader title="Booking" status={<StatusMark kind="checking" label="Checking" />} />
-          <DetailTable rows={rows("checking…", "Price")} />
-        </TrustCard>
+        <ActionReceipt
+          label="Booking"
+          state="checking"
+          busy
+          head={<Head booking={booking} sentence={`Booking ${booking.provider} for ${booking.slot}.`} status={<Status state="running" label="Checking with provider" />} />}
+          lines={[{ label: `Held ${booking.slot}` }]}
+          note="The booking ID shows here once the provider confirms it."
+        />
       );
     case "failed":
       return (
-        <TrustCard label="Not booked" tone="voided">
-          <TrustHeader title="Not booked" status={<StatusMark kind="cancelled" label="Failed" />} />
-          <Notice tone="err" lead={<span aria-hidden className="text-danger-text">✕</span>}>
-            {state.reason} You were not charged.
-          </Notice>
-          <DetailTable faded rows={rows("not available", "Price")} />
-          {onSeeOptions !== undefined && (
-            <TrustActions>
-              <Button variant="secondary" onClick={onSeeOptions}>
+        <ActionReceipt
+          label="Not booked"
+          state="failed"
+          head={<Head booking={booking} sentence={`${booking.provider} was not booked.`} status={<Status state="failed" label="Not booked" />} />}
+          lines={[{ label: state.reason, failed: true }]}
+          note="You were not charged."
+          actions={
+            onSeeOptions === undefined ? undefined : (
+              <Button size="sm" variant="ghost" onClick={onSeeOptions}>
                 See options
               </Button>
-            </TrustActions>
-          )}
-        </TrustCard>
+            )
+          }
+        />
       );
   }
 }
