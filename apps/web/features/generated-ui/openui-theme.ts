@@ -129,7 +129,9 @@ function role(name: string): string {
 export function buildOpenUiTheme(): OpenUiThemeOverrides {
   return {
     background: role("page"),
-    foreground: role("fg"),
+    // Despite the name, OpenUI's `foreground` is a surface: tooltips, cards, menus and the ring around a
+    // chart dot fill with it, and put `textNeutral*` on top. Ink here drew the chart tooltip black on black.
+    foreground: role("raised"),
     popoverBackground: role("raised"),
     sunk: role("surface-2"),
     sunkDeep: role("surface-3"),

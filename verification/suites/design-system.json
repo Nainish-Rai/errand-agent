@@ -251,6 +251,64 @@
           "note": "the gallery, settled"
         }
       ]
+    },
+    {
+      "id": "loading-icon-button-spinner-only",
+      "title": "A loading icon button shows the spinner in place of its icon, never both",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/design"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Sending",
+            "state": "visible",
+            "nth": 0
+          },
+          "note": "the loading send button"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=button[name=\"Sending\"] >> nth=0 >> svg"
+          ],
+          "options": {
+            "count": 0
+          },
+          "note": "its arrow is hidden while it loads"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=button[name=\"Sending\"] >> nth=0 >> .animate-spin"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "one spinner in its place"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=button[name=\"Saving…\"] >> nth=0 >> .animate-spin"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "a text button keeps its label beside the spinner"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "loading-buttons.png"
+          ]
+        }
+      ]
     }
   ]
 }

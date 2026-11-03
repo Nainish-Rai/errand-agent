@@ -37,7 +37,7 @@ Driving (the root page; targets: SELECTOR, or --role ROLE --name NAME | --label 
   type TEXT (into the focused element) · key Enter|Escape|ControlOrMeta+A
   wait TARGET [--state visible|hidden|attached|detached] [--timeout-ms MS]
   text TARGET · count TARGET
-  assert TARGET (--text T | --value V | --count N | --attr name=value | --state hidden|visible|attached|detached)
+  assert TARGET (--text T | --value V | --count N | --attr name=value | --style property=value | --state hidden|visible|attached|detached)
   assert --url /ROUTE
       Assertions retry until --timeout-ms (default 15000). In assert, --text is the expected text.
   locate TARGET [--operation click|hover|fill]

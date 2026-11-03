@@ -382,13 +382,22 @@ export class BrowserSession {
       const actual = await element.getAttribute(key);
       if (actual !== expected) return `${key} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`;
     }
+    // A computed style, for what only shows as paint (a focus ring, a colour): read, never set.
+    const style = stringOption(options, "style");
+    if (style !== undefined) {
+      const separator = style.indexOf("=");
+      if (separator < 1) throw new Error("--style is property=value, e.g. outline-style=none");
+      const [property, expected] = [style.slice(0, separator), style.slice(separator + 1)];
+      const actual = await element.evaluate((node, name) => getComputedStyle(node).getPropertyValue(name), property);
+      if (actual !== expected) return `${property} is ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`;
+    }
     return undefined;
   }
 
   /** Retries until the expectation holds or the timeout passes (default 15000 ms). */
   async assert(target: Target, options: Options): Promise<CommandResult> {
-    const expectations = ["text", "value", "count", "attr", "state", "url"].filter((key) => options[key] !== undefined);
-    if (expectations.length === 0) throw new Error("assert needs an expectation: --text, --value, --count, --attr, --state or --url");
+    const expectations = ["text", "value", "count", "attr", "style", "state", "url"].filter((key) => options[key] !== undefined);
+    if (expectations.length === 0) throw new Error("assert needs an expectation: --text, --value, --count, --attr, --style, --state or --url");
     if (options.url === undefined && !hasTarget({ ...target, text: undefined })) {
       throw new Error("assert needs a target (in assert, --text is the expected text, not the target)");
     }

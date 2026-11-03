@@ -207,3 +207,12 @@
 }
 @keyframes lime-spin { to { transform: rotate(1turn); } }
 /* ---- end lime source */
+
+/* Errand: a field shell (the chat input, the search palette, an input group, the trace search) shows focus itself,
+   on its border or as the open palette, as v3's Chat input does. The text field inside draws no ring of its own,
+   which would otherwise sit square inside the rounded shell: Lime's ring is unlayered on purpose, so a utility
+   can't remove it, only this named hook. Under forced colors, where borders lose their colour, the shell rings. */
+.lime [data-focus-shell] :where(input, textarea):focus-visible { outline: none; }
+@media (forced-colors: active) {
+  .lime [data-focus-shell]:focus-within { outline: var(--line-focus) solid Highlight; outline-offset: var(--focus-offset); }
+}

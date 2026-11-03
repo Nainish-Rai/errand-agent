@@ -12,6 +12,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="input-group"
+      data-focus-shell
       role="group"
       className={cn(
         "group/input-group relative flex w-full items-center rounded-field border border-line-strong bg-field transition-[color,border-color] duration-(--dur-instant) ease-out outline-none",

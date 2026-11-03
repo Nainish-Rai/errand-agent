@@ -336,6 +336,7 @@ function TraceHeader({
       <span className="font-semibold">{title}</span>
       <label
         data-slot="trace-waterfall-search"
+        data-focus-shell
         className={cn(
           'ms-auto flex h-8 w-[191px] min-w-0 cursor-text items-center gap-2 rounded-field border border-line-strong bg-field ps-2.5 pe-1.5 text-fg-3',
           'transition-[border-color] duration-(--dur-instant) ease-out focus-within:border-control',
