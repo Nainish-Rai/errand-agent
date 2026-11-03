@@ -20,12 +20,14 @@ import {
   StackPropsSchema,
   type ProviderChoiceProps,
 } from "@errand/contracts";
+import { repeatsSearchCards } from "@errand/client";
 import { createLibrary, defineComponent } from "@openuidev/react-lang";
 import type { ReactNode } from "react";
 
 import { AskForm } from "./ask-form";
 import { PriceChart, SlotsPerDayChart, SpendChart } from "./charts";
 import { BookingPicker, FollowUps, NotYetAvailable, PickOne, SlotPicker } from "./pickers";
+import { useProvidersShownBySearch } from "./bound-data";
 import { ProviderChoiceCards } from "./provider-choice-cards";
 import { ProviderDetailsPanel } from "./provider-details";
 
@@ -52,12 +54,19 @@ const Stack = defineComponent({
   component: ({ props, renderNode }) => <div className="flex flex-col">{renderNode(props.items) as ReactNode}</div>,
 });
 
+/** Provider cards, unless this reply's search already shows every one of them (no provider twice). */
+function ModelChoiceCards({ choices, title }: { readonly choices: readonly ProviderChoiceProps[]; readonly title?: string }) {
+  const shownBySearch = useProvidersShownBySearch();
+  if (repeatsSearchCards(choices.map((choice) => choice.providerId), shownBySearch)) return null;
+  return <ProviderChoiceCards choices={choices} {...(title === undefined ? {} : { title })} />;
+}
+
 const ProviderChoices = defineComponent({
   name: "ProviderChoices",
   description: description("ProviderChoices"),
   props: ProviderChoicesPropsSchema,
   component: ({ props }) => (
-    <ProviderChoiceCards
+    <ModelChoiceCards
       choices={props.choices.flatMap((choice) => {
         const bound = asProps<ProviderChoiceProps>(choice) ?? choice;
         return typeof bound.providerId === "string" ? [bound] : [];
@@ -71,7 +80,7 @@ const ProviderChoice = defineComponent({
   name: "ProviderChoice",
   description: description("ProviderChoice"),
   props: ProviderChoicePropsSchema,
-  component: ({ props }) => <ProviderChoiceCards choices={[props]} />,
+  component: ({ props }) => <ModelChoiceCards choices={[props]} />,
 });
 
 const PickOption = defineComponent({

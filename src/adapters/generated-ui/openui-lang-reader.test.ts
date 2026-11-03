@@ -60,8 +60,8 @@ describe("the component library", () => {
   });
 
   it("keeps its instructions within their share of the context budget", () => {
-    // Measured live at 2.1k MiniMax input tokens (docs/notes/openui-spike.md); ~4 characters a
-    // token, so 10k characters is the cap ticket 12's context budget reserves for them.
+    // 5,222 characters measured live at 1,235 MiniMax input tokens (docs/notes/openui-spike.md),
+    // about 4.2 characters a token; 10k characters (about 2.4k tokens) is the cap for ticket 12.
     expect(generatedUiInstructions().length).toBeLessThan(10_000);
   });
 });

@@ -1,8 +1,9 @@
 "use client";
 
-import type { ApiClient } from "@errand/client";
+import { useAuiState } from "@assistant-ui/react";
+import { providersShownBySearch, type ApiClient } from "@errand/client";
 import type { BookingView, ErrandView, GetAvailabilityResponse, GetSpendResponse, ProviderDetails } from "@errand/contracts";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 // What generated components read the world through: the app API client (read-only routes only)
 // and a way to answer as the person. Every price, rating, slot, status and chart value comes from
@@ -25,6 +26,18 @@ export function useGeneratedUiHost(): GeneratedUiHost {
   const host = useContext(HostContext);
   if (host === undefined) throw new Error("Generated UI needs a GeneratedUiHostProvider above it.");
   return host;
+}
+
+/** The providers this reply's search_providers already shows as cards (see packages/client repeats.ts). */
+export function useProvidersShownBySearch(): ReadonlySet<string> {
+  const parts = useAuiState((state) => state.message.parts);
+  return useMemo(
+    () =>
+      providersShownBySearch(
+        parts.flatMap((part) => (part.type === "tool-call" && part.toolName === "search_providers" && part.result !== undefined ? [part.result] : [])),
+      ),
+    [parts],
+  );
 }
 
 export type Loaded<T> = { readonly status: "loading" } | { readonly status: "failed" } | { readonly status: "ready"; readonly data: T };

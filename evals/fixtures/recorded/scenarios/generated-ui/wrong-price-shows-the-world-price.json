@@ -1,0 +1,83 @@
+{
+  "scenario": "scenarios/generated-ui/wrong-price-shows-the-world-price",
+  "recordedAt": "2026-11-03T01:52:55.521Z",
+  "evalRunId": "afff57f9-0c9a-41d6-8167-4375cf200904",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need a plumber in Koramangala this week. Can you help?"
+    },
+    {
+      "say": "Which one would you pick?"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll help you find a plumber in Koramangala. Let me note this down and check what's needed.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "I found two good options for a plumber in Koramangala this week.\n\n**Venkatesh Sanitary Solutions** (₹499, rated 4.8 from 241 reviews) — my pick. They're verified, can come same-day, and a senior technician is available. Earliest slot is today, Wed 4 Nov, 10:00 am.\n\n**Shiva Sanitary Solutions** (₹399) — the cheapest option, with a senior technician. Earliest slot is Thu 5 Nov, 8:00 am. Slightly lower rating (4.5 from 133 reviews).\n\nBoth are shown in the cards below — tap Choose on the one you'd like, and I'll hold the slot for you.",
+            "toolCalls": [
+              {
+                "name": "present_ui",
+                "input": {
+                  "ui": "root = Stack([cards])\ncards = ProviderChoices([a, b], \"Plumbers in Koramangala this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match · earliest today\", \"Rated 4.8 from 241 reviews, verified, same-day service with a senior technician\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest at ₹399\", \"Senior technician available, earliest slot Thu 5 Nov morning\")"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Tap Choose on the card you'd like, or just tell me which one and I'll hold that slot."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "text": "I'd pick **Venkatesh Sanitary Solutions** — ₹499 is only ₹100 more than the cheapest option, and you get a 4.8 rating across 241 reviews, verified status, and same-day availability with a senior technician. That's the better bet for a plumbing job where the diagnosis may not be straightforward.\n\nShiva Sanitary Solutions is the sensible pick if you'd rather save the money and don't mind waiting until Thursday morning.\n\nWant me to hold the Venkatesh slot today at 10:00 am?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.00562458,
+    "simulatedUser": 0.0258392
+  }
+}

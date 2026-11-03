@@ -37,7 +37,7 @@ export default defineScenario({
     ],
   },
   expected:
-    "turn 1 asks with an AskForm of only timeWindow (verdict asked); the form sends only that field as an ordinary message; the errand ends with the time window filled, nothing missing, area unchanged, choosing",
+    "turn 1 asks with an AskForm of only timeWindow (verdict asked); the scripted form sends only that field as an ordinary message; the errand ends with the time window filled, nothing missing, area unchanged, choosing",
   async expect(t, run) {
     t.succeeded();
     const asks = generatedUiCalls(run.turns).filter((call) => call.tool === "ask_ui");
@@ -45,7 +45,10 @@ export default defineScenario({
     t.check(asks[0]?.turn, equals(1)).label("asked in the first turn");
 
     // The form only showed (and sent) the missing field: the area it was also given is not sent.
-    t.check(run.uiTaps.map((tap) => tap.sent), equals(["When: This week"])).label("the form sends only the missing field");
+    // A simulated user types its answer instead (it can't tap), so this holds for the scripted form.
+    if (run.steps.some((step) => "ask" in step)) {
+      t.check(run.uiTaps.map((tap) => tap.sent), equals(["When: This week"])).label("the form sends only the missing field");
+    }
 
     const errand = await run.api.getErrand(run.sessionId);
     t.check({ from: errand?.timeWindow?.from, to: errand?.timeWindow?.to }, equals(THIS_WEEK));

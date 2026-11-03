@@ -1,0 +1,102 @@
+{
+  "scenario": "scenarios/generated-ui/ask-form-fills-the-errand",
+  "recordedAt": "2026-11-03T01:51:08.563Z",
+  "evalRunId": "afff57f9-0c9a-41d6-8167-4375cf200904",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "happy_path",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need a plumber in Koramangala."
+    },
+    {
+      "say": "This week works for me."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll help you find a plumber in Koramangala. Let me note that down and check what's still needed.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "ask_ui",
+                "input": {
+                  "ui": "root = Stack([form])\nform = AskForm([\"timeWindow\"], \"When should the plumber come?\")"
+                }
+              }
+            ]
+          },
+          {
+            "text": "When should the plumber visit? I've added the options in the chat above — pick one, or tell me your preferred day and time."
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "I found two good plumbers for you in Koramangala this week.\n\n- **Venkatesh Sanitary Solutions** — my top pick: rated 4.8 across 241 reviews, verified, and they can come as early as today (Wed 4 Nov, 10:00 am).\n- **Shiva Sanitary Solutions** — the cheapest at ₹399, with a senior technician, first slot Thu 5 Nov at 8:00 am.\n\nTap Choose on the card you'd like, and I'll hold that slot for you.",
+            "toolCalls": [
+              {
+                "name": "present_ui",
+                "input": {
+                  "ui": "root = Stack([cards])\ncards = ProviderChoices([a, b], \"Plumbers available in Koramangala this week\")\na = ProviderChoice(\"prv_plumber_koramangala_4\", \"Best match · earliest slot\", \"Top rated (4.8, 241 reviews), verified, and can visit today\")\nb = ProviderChoice(\"prv_plumber_koramangala_5\", \"Cheapest · ₹399\", \"Great price with a senior technician, starting Thursday 8:00 am\")"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Both cards are in the chat above — pick one with the Choose button and I'll get that slot held for your approval card."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.004805339999999999,
+    "simulatedUser": 0.0120328
+  }
+}

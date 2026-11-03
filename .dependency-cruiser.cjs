@@ -45,8 +45,15 @@ module.exports = {
       comment:
         "packages/client: contracts, the eve client and OpenUI's framework-agnostic parser (lang-core) only. No React, no server code.",
       severity: "error",
-      from: { path: "^packages/client/" },
+      from: { path: "^packages/client/", pathNot: "\\.test\\.ts$" },
       to: { pathNot: ["^packages/(client|contracts)/", npm("zod"), npm("@openuidev/lang-core"), eveEntry("client")] },
+    },
+    {
+      name: "client-tests-are-headless",
+      comment: "packages/client tests: the client, contracts and vitest only.",
+      severity: "error",
+      from: { path: "^packages/client/.*\\.test\\.ts$" },
+      to: { pathNot: ["^packages/(client|contracts)/", npm("zod"), npm("vitest")] },
     },
     {
       name: "design-tokens-is-a-leaf",
