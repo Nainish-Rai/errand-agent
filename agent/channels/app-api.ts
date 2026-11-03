@@ -44,6 +44,7 @@ import { getHomeSummary } from "../../src/core/use-cases/get-home-summary";
 import { listMemoryFacts } from "../../src/core/use-cases/list-memory-facts";
 import { seedMemory } from "../../src/core/use-cases/seed-memory";
 import { getProviders } from "../../src/core/use-cases/get-providers";
+import { getSessionContext } from "../../src/core/use-cases/get-session-context";
 import { getSessionTrace } from "../../src/core/use-cases/get-session-trace";
 import { listBookings } from "../../src/core/use-cases/list-bookings";
 import { getProposal, listProposals } from "../../src/core/use-cases/list-proposals";
@@ -53,6 +54,7 @@ import { presentErrand } from "../lib/errand-presenter";
 import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
 import { memoryOwnerOfRequest } from "../lib/memory-owner";
 import { presentConfirmOutcome, presentCorrectOutcome, presentFact, presentMemory, presentTombstone } from "../lib/memory-presenter";
+import { presentSessionContext } from "../lib/context-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
 import { presentProviderDetails } from "../lib/world-presenter";
 
@@ -116,6 +118,13 @@ export default defineChannel({
       // The spans are stamped with the wall clock, so "now" must be too: a pinned clock here made
       // running spans look as long as the pin's offset from today.
       return Response.json(presentSessionTrace(trace, container().wallClock.now().getTime()));
+    }),
+
+    // The context log: every model call's context against the budget, and what was left out and why.
+    GET(`${API_PREFIX}/sessions/:sessionId/context`, async (_request, { params }) => {
+      const sessionId = SessionIdSchema.safeParse(params.sessionId);
+      if (!sessionId.success) return failure(400, "invalid_session_id", "Pass an eve session id.");
+      return Response.json(presentSessionContext(await getSessionContext(container().traceSink, sessionId.data)));
     }),
 
     // The session's errand: its details, workflow state and what is still missing. Null before

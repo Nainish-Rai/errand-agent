@@ -11,6 +11,7 @@ import {
   GetHomeSummaryResponseSchema,
   GetProviderResponseSchema,
   GetProvidersResponseSchema,
+  GetSessionContextResponseSchema,
   GetSessionTraceResponseSchema,
   InjectWorldFaultResponseSchema,
   LoadModelScriptResponseSchema,
@@ -30,6 +31,7 @@ import {
   type GetHomeSummaryResponse,
   type ErrandView,
   type ForgetMemoryFactResponse,
+  type GetSessionContextResponse,
   type GetSessionTraceResponse,
   type InjectWorldFaultRequest,
   type InjectWorldFaultResponse,
@@ -123,6 +125,15 @@ export class ApiClient {
       `/sessions/${encodeURIComponent(sessionId)}/trace`,
       { method: "GET", signal: options.signal },
       GetSessionTraceResponseSchema,
+    );
+  }
+
+  /** Every model call's context in the session: what was sent against the context budget, and what was left out and why. */
+  async getSessionContext(sessionId: string, options: { readonly signal?: AbortSignal } = {}): Promise<GetSessionContextResponse> {
+    return await this.#request(
+      `/sessions/${encodeURIComponent(sessionId)}/context`,
+      { method: "GET", signal: options.signal },
+      GetSessionContextResponseSchema,
     );
   }
 
