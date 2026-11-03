@@ -5,6 +5,7 @@ import {
   LoadModelScriptRequestSchema,
   ProposalStatusSchema,
   SetRunLimitsRequestSchema,
+  SimulateProviderCancellationRequestSchema,
   CorrectMemoryFactRequestSchema,
   DraftErrandRequestSchema,
   MemoryKeySchema,
@@ -189,6 +190,13 @@ const ROUTES: readonly Route[] = [
     pattern: /^\/dev\/world-fault$/,
     route: "PUT /api/v1/dev/world-fault",
     handle: async (client, _match, _url, body) => await client.injectWorldFault(InjectWorldFaultRequestSchema.parse(body)),
+  },
+  {
+    method: "POST",
+    pattern: /^\/dev\/world-events\/provider-cancelled$/,
+    route: "POST /api/v1/dev/world-events/provider-cancelled",
+    handle: async (client, _match, _url, body) =>
+      await client.simulateProviderCancellation(SimulateProviderCancellationRequestSchema.parse(body)),
   },
 ];
 
