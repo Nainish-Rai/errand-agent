@@ -12,7 +12,7 @@ Images are local, licensed assets shipped with the app (the v3 Unsplash set, cre
 
 **Status:** ready-for-agent
 
-- [ ] Image assets and their credits live in the app; the credits are visible on a page
-- [ ] A tool result containing an image URL, or an unknown asset key, renders the fallback and never fetches anything: an eval or test proves it
-- [ ] Every image has alt text, has a fixed aspect ratio (1:1 avatar, 4:3 option, 16:9 hero) and causes no layout shift on load
-- [ ] Provider choice, service choice and home tiles show the images in a verify-errand run, and screenshots are attached
+- [x] Image assets and their credits live in the app; the credits are visible on a page
+- [x] A tool result containing an image URL, or an unknown asset key, renders the fallback and never fetches anything: an eval or test proves it
+- [x] Every image has alt text, has a fixed aspect ratio (1:1 avatar, 4:3 option, 16:9 hero) and causes no layout shift on load
+- [x] Provider choice, service choice and home tiles show the images in a verify-errand run, and screenshots are attached
