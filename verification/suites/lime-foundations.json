@@ -256,7 +256,7 @@
           "command": "assert",
           "options": {
             "role": "listitem",
-            "name": "Budget · ₹1,500",
+            "name": "Budget \u00b7 \u20b91,500",
             "text": "inferred"
           },
           "note": "memory in Lime: the guess keeps its dashed inferred edge"
@@ -304,26 +304,13 @@
           ]
         },
         {
-          "command": "fill",
-          "options": {
-            "label": "Operator token",
-            "value": "{{operator-token}}"
-          }
-        },
-        {
-          "command": "key",
-          "args": [
-            "Enter"
-          ]
-        },
-        {
           "command": "assert",
           "options": {
             "role": "form",
             "name": "Operator sign-in",
             "state": "hidden"
           },
-          "note": "the session list opens"
+          "note": "already signed in from the session page, so the session list opens"
         },
         {
           "command": "screenshot",
@@ -505,7 +492,7 @@
           "command": "assert",
           "options": {
             "role": "listitem",
-            "name": "Budget · ₹1,500",
+            "name": "Budget \u00b7 \u20b91,500",
             "text": "inferred"
           },
           "note": "memory in Lime: the guess keeps its dashed inferred edge"
@@ -553,26 +540,13 @@
           ]
         },
         {
-          "command": "fill",
-          "options": {
-            "label": "Operator token",
-            "value": "{{operator-token}}"
-          }
-        },
-        {
-          "command": "key",
-          "args": [
-            "Enter"
-          ]
-        },
-        {
           "command": "assert",
           "options": {
             "role": "form",
             "name": "Operator sign-in",
             "state": "hidden"
           },
-          "note": "the session list opens"
+          "note": "already signed in from the session page, so the session list opens"
         },
         {
           "command": "screenshot",

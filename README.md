@@ -154,12 +154,12 @@ The agent remembers a person's usual area, budget, earliest start hour, favourit
 
 ## Home screen
 
-`/` is the home screen (`apps/web/features/home`, after `mockups/home.html`): a day/night hero skyline, the errand composer, and six widgets from one `GET /api/v1/home` (core's GetHomeSummary, `src/core/use-cases/get-home-summary.ts`). The chat lives at `/chat` (new) and `/chat/SESSION`, which replays the session and follows a turn still running.
+`/` is the home screen (`apps/web/features/home`, restyled on design system v3): the page title, the errand composer, and six widgets from one `GET /api/v1/home` (core's GetHomeSummary, `src/core/use-cases/get-home-summary.ts`). The chat lives at `/chat` (new) and `/chat/SESSION`, which replays the session and follows a turn still running.
 
 - **Composer.** Tabs New errand / Running N, and chips for area, budget and time of day, prefilled from memory, plus the model in use (informational: the backend picks it). Starting an errand creates the session, posts the chips to `POST /api/v1/sessions/:id/errand` (core's DraftErrand: validated against the catalog and saved with UpdateErrand, traced as `composer → errand: …`), then sends the text, so the agent never asks for what the chips already say.
 - **Widgets.** Working now (each unfinished errand's current step); Waiting on you (pending approvals open `/chat/SESSION?proposal=ID` scrolled to and focused on the card; inferred facts open the Memory panel); Upcoming bookings; Alerts (provider cancellations come from the `AlertFeed` port, which the provider-event log implements, and link to their chat at the replacement's card; failed errands and recovered bookings come from what the backend already knows); Bookings over 14 days; Memory (inferred facts dashed). Each has a designed empty state (`new_user` shows them all).
 - **Live updates.** The page polls `GET /api/v1/home` every 5 s and when the tab becomes visible, and says so in its footer. Server-sent events would need an event publisher across every use case; polling was the cheap option.
-- **Top bar.** Home switcher, search (a command menu stub, ⌘K), theme toggle and a bell counting the alerts that need you. The theme follows the system until toggled, then the choice persists.
+- **Top bar.** Home switcher, search (a command menu stub, ⌘K), theme toggle and a bell counting the alerts that need you. Light is the default whatever the OS prefers; the toggle switches to dark and the dark choice persists.
 - **Chat layout.** Show memory opens the memory panel in a right rail (`?rail=memory`); below the `lg` breakpoint it overlays the chat. The chat has no trace, token count or cost: those are in the [operator console](#operator-console), and an old `?rail=trace` link opens the chat without them.
 
 
