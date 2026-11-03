@@ -4,6 +4,7 @@ import {
   ApproveProposalResponseSchema,
   DeclineProposalResponseSchema,
   GetAvailabilityResponseSchema,
+  ListServiceOptionsResponseSchema,
   GetProposalResponseSchema,
   GetSpendResponseSchema,
   ListBookingsResponseSchema,
@@ -42,6 +43,7 @@ import {
   type ForgetMemoryFactResponse,
   type GetSessionContextResponse,
   type GetAvailabilityResponse,
+  type ListServiceOptionsResponse,
   type GetSpendResponse,
   type GetSessionTraceResponse,
   type GetSessionTranscriptResponse,
@@ -127,9 +129,9 @@ export class ApiClient {
     return await this.#request(`/spend?${query}`, { method: "GET" }, GetSpendResponseSchema);
   }
 
-  /** A provider photo's `src` (a path under the API) as a full URL on this backend. */
-  photoUrl(src: string): string {
-    return `${this.#baseUrl}${src}`;
+  /** The services (home tiles) and kinds of service (service choice cards) the world offers. */
+  async listServiceOptions(): Promise<ListServiceOptionsResponse> {
+    return await this.#request("/services", { method: "GET" }, ListServiceOptionsResponseSchema);
   }
 
   /** The session's errand (details, workflow state, what is missing), or null before the first request. */

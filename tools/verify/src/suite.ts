@@ -58,6 +58,7 @@ const STEP_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   motion: [],
   screenshot: ["viewport", "animations"],
   snapshot: TARGET,
+  network: ["method", "path", "notPath", "resourceType", "status", "expectCount"],
 };
 const SETUP_COMMANDS = new Set(["api", "goto", "theme", "motion", "viewport"]);
 const ACTIONS = new Set(["goto", "reload", "click", "hover", "fill", "type", "key"]);
@@ -74,7 +75,9 @@ const ARG_COUNT: Readonly<Record<string, readonly [number, number]>> = {
 };
 
 const isAssertion = (step: SuiteStep) =>
-  step.command === "assert" || (step.command === "api" && (step.options?.expect !== undefined || step.options?.status !== undefined));
+  step.command === "assert" ||
+  (step.command === "api" && (step.options?.expect !== undefined || step.options?.status !== undefined)) ||
+  (step.command === "network" && step.options?.expectCount !== undefined);
 
 function fail(message: string): never {
   throw new Error(`Invalid suite: ${message}`);
@@ -135,7 +138,7 @@ export function validateSuite(value: unknown): Suite {
 export function stepOptions(step: SuiteStep): Options {
   const options: Options = {};
   for (const [key, value] of Object.entries(step.options ?? {})) {
-    const name = key === "timeoutMs" ? "timeout-ms" : key;
+    const name = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
     if (value === true) options[name] = true;
     else if (value === false) continue;
     else if (typeof value === "object") options[name] = JSON.stringify(value);

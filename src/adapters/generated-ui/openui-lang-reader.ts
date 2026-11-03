@@ -98,6 +98,7 @@ const RULES = [
   "Use PriceChart only for 4 or more options. Use SlotsPerDayChart when the person asks when someone is free. Use SpendChart only when asked about spending.",
   "When update_errand returns a question, call ask_ui with AskForm listing exactly the question's fields, then end your turn.",
   "ReviewInsight only for a provider get_provider_insight returned an insight for. PreferenceCard only in ask_ui, with the fact ids of inferred facts waiting for confirmation (remember_fact's fact.id).",
+  "To ask which kind of AC service, call ask_ui with ServiceChoices; its optionIds are ac_gas_refill, ac_deep_clean and ac_repair.",
   "After ask_ui, end your turn and wait: the answer comes back as the person's next message.",
   "If a tool result says the UI was refused or didn't parse, answer in text instead.",
 ];

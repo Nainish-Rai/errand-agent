@@ -2,14 +2,16 @@
 
 import { useAuiState } from "@assistant-ui/react";
 import { bindBookings, bookingMessage, modelText, pickMessage, rupees, slotLabel, slotMessage } from "@errand/client";
-import type { PickOptionProps } from "@errand/contracts";
+import type { PickOptionProps, ServiceChoiceProps } from "@errand/contracts";
 import { FollowUpBlock, FollowUpItem } from "@openuidev/react-ui";
 import { useState } from "react";
 
+import { Money } from "@/components/money";
 import { Skeleton } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
+import { Photo, ServiceIcon } from "@/features/images";
 
-import { useBookings, useGeneratedUiHost, useProviders } from "./bound-data";
+import { useBookings, useGeneratedUiHost, useProviders, useServiceOptions } from "./bound-data";
 
 // The asking components besides the form, and the next-step chips. Each tap sends one ordinary
 // message as the person. Slots and bookings are read by id; only labels the person reads as
@@ -100,6 +102,53 @@ export function PickOne({ question, options }: { readonly question: string; read
           Send
         </Button>
       </form>
+    </section>
+  );
+}
+
+/**
+ * "Which AC service?": a photo card per kind of service. The model names option ids and labels; the
+ * card's label, price, description and photo are the world's, by id. An id the world doesn't have
+ * keeps the model's label beside a line icon, with no price and no photo.
+ */
+export function ServiceChoices({ question, choices }: { readonly question: string; readonly choices: readonly ServiceChoiceProps[] }) {
+  const options = useServiceOptions();
+  const { disabled, sent, answer } = useAnswer();
+  if (options.status === "loading") return <Loading />;
+  const byId = new Map(options.status === "ready" ? [...options.data.services, ...options.data.kinds].map((option) => [option.id, option]) : []);
+  return (
+    <section aria-label={question} data-testid="service-choices" className="my-3 flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
+      <p className="m-0 text-sm font-medium text-fg">{question}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {choices.map((choice) => {
+          const option = byId.get(choice.optionId);
+          const label = option?.label ?? choice.label;
+          return (
+            <button
+              key={choice.optionId}
+              type="button"
+              disabled={disabled}
+              data-sent={sent === label || undefined}
+              data-option-id={choice.optionId}
+              onClick={() => answer(pickMessage(label))}
+              className="flex min-w-0 flex-col overflow-hidden rounded-panel border border-line-strong bg-page text-left text-fg hover:bg-surface disabled:cursor-not-allowed disabled:opacity-45 data-sent:border-accent-line data-sent:bg-accent-wash data-sent:opacity-100"
+            >
+              <Photo imageKey={option?.image} ratio="landscape" fallback={<ServiceIcon service={option?.service} />} className="w-full" />
+              <span className="flex flex-col gap-0.5 px-2.5 pt-2 pb-2.5">
+                <span className="text-sm font-medium">{label}</span>
+                {option !== undefined && (
+                  <>
+                    <span className="text-xs tabular-nums text-fg">
+                      from <Money amount={option.fromPriceInr} />
+                    </span>
+                    <span className="text-xs text-fg-2">{option.description}</span>
+                  </>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </section>
   );
 }

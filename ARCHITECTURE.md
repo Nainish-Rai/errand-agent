@@ -7,7 +7,7 @@ scripts are all just clients of it. No business rule lives in a client.
 
 | Service | What it is | Port (dev) | Talks to |
 |---|---|---|---|
-| **backend** | The eve server. It hosts the agent, the chat API, the app API, live events and images. The mock provider world runs inside it, behind a port. | 3100 | SQLite file, MiniMax, Claude Code CLI |
+| **backend** | The eve server. It hosts the agent, the chat API, the app API and live events. The mock provider world runs inside it, behind a port. | 3100 | SQLite file, MiniMax, Claude Code CLI |
 | **web** | Next.js UI shell: home screen, chat, trace panel. No API routes and no business logic. | 3000 | backend only |
 | **mobile** (later) | Expo app, same screens. Not built for the assignment. | — | backend only |
 
@@ -39,7 +39,7 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | GET | `/ops/sessions` | Operators only. ListOperatorSessions: every session, its owner and errand, newest first |
   | GET | `/ops/sessions/:id/transcript` | Operators only. The session's read-only transcript; the read is recorded |
   | GET | `/ops/sessions/:id/reads` | Operators only. ListOperatorReads: who read the session's trace, context or transcript, and how often |
-  | GET | `/assets/providers/:file` | Provider photos, served by the backend so every client gets the same images |
+  | GET | `/services` | ListServiceOptions: the services (home tiles) and kinds of service ("Which AC service?") with the world's prices and image keys |
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
   | PUT | `/dev/model-script` `{script}` | Dev only. Load a scenario's model turns into the offline model (`null` unloads) |
   | PUT | `/dev/run-limits` `{limits}` | Dev only. Run-budget limits for runs that start afterwards (`null` restores the defaults) |
@@ -95,6 +95,14 @@ through the same client package the web uses. If evals pass, any client that spe
 | `apps/*` | `packages/client`, `packages/contracts`, `packages/design-tokens` (its generated CSS and types), UI libraries | `src/`, `agent/` |
 | `evals/` | `packages/client`, `packages/contracts`, `src/adapters/world` (seeding and state assertions), `src/adapters/models` and `src/adapters/tracing/price-table` (the simulated user's model and its cost) | `agent/`, the rest of `src/` (tests depend inward; nothing depends on tests) |
 
+**Photos are image keys, never URLs (ticket 22).** The provider world names an image key for a provider
+(`image`, `photos`) or a service option, and the wire carries it as an untrusted string. Each client ships
+its own files: the web app's closed registry (`apps/web/features/images/registry.ts`, typed against
+`IMAGE_KEYS` in contracts) is the only thing that turns a key into a picture. A URL, a data: URI, a path or
+an unknown key draws the fallback (initials or a line icon) and the browser fetches nothing; answer text
+draws no media at all (Streamdown drops images and media elements), and `img-src 'self'` backs both up.
+The browser suite `verification/suites/images.json` proves it on the requests, in the `untrusted_images` world.
+
 **The review reader is not an eve subagent.** It reads untrusted reviews, so it must have no tools
 and answer only in a schema. An eve declared subagent runs eve's turn loop, and a per-call model
 override needs an AI Gateway id, so the fallback from Claude Code to MiniMax couldn't be expressed.
@@ -133,7 +141,7 @@ errand-agent/
 │   ├── memory/preferences.ts             # eve memory provider → BuildModelContext
 │   └── channels/
 │       ├── eve.ts                        # chat API config (CORS, auth)
-│       └── app-api.ts                    # /api/v1/* routes + /events SSE + assets
+│       └── app-api.ts                    # /api/v1/* routes + /events SSE
 ├── src/
 │   ├── core/
 │   │   ├── errand/            errand.ts · errand-workflow.ts
@@ -151,7 +159,7 @@ errand-agent/
 │   │   └── ports/             provider-world · action-ledger · proposal-store · memory-store
 │   │                          clock · id-source · trace-sink · event-publisher · review-reader
 │   ├── adapters/
-│   │   ├── world/             mock-provider-world.ts (the 8 fixed tools) · scenarios/ · seed/ · assets/ (WebP + CREDITS.md)
+│   │   ├── world/             mock-provider-world.ts (the 8 fixed tools) · scenarios/ · seed/ · provider-images.ts (id → image key)
 │   │   ├── sqlite/            database.ts · migrations/ · *-store.ts (one per port)
 │   │   ├── models/            minimax.ts · claude-code.ts · scripted.ts · select-model.ts
 │   │   ├── review-reader/     the quarantined review reader: no tools, Claude Code CLI then MiniMax, strict schema
@@ -164,6 +172,7 @@ errand-agent/
 ├── apps/
 │   ├── web/                   app/ (home, chat/[id]) · features/home/widgets · features/chat
 │   │                          (assistant-ui runtime, approval-card, openui-library) · features/trace-panel
+│   │                          · features/images (the closed photo registry, Photo, the bundled WebP files)
 │   └── mobile/                README.md only: how an Expo app plugs into the same backend
 ├── evals/                     scenarios/ · users/ · scenario.ts · invariants.ts · reporter.ts · eval-table.ts
 │                              fixtures/recorded/ (replay fixtures) · results/<mode>.json (feeds docs/EVAL_TABLE.md)

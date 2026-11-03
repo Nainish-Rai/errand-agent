@@ -77,8 +77,8 @@ export function ServiceTiles({ disabled, onPick, mediaFor }: { readonly disabled
   );
 }
 
-/** v3's FollowUps: requests the person could have typed. A press sends one as written. */
-export function FollowUps({ suggestions, disabled, onPick }: { readonly suggestions: readonly string[]; readonly disabled: boolean; readonly onPick: (request: string) => void }) {
+/** v3's FollowUps: requests the person could have typed, each with an optional 24px photo before it. A press sends one as written. */
+export function FollowUps({ suggestions, disabled, onPick, mediaFor }: { readonly suggestions: readonly string[]; readonly disabled: boolean; readonly onPick: (request: string) => void; readonly mediaFor?: (request: string) => ReactNode }) {
   return (
     <div role="group" aria-label="Suggestions" className="flex flex-wrap gap-2">
       {suggestions.map((text) => (
@@ -87,8 +87,9 @@ export function FollowUps({ suggestions, disabled, onPick }: { readonly suggesti
           type="button"
           disabled={disabled}
           onClick={() => onPick(text)}
-          className={cn(focusRing, press, "inline-flex min-h-8 max-w-full items-center rounded-panel border border-line-strong bg-page px-3 py-1 text-left text-sm text-fg hover:bg-surface")}
+          className={cn(focusRing, press, "inline-flex min-h-8 max-w-full items-center gap-2 rounded-panel border border-line-strong bg-page px-3 py-1 text-left text-sm text-fg hover:bg-surface")}
         >
+          {mediaFor?.(text)}
           {text}
         </button>
       ))}

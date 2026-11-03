@@ -48,7 +48,8 @@ Driving (the root page; targets: SELECTOR, or --role ROLE --name NAME | --label 
 Evidence
   screenshot [NAME.png] [--viewport] [--animations allow] · snapshot [NAME.txt] [target options] (ARIA tree)
       Screenshots settle animations; --animations allow captures the frame as it is, mid-motion.
-  network [--method M] [--path /exact | /prefix*] [--status N] [--since ISO]
+  network [--method M] [--path /exact | /prefix*] [--not-path /exact | /prefix*] [--resource-type image]
+          [--status N] [--since ISO] [--expect-count N]   with --expect-count, fails unless exactly N match
   logs [--level error] [--since ISO]                      console messages and page errors
   api GET|POST|PUT|PATCH|DELETE /api/v1/... [--body JSON] [--expect JSON] [--timeout-ms MS]
       Through packages/client, so bodies are parsed against the contracts. sessions/current/... is

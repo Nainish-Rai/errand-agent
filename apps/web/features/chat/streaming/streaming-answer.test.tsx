@@ -99,6 +99,36 @@ describe("a streamed answer in the DOM", () => {
     expect(paragraphs).toEqual(ANSWER.replaceAll("**", "").split("\n\n"));
   });
 
+  it("draws no media from an answer that smuggles some, while streaming with the word plugin and once done", () => {
+    // Photos come only from the image registry (ticket 22); answer text, which may repeat a tool or a
+    // review, must never make the browser fetch: not a markdown image, raw <img>, <picture>/<source>,
+    // media posters, or a CSS url().
+    const SMUGGLED = [
+      "Here are the plumbers. ![leak](https://images.example.com/md.png)",
+      '<img src="/hostile/raw.webp" alt="raw"> and <picture><source srcset="/hostile/source.webp"></picture>',
+      '<video poster="/hostile/poster.webp"></video><iframe src="/hostile/frame"></iframe>',
+      '<span style="background-image:url(/hostile/css.webp)">styled</span> Which one should I book?',
+    ].join("\n\n");
+    const media = () => container.querySelectorAll('img, picture, source, image, video, audio, iframe, object, embed, [src], [srcset], [poster], [style*="url("]');
+
+    act(() => root.render(<StreamingAnswer text="" isRunning />));
+    let streamingFrames = 0;
+    for (let end = 8; end <= SMUGGLED.length + 8; end += 8) {
+      act(() => root.render(<StreamingAnswer text={SMUGGLED.slice(0, end)} isRunning />));
+      act(() => vi.advanceTimersByTime(FRAME_MS * 4));
+      if (stream().dataset.phase === "streaming" && words().length > 0) streamingFrames += 1;
+      expect(media()).toHaveLength(0);
+    }
+    expect(streamingFrames).toBeGreaterThan(5);
+
+    act(() => root.render(<StreamingAnswer text={SMUGGLED} isRunning={false} />));
+    for (let frame = 0; frame < 400 && stream().dataset.phase !== "done"; frame++) act(() => vi.advanceTimersByTime(FRAME_MS));
+    expect(stream().dataset.phase).toBe("done");
+    expect(media()).toHaveLength(0);
+    expect(stream().textContent).toContain("styled");
+    expect(stream().textContent).toContain("Which one should I book?");
+  });
+
   it("shows an answer that was already complete at once, with nothing to unwrap", () => {
     act(() => root.render(<StreamingAnswer text={ANSWER} isRunning={false} />));
     expect(stream().dataset.phase).toBe("done");

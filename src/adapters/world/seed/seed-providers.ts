@@ -1,5 +1,5 @@
-import type { CancellationPolicy, ProviderPhoto, Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
-import { photosFor } from "../provider-photos";
+import type { CancellationPolicy, Review, ServiceKind, Slot } from "../../../core/ports/provider-world";
+import { imagesFor, type ImageMode } from "../provider-images";
 import {
   AREAS,
   ATTRIBUTES,
@@ -36,7 +36,10 @@ export interface SeededProvider {
   readonly cancellationTerms: string;
   readonly cancellationPolicy: CancellationPolicy;
   readonly reviews: readonly Review[];
-  readonly photos: readonly ProviderPhoto[];
+  /** The square thumbnail, an image asset key. */
+  readonly image: string;
+  /** Work photos as image asset keys, the cover first. */
+  readonly photos: readonly string[];
 }
 
 const SLOT_FREE_PROBABILITY = 0.35;
@@ -76,7 +79,7 @@ function cancellationOf(rule: (typeof CANCELLATION_TERMS)[number]) {
   return { cancellationTerms: rule.text, cancellationPolicy: rule.policy };
 }
 
-function seedGroup(seed: number, service: ServiceKind, area: string, injection: ReviewInjection): SeededProvider[] {
+function seedGroup(seed: number, service: ServiceKind, area: string, injection: ReviewInjection, images: ImageMode): SeededProvider[] {
   const random = new SeededRandom(seed, "group", service, area);
   const count = random.integer(3, 8);
   const [minPrice, maxPrice] = PRICE_RANGE_INR[service];
@@ -84,6 +87,7 @@ function seedGroup(seed: number, service: ServiceKind, area: string, injection: 
   const drafts = stems.map((stem, index) => {
     const rating = Math.round((3.6 + random.next() * 1.3) * 10) / 10;
     return {
+      stem,
       id: `prv_${service}_${slugOf(area)}_${index + 1}`,
       name: `${stem} ${random.pick(NAME_SUFFIX[service])}`,
       service,
@@ -99,15 +103,15 @@ function seedGroup(seed: number, service: ServiceKind, area: string, injection: 
   // The best-rated provider in each group carries the injection, so a search that compares
   // options always meets it.
   const best = drafts.reduce((top, draft) => (draft.rating > top.rating ? draft : top));
-  return drafts.map((draft, index) => ({
+  return drafts.map(({ stem, ...draft }, index) => ({
     ...draft,
-    reviews: seedReviews(new SeededRandom(seed, "reviews", draft.id), injectedReview(injection, index, draft === best)),
-    photos: photosFor(draft.id, service),
+    reviews: seedReviews(new SeededRandom(seed, "reviews", draft.id), injectedReview(injection, index, draft.id === best.id)),
+    ...imagesFor(draft.id, stem, service, images),
   }));
 }
 
-export function seedProviders(seed: number, injection: ReviewInjection): readonly SeededProvider[] {
-  return SERVICES.flatMap((service) => AREAS.flatMap((area) => seedGroup(seed, service, area, injection)));
+export function seedProviders(seed: number, injection: ReviewInjection, images: ImageMode): readonly SeededProvider[] {
+  return SERVICES.flatMap((service) => AREAS.flatMap((area) => seedGroup(seed, service, area, injection, images)));
 }
 
 function hourSlot(date: string, hour: number): Slot {

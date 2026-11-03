@@ -62,6 +62,16 @@ export const PickOnePropsSchema = z.object({
   options: z.array(PickOptionPropsSchema),
 });
 
+export const ServiceChoicePropsSchema = z.object({
+  optionId: z.string().describe("A service option id, e.g. ac_gas_refill"),
+  label: z.string().describe("What tapping it says, e.g. Gas refill"),
+});
+
+export const ServiceChoicesPropsSchema = z.object({
+  question: z.string(),
+  choices: z.array(ServiceChoicePropsSchema),
+});
+
 export const BookingPickerPropsSchema = z.object({
   question: z.string(),
   bookingIds: z.array(z.string().describe("A bookingId from the person's bookings")),
@@ -93,6 +103,7 @@ export const StackPropsSchema = z.object({
       ReviewInsightPropsSchema,
       SlotPickerPropsSchema,
       PickOnePropsSchema,
+      ServiceChoicesPropsSchema,
       BookingPickerPropsSchema,
       PreferenceCardPropsSchema,
       AskFormPropsSchema,
@@ -127,6 +138,8 @@ export const GENERATED_UI_COMPONENTS: readonly GeneratedUiComponentContract[] = 
   { name: "SlotPicker", description: "Asks which free slot of one provider", props: SlotPickerPropsSchema },
   { name: "PickOne", description: "Asks to pick one of a few options", props: PickOnePropsSchema },
   { name: "PickOption", description: "One option in PickOne", props: PickOptionPropsSchema },
+  { name: "ServiceChoices", description: "Asks which kind of service, as photo cards", props: ServiceChoicesPropsSchema },
+  { name: "ServiceChoice", description: "One card in ServiceChoices", props: ServiceChoicePropsSchema },
   { name: "BookingPicker", description: "Asks which of the person's bookings they mean", props: BookingPickerPropsSchema },
   { name: "PreferenceCard", description: "Asks to keep or dismiss inferred preferences", props: PreferenceCardPropsSchema },
   { name: "AskForm", description: "Asks for the missing errand details with chips and a date picker", props: AskFormPropsSchema },
@@ -143,6 +156,8 @@ export type ReviewInsightProps = z.infer<typeof ReviewInsightPropsSchema>;
 export type SlotPickerProps = z.infer<typeof SlotPickerPropsSchema>;
 export type PickOptionProps = z.infer<typeof PickOptionPropsSchema>;
 export type PickOneProps = z.infer<typeof PickOnePropsSchema>;
+export type ServiceChoiceProps = z.infer<typeof ServiceChoicePropsSchema>;
+export type ServiceChoicesProps = z.infer<typeof ServiceChoicesPropsSchema>;
 export type BookingPickerProps = z.infer<typeof BookingPickerPropsSchema>;
 export type PreferenceCardProps = z.infer<typeof PreferenceCardPropsSchema>;
 export type AskField = z.infer<typeof AskFieldSchema>;

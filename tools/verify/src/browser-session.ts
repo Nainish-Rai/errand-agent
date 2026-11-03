@@ -226,10 +226,22 @@ export class BrowserSession {
       this.record({ type: "request", method: request.method(), url, resourceType: request.resourceType() });
     });
     page.on("response", (response) =>
-      this.record({ type: "response", method: response.request().method(), url: cleanUrl(response.url()), status: response.status() }),
+      this.record({
+        type: "response",
+        method: response.request().method(),
+        url: cleanUrl(response.url()),
+        status: response.status(),
+        resourceType: response.request().resourceType(),
+      }),
     );
     page.on("requestfailed", (request) =>
-      this.record({ type: "requestfailed", method: request.method(), url: cleanUrl(request.url()), error: request.failure()?.errorText ?? "unknown" }),
+      this.record({
+        type: "requestfailed",
+        method: request.method(),
+        url: cleanUrl(request.url()),
+        error: request.failure()?.errorText ?? "unknown",
+        resourceType: request.resourceType(),
+      }),
     );
     page.on("framenavigated", (frame) => {
       if (frame !== page.mainFrame()) return;
@@ -506,15 +518,23 @@ export class BrowserSession {
   async network(options: Options): Promise<CommandResult> {
     const method = stringOption(options, "method")?.toUpperCase();
     const pathFilter = stringOption(options, "path");
+    const notPath = stringOption(options, "not-path");
+    const resourceType = stringOption(options, "resource-type");
+    const expectCount = integerOption(options, "expect-count", 0, 100_000);
     const status = integerOption(options, "status", 100, 599);
     const since = stringOption(options, "since");
     if (since !== undefined && !Number.isFinite(Date.parse(since))) throw new Error("--since is an ISO timestamp");
-    if (pathFilter !== undefined && (!pathFilter.startsWith("/") || pathFilter.includes("?"))) throw new Error("--path is a pathname (no query); end it with * for a prefix");
-    const matchesPath = (url: string) => {
-      if (pathFilter === undefined) return true;
-      const pathname = new URL(url).pathname;
-      return pathFilter.endsWith("*") ? pathname.startsWith(pathFilter.slice(0, -1)) : pathname === pathFilter;
+    for (const [flag, value] of [["--path", pathFilter], ["--not-path", notPath]] as const) {
+      if (value !== undefined && (!value.startsWith("/") || value.includes("?"))) throw new Error(`${flag} is a pathname (no query); end it with * for a prefix`);
+    }
+    const pathMatches = (url: string, filter: string) => {
+      // A data: or blob: URL has no path on any origin; it never matches a path filter.
+      const parsed = new URL(url, "http://invalid.invalid");
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+      return filter.endsWith("*") ? parsed.pathname.startsWith(filter.slice(0, -1)) : parsed.pathname === filter;
     };
+    const matchesPath = (url: string) =>
+      (pathFilter === undefined || pathMatches(url, pathFilter)) && (notPath === undefined || !pathMatches(url, notPath));
     const lists = { requests: [] as unknown[], responses: [] as unknown[], failed: [] as unknown[], blocked: [] as unknown[] };
     const counts = { requests: 0, responses: 0, failed: 0, blocked: 0 };
     const push = (key: keyof typeof lists, entry: unknown) => {
@@ -531,6 +551,7 @@ export class BrowserSession {
       }
       if (type !== "request" && type !== "response" && type !== "requestfailed") continue;
       if (method !== undefined && entry.method !== method) continue;
+      if (resourceType !== undefined && entry.resourceType !== resourceType) continue;
       if (!matchesPath(String(entry.url))) continue;
       if (type === "requestfailed") {
         if (status === undefined) push("failed", entry);
@@ -539,9 +560,14 @@ export class BrowserSession {
       if (status !== undefined && entry.status !== status) continue;
       push(type === "request" ? "requests" : "responses", entry);
     }
+    const count = status === undefined ? counts.requests : counts.responses;
+    if (expectCount !== undefined && count !== expectCount) {
+      const seen = (status === undefined ? lists.requests : lists.responses).slice(0, 10).map((entry) => (entry as { url?: unknown }).url);
+      throw new CommandFailure(`Expected ${expectCount} matching ${status === undefined ? "request" : "response"}(s), saw ${count}: ${JSON.stringify(seen)}`);
+    }
     return {
       ok: true,
-      count: status === undefined ? counts.requests : counts.responses,
+      count,
       countSource: status === undefined ? "requests" : "responses",
       counts,
       ...lists,

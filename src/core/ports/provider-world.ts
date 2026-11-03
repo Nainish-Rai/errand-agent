@@ -25,14 +25,28 @@ export interface ProviderSummary {
   readonly reviewCount: number;
   readonly freeSlots: readonly Slot[];
   readonly attributes: readonly string[];
-  /** Photos of the provider's work, the cover first: asset files the backend serves, never fetched at runtime. */
-  readonly photos: readonly ProviderPhoto[];
+  /** The provider's square thumbnail as an image asset key, never a URL: each client ships the files. */
+  readonly image: string;
+  /** Photos of the provider's work as image asset keys, the cover first. */
+  readonly photos: readonly string[];
 }
 
-export interface ProviderPhoto {
-  /** A file name among the provider-photo assets, such as plumber-2.webp */
-  readonly file: string;
-  readonly alt: string;
+/** A service, or a kind of one service, that the person can pick, with the world's facts for its card. */
+export interface ServiceOption {
+  readonly id: string;
+  readonly service: ServiceKind;
+  readonly label: string;
+  readonly description: string;
+  readonly fromPriceInr: number;
+  /** An image asset key, never a URL. */
+  readonly image: string;
+}
+
+export interface ServiceOptions {
+  /** One option per service, in the order the home tiles show them. */
+  readonly services: readonly ServiceOption[];
+  /** Kinds of one service the person may be asked to pick between: gas refill, deep clean, repair. */
+  readonly kinds: readonly ServiceOption[];
 }
 
 export interface Review {
@@ -177,4 +191,6 @@ export interface ProviderWorld {
   getBookingStatus(idempotencyKey: string): Promise<BookingStatusOutcome>;
   cancel(bookingId: string, idempotencyKey: string): Promise<CancelOutcome>;
   reschedule(bookingId: string, newSlot: Slot, idempotencyKey: string): Promise<RescheduleOutcome>;
+  /** The services and kinds of service the person can pick from, for tiles and service choice cards. */
+  listServiceOptions(): Promise<ServiceOptions>;
 }

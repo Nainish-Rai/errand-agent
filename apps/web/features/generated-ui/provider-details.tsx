@@ -1,19 +1,17 @@
 "use client";
 
-import { ImageGallery } from "@openuidev/react-ui";
-
 import { Money } from "@/components/money";
 import { Skeleton } from "@/components/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { initialsOf, Photo, ProviderThumbnail } from "@/features/images";
 
-import { useGeneratedUiHost, useProviders } from "./bound-data";
+import { useProviders } from "./bound-data";
 
-// Provider details: a gallery of past work, what the provider says about itself, its tags and its
-// cancellation terms, all from GET /providers/:id. Review insights join it once ticket 09's review
+// Provider details: its thumbnail and photos of past work (image keys the registry resolves), what
+// the provider says about itself, its tags and its cancellation terms, all from GET /providers/:id. Review insights join it once ticket 09's review
 // reader serves them (ReviewInsight is pending until then).
 
 export function ProviderDetailsPanel({ providerId }: { readonly providerId: string }) {
-  const { api } = useGeneratedUiHost();
   const providers = useProviders([providerId]);
   if (providers.status === "loading") {
     return (
@@ -28,11 +26,20 @@ export function ProviderDetailsPanel({ providerId }: { readonly providerId: stri
 
   return (
     <section aria-label={`${provider.name} details`} data-testid="provider-details" className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="m-0 text-sm font-medium text-fg">{provider.name}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <ProviderThumbnail imageKey={provider.image} name={provider.name} />
+          <h3 className="m-0 text-sm font-medium text-fg">{provider.name}</h3>
+        </div>
         <Money amount={provider.priceInr} className="text-sm text-fg" />
       </div>
-      <ImageGallery images={provider.photos.map((photo) => ({ src: api.photoUrl(photo.src), alt: photo.alt }))} />
+      <ul aria-label="Photos of past work" className="m-0 grid list-none grid-cols-4 gap-1.5 p-0">
+        {provider.photos.map((key, index) => (
+          <li key={`${index}-${key}`}>
+            <Photo imageKey={key} ratio="landscape" fallback={initialsOf(provider.name)} className="w-full rounded-sm" />
+          </li>
+        ))}
+      </ul>
       <p className="m-0 text-xs text-fg-2">{provider.about}</p>
       <div className="flex flex-wrap gap-1">
         {provider.attributes.map((attribute) => (

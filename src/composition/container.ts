@@ -17,7 +17,6 @@ import type { HomeSummaryDependencies } from "../core/use-cases/get-home-summary
 import type { AlertFeed } from "../core/ports/alert-feed";
 import type { ErrandDependencies } from "../core/use-cases/errand-session";
 import type { GeneratedUiDependencies } from "../core/use-cases/generated-ui-session";
-import type { ProviderPhotoFiles } from "../core/ports/provider-photo-files";
 import type { ProposalDependencies } from "../core/use-cases/proposal-session";
 import type { MemoryDependencies } from "../core/use-cases/memory-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
@@ -64,7 +63,6 @@ import { faultyWorld, WorldPause, type WorldFault } from "../adapters/world/faul
 import { DEV_USER_ID, MockProviderWorld, type ProviderCancellationOutcome } from "../adapters/world/mock-provider-world";
 import { isScenarioName, scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
-import { PROVIDER_PHOTO_DIRECTORY, providerPhotoFilesIn } from "../adapters/world/provider-photos";
 import { generatedUiInstructions, openUiLangReader } from "../adapters/generated-ui/openui-lang-reader";
 
 // Main: the only place that constructs adapters. The agent and its channels ask this module for
@@ -407,9 +405,6 @@ class Container {
 
   /** The generated-UI library's part of the model's instructions (it counts toward the context budget). */
   readonly generatedUiInstructions: string = generatedUiInstructions();
-
-  /** The committed provider photos the app API serves. */
-  readonly providerPhotoFiles: ProviderPhotoFiles = providerPhotoFilesIn(path.resolve(process.cwd(), PROVIDER_PHOTO_DIRECTORY));
 
   modelFor(role: ModelRole): LanguageModel {
     const selection = parseModelSelection(process.env.ERRAND_MODELS);

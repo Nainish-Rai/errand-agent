@@ -31,7 +31,7 @@
         { "command": "assert", "args": ["html"], "options": { "attr": "data-theme=light" }, "note": "light by default" },
         { "command": "assert", "args": ["role=heading[name=/^Good (morning|afternoon|evening)$/]"], "options": { "state": "visible" }, "note": "the greeting for the time of day in IST, from the backend's clock" },
         { "command": "assert", "options": { "role": "button", "name": "Plumber for a leaking kitchen tap this week", "state": "visible" }, "note": "three suggestions under the composer" },
-        { "command": "assert", "args": ["role=group[name=\"Services\"s] >> role=button"], "options": { "count": 5 }, "note": "five service tiles, text only until ticket 22 adds photos" },
+        { "command": "assert", "args": ["role=group[name=\"Services\"s] >> role=button"], "options": { "count": 5 }, "note": "five service tiles" },
         { "command": "assert", "options": { "role": "region", "name": "Upcoming", "text": "Booked" }, "note": "the upcoming AC service with its status word" },
         { "command": "assert", "options": { "role": "region", "name": "Alerts", "text": "Confirm earliest start" }, "note": "the guess waits on the person in Alerts" },
         { "command": "assert", "args": ["role=region[name=\"Alerts\"s] >> .inferred"], "options": { "count": 2 }, "note": "the guess's icon and value keep the dashed inferred edge" },

@@ -1,10 +1,12 @@
+import { IMAGE_KEYS } from "@errand/contracts";
 import { describe, expect, it } from "vitest";
 
 import type { Clock } from "../../core/ports/clock";
 import type { ProviderSummary, SearchOutcome } from "../../core/ports/provider-world";
 import { faultyWorld, WorldPause } from "./faulty-world";
 import { DEV_USER_ID, HOLD_LIFETIME_MS, MockProviderWorld } from "./mock-provider-world";
-import { INJECTION_CAMPAIGN, PROMPT_INJECTION_REVIEW } from "./seed/catalog";
+import { UNTRUSTED_IMAGE_VALUES } from "./provider-images";
+import { AREAS, INJECTION_CAMPAIGN, PROMPT_INJECTION_REVIEW, SERVICES } from "./seed/catalog";
 import { scenarioNamed, type ScenarioName } from "./scenarios/scenarios";
 import type { WorldState, WorldStateStore } from "./world-state";
 
@@ -463,5 +465,47 @@ describe("a provider cancels a booking (dev only, not one of the eight tools)", 
 
   it("knows no event for a booking it doesn't have", () => {
     expect(worldFor("happy_path").simulateProviderCancellation({ bookingId: "bkg_nope" })).toEqual({ kind: "booking_not_found" });
+  });
+});
+
+describe("photos as image asset keys", () => {
+  const registered: ReadonlySet<string> = new Set(IMAGE_KEYS);
+  const allProviders = async (world: MockProviderWorld) => {
+    const groups = await Promise.all(
+      SERVICES.flatMap((service) => AREAS.map((area) => world.searchProviders({ service, area, dateRange: THIS_WEEK }))),
+    );
+    return groups.flatMap(providersOf);
+  };
+
+  it("names only registered keys for every provider and service, never a URL", async () => {
+    const world = worldFor("default");
+    const providers = await allProviders(world);
+    const options = await world.listServiceOptions();
+    const keys = [...providers.flatMap((provider) => [provider.image, ...provider.photos]), ...[...options.services, ...options.kinds].map((option) => option.image)];
+    expect(keys.length).toBeGreaterThan(providers.length * 2);
+    expect(keys.filter((key) => !registered.has(key))).toEqual([]);
+  });
+
+  it("keeps a provider's photos across restarts and gives the named plumbing teams their own thumbnail", async () => {
+    const [one, two] = await Promise.all([worldFor("default", 42).getProvider("prv_plumber_koramangala_5"), worldFor("happy_path", 42).getProvider("prv_plumber_koramangala_5")]);
+    if (one.kind !== "found" || two.kind !== "found") throw new Error("Expected the provider");
+    expect(one.provider.name).toBe("Shiva Sanitary Solutions");
+    expect(one.provider.image).toBe("plumber-kit");
+    expect(one.provider.photos).toEqual(two.provider.photos);
+  });
+
+  it("offers one tile per service and the three kinds of AC service", async () => {
+    const options = await worldFor("default").listServiceOptions();
+    expect(options.services.map((option) => option.service)).toEqual(["plumber", "ac_servicing", "electrician", "cleaner", "carpenter"]);
+    expect(options.kinds.map((option) => option.id)).toEqual(["ac_gas_refill", "ac_deep_clean", "ac_repair"]);
+  });
+
+  it("names a hostile value in place of every key in the untrusted_images world", async () => {
+    const world = worldFor("untrusted_images");
+    const providers = await allProviders(world);
+    const options = await world.listServiceOptions();
+    const values = [...providers.flatMap((provider) => [provider.image, ...provider.photos]), ...[...options.services, ...options.kinds].map((option) => option.image)];
+    expect(values.filter((value) => registered.has(value))).toEqual([]);
+    expect(new Set(values)).toEqual(new Set(UNTRUSTED_IMAGE_VALUES));
   });
 });

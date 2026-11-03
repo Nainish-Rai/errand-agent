@@ -113,6 +113,15 @@ const markdownComponents: MarkdownProps["components"] = {
   ),
 };
 
+// Answer text is the model's, and the model may repeat what a tool or a review said. Photos come only
+// from the app's registry by image key, so markdown draws no media at all: `![](url)`, raw
+// `<img>`, `<picture>`/`<source srcset>`, SVG `<image>` and media posters are dropped before render,
+// and no URL survives in a src-like attribute. Nothing in an answer can make the browser fetch.
+const MEDIA_ELEMENTS = ["img", "picture", "source", "image", "video", "audio", "track", "iframe", "object", "embed"];
+const MEDIA_URL_KEYS = new Set(["src", "srcSet", "srcset", "poster", "background", "xlinkHref"]);
+
+const urlTransform: MarkdownProps["urlTransform"] = (url, key) => (MEDIA_URL_KEYS.has(key) ? "" : url);
+
 export const Markdown = memo(function Markdown({ className, ...props }: MarkdownProps) {
   return (
     <Streamdown
@@ -123,6 +132,8 @@ export const Markdown = memo(function Markdown({ className, ...props }: Markdown
       components={markdownComponents}
       plugins={streamdownPlugins}
       {...props}
+      disallowedElements={MEDIA_ELEMENTS}
+      urlTransform={urlTransform}
     />
   );
 });

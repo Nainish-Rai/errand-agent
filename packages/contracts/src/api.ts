@@ -44,6 +44,7 @@ export const ScenarioNameSchema = z.enum([
   "reschedule_conflict",
   "review_injection",
   "new_user",
+  "untrusted_images",
 ]);
 
 export const SwitchScenarioRequestSchema = z.object({

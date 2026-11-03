@@ -55,7 +55,8 @@ export interface BoundChoice {
   readonly rating: number;
   readonly reviewCount: number;
   readonly earliestSlot: Slot | undefined;
-  readonly photo: { readonly src: string; readonly alt: string } | undefined;
+  /** The cover photo's image asset key, as the world named it: untrusted, so clients resolve it themselves. */
+  readonly photo: string | undefined;
   readonly attributes: readonly string[];
   /** The model's words, only when they state no fact. */
   readonly highlight: string | undefined;

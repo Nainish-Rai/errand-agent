@@ -17,9 +17,12 @@ import type {
   RescheduleOutcome,
   SearchOutcome,
   SearchQuery,
+  ServiceOption,
+  ServiceOptions,
   Slot,
 } from "../../core/ports/provider-world";
-import { AREAS, resolveArea, resolveService, SERVICES } from "./seed/catalog";
+import { serviceImageFor } from "./provider-images";
+import { AREAS, resolveArea, resolveService, SERVICE_KINDS, SERVICE_TILES, SERVICES, type CatalogServiceOption } from "./seed/catalog";
 import { istDateOf, istHourOf, seededSlotsOn, seedProviders, type SeededProvider } from "./seed/seed-providers";
 import { drawFor } from "./seed/seeded-random";
 import type { Scenario } from "./scenarios/scenarios";
@@ -102,7 +105,7 @@ export class MockProviderWorld implements ProviderWorld {
     this.#scenario = options.scenario;
     this.#clock = options.clock;
     this.#store = options.store;
-    this.#providers = new Map(seedProviders(options.seed, options.scenario.reviewInjection).map((provider) => [provider.id, provider]));
+    this.#providers = new Map(seedProviders(options.seed, options.scenario.reviewInjection, options.scenario.images).map((provider) => [provider.id, provider]));
     if (options.state === undefined) {
       if (options.scenario.seedsBookingHistory) {
         for (const booking of this.#seedPastBookings()) this.#bookings.set(booking.bookingId, booking);
@@ -174,6 +177,11 @@ export class MockProviderWorld implements ProviderWorld {
     const today = istDateAt(this.#clock.now());
     const week = { from: today, to: istDateAt(new Date(this.#clock.now().getTime() + 6 * DAY_MS)) };
     return { kind: "found", provider: this.#detailsOf(provider, week) };
+  }
+
+  async listServiceOptions(): Promise<ServiceOptions> {
+    const withImage = (option: CatalogServiceOption): ServiceOption => ({ ...option, image: serviceImageFor(option.id, option.image, this.#scenario.images) });
+    return { services: SERVICE_TILES.map(withImage), kinds: SERVICE_KINDS.map(withImage) };
   }
 
   async listBookings(userId: string): Promise<readonly Booking[]> {

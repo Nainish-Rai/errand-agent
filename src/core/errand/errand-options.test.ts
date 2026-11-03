@@ -10,7 +10,7 @@ function slot(day: string, hour: number): Slot {
 }
 
 function provider(id: string, priceInr: number, rating: number, slots: Slot[], attributes: string[] = []): ProviderSummary {
-  return { id, name: id, service: "plumber", area: "Koramangala", priceInr, rating, reviewCount: 100, freeSlots: slots, attributes, photos: [] };
+  return { id, name: id, service: "plumber", area: "Koramangala", priceInr, rating, reviewCount: 100, freeSlots: slots, attributes, image: "plumbing", photos: [] };
 }
 
 const WEEK: TimeWindow = { dates: { from: "2026-11-04", to: "2026-11-10" } };

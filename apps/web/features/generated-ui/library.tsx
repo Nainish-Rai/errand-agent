@@ -14,6 +14,8 @@ import {
   ProviderChoicesPropsSchema,
   ProviderDetailsPropsSchema,
   ReviewInsightPropsSchema,
+  ServiceChoicePropsSchema,
+  ServiceChoicesPropsSchema,
   SlotPickerPropsSchema,
   SlotsPerDayChartPropsSchema,
   SpendChartPropsSchema,
@@ -27,7 +29,7 @@ import type { ReactNode } from "react";
 import { AskForm } from "./ask-form";
 import { PriceChart, SlotsPerDayChart, SpendChart } from "./charts";
 import { PreferenceCard, ReviewInsight } from "./insight-and-preferences";
-import { BookingPicker, FollowUps, PickOne, SlotPicker } from "./pickers";
+import { BookingPicker, FollowUps, PickOne, ServiceChoices, SlotPicker } from "./pickers";
 import { useProvidersShownBySearch } from "./bound-data";
 import { ProviderChoiceCards } from "./provider-choice-cards";
 import { ProviderDetailsPanel } from "./provider-details";
@@ -91,6 +93,13 @@ const PickOption = defineComponent({
   component: () => null,
 });
 
+const ServiceChoice = defineComponent({
+  name: "ServiceChoice",
+  description: description("ServiceChoice"),
+  props: ServiceChoicePropsSchema,
+  component: () => null,
+});
+
 export const generatedUiLibrary = createLibrary({
   root: GENERATED_UI_ROOT,
   components: [
@@ -148,6 +157,21 @@ export const generatedUiLibrary = createLibrary({
       ),
     }),
     PickOption,
+    defineComponent({
+      name: "ServiceChoices",
+      description: description("ServiceChoices"),
+      props: ServiceChoicesPropsSchema,
+      component: ({ props }) => (
+        <ServiceChoices
+          question={props.question}
+          choices={props.choices.flatMap((choice) => {
+            const bound = asProps<{ optionId: string; label: string }>(choice) ?? choice;
+            return typeof bound.optionId === "string" && typeof bound.label === "string" ? [bound] : [];
+          })}
+        />
+      ),
+    }),
+    ServiceChoice,
     defineComponent({
       name: "BookingPicker",
       description: description("BookingPicker"),

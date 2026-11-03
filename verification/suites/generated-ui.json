@@ -316,7 +316,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Shiva Sanitary Solutions details\"] >> role=img"
+            "role=region[name=\"Shiva Sanitary Solutions details\"] >> role=list[name=\"Photos of past work\"] >> role=img"
           ],
           "options": {
             "count": 4
