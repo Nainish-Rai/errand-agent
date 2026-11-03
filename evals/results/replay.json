@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T01:24:48.743Z",
+  "ranAt": "2026-11-03T01:40:02.936Z",
   "trials": 1,
   "scenarios": [
     {
@@ -99,6 +99,69 @@
         {
           "verdict": "passed",
           "actual": "3 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → booked; card approve → 200 approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/approval/hold-expired",
+      "description": "book returning hold_expired re-holds the slot and shows a fresh card: nothing is booked until a tap on the fresh card, then exactly once.",
+      "expected": "book returns hold_expired and nothing is booked; the slot is held again on a new hold and proposed on a fresh card; exactly one booking, made only by the second tap's grant",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → hold_reproposed; execute_proposal() → booked; card approve → 200 approved; card approve → 200 approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/approval/price-changed-on-hold",
+      "description": "A price raised after the tap voids the approval: nothing is booked, the agent names the old and new price, and only a tap on the fresh card books, once.",
+      "expected": "the first tap's grant is voided and books nothing; the reply names the old and new price; a fresh card shows the new price; exactly one booking, at the new price, made only by the second tap's grant",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → approval_invalidated; execute_proposal() → booked; card approve → 200 approved; card approve → 200 approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "failures": [],
+          "pendingInvariants": [
+            "no-forgotten-fact-in-context",
+            "generated-ui-is-allowed",
+            "generated-ui-matches-world"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenarios/approval/slot-changed-after-approval",
+      "description": "A visit moved after the tap voids the approval: nothing is booked, the agent names the old and new time, and only a tap on the fresh card books, once.",
+      "expected": "the first tap's grant is voided and books nothing; the reply names the old and new time; a fresh card shows the new slot; exactly one booking, at the new slot, made only by the second tap's grant",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → approval_invalidated; execute_proposal() → booked; card approve → 200 approved; card approve → 200 approved",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0

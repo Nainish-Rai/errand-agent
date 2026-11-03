@@ -30,8 +30,16 @@ export interface ProposalStore {
    */
   issueGrant(grant: Grant): Promise<Grant>;
   grantOf(proposalId: string): Promise<Grant | undefined>;
-  /** Marks the grant used. True for exactly one caller; false when it was already used or doesn't exist. */
+  /**
+   * Marks the grant used. True for exactly one caller; false when it was already used, was voided
+   * or doesn't exist.
+   */
   consumeGrant(grantId: string, atMs: number): Promise<boolean>;
+  /**
+   * Marks an unused grant void: the terms it covered changed. True when this call voided it; false
+   * when it was already used, already void or doesn't exist. A voided grant can never be consumed.
+   */
+  voidGrant(grantId: string, atMs: number): Promise<boolean>;
   /** Dev only: the world was reseeded, so every stored proposal names holds that no longer exist. */
   discardAll(): Promise<void>;
 }

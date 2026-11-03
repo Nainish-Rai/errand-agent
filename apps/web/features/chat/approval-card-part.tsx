@@ -9,12 +9,13 @@ import {
   type ExecuteProposalOutput,
   type ProposalCard,
   type ProposalView,
+  type TermChangeView,
 } from "@errand/contracts";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import type { MonogramTone } from "@/components/monogram";
 import { Spinner } from "@/components/ui/spinner";
-import { ApprovalCard, BookingReceipt, type ApprovalProposal, type ApprovalState } from "@/features/trust";
+import { ApprovalCard, BookingReceipt, type ApprovalChange, type ApprovalProposal, type ApprovalState } from "@/features/trust";
 
 import { appApi } from "./backend";
 import { useSendText } from "./send-text";
@@ -98,15 +99,36 @@ function useHoldLeft(proposal: ProposalView | undefined): string | undefined {
   return holdLeftLabel(Math.max(0, proposal.holdSecondsLeft - Math.floor((now - readAt) / 1_000)));
 }
 
+function changeOf(change: TermChangeView): ApprovalChange {
+  switch (change.field) {
+    case "price":
+      return change;
+    case "slot":
+      return { field: "slot", from: slotLabel(change.from.start), to: slotLabel(change.to.start) };
+    case "provider":
+      return { field: "provider", from: change.from.providerName, to: change.to.providerName };
+  }
+}
+
+/** When the hold ran out: when core found it lapsed, if it did, else the hold's own expiry. */
+function expiredAtOf(proposal: ProposalView): string {
+  return clockFormat.format(new Date(proposal.invalidation?.at ?? proposal.terms.holdExpiresAt));
+}
+
 function stateOf(proposal: ProposalView, busy: boolean, holdLeft: string | undefined): ApprovalState {
   if (busy) return { status: "approving" };
   switch (proposal.status) {
     case "pending":
-      return proposal.holdSecondsLeft > 0 ? { status: "pending", holdLeft } : { status: "expired", expiredAt: clockFormat.format(new Date(proposal.terms.holdExpiresAt)) };
+      return proposal.holdSecondsLeft > 0 ? { status: "pending", holdLeft } : { status: "expired", expiredAt: expiredAtOf(proposal) };
     case "declined":
       return { status: "declined" };
     case "expired":
-      return { status: "expired", expiredAt: clockFormat.format(new Date(proposal.terms.holdExpiresAt)) };
+      return { status: "expired", expiredAt: expiredAtOf(proposal) };
+    case "voided": {
+      const [first, ...rest] = (proposal.invalidation?.changes ?? []).map(changeOf);
+      // A voided proposal always records what changed; without it, say so rather than show no change.
+      return first === undefined ? { status: "expired", expiredAt: expiredAtOf(proposal) } : { status: "voided", changes: [first, ...rest] };
+    }
     case "approved":
     case "executing":
     case "executed":
@@ -126,6 +148,15 @@ function proposalOf(view: ProposalCard): ApprovalProposal {
     address: `${terms.area}, Bengaluru`,
     cancellationTerms: terms.cancellationTerms,
   };
+}
+
+function cardElementId(proposalId: string): string {
+  return `approval-card-${proposalId}`;
+}
+
+/** Brings the card that replaced a voided or expired one into view. */
+function showCard(proposalId: string): void {
+  document.getElementById(cardElementId(proposalId))?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
@@ -160,7 +191,7 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
   );
 
   return (
-    <div className="my-3 flex flex-col gap-1.5">
+    <div id={cardElementId(card.proposalId)} className="my-3 flex flex-col gap-1.5">
       {proposal === undefined ? (
         <div className="flex items-center gap-2 text-label text-fg-meta">
           <Spinner /> Loading the approval card…
@@ -177,8 +208,12 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
           state={stateOf(proposal, busy, holdLeft)}
           onApprove={() => void act(() => appApi.approveProposal(proposal.proposalId, { fingerprint: proposal.fingerprint }), CARD_FOLLOW_UPS.approved)}
           onDecline={() => void act(() => appApi.declineProposal(proposal.proposalId), CARD_FOLLOW_UPS.declined)}
-          onOtherOptions={() => void act(() => appApi.declineProposal(proposal.proposalId), CARD_FOLLOW_UPS.otherOptions)}
-          onCheckAgain={() => void send("Please hold that slot again.")}
+          onOtherOptions={() =>
+            // A replaced card's hold belongs to the card that replaced it, so that is the one to decline.
+            void act(() => appApi.declineProposal(proposal.invalidation?.replacedBy ?? proposal.proposalId), CARD_FOLLOW_UPS.otherOptions)
+          }
+          onReviewChange={() => proposal.invalidation !== null && showCard(proposal.invalidation.replacedBy)}
+          onCheckAgain={() => (proposal.invalidation === null ? void send("Please hold that slot again.") : showCard(proposal.invalidation.replacedBy))}
         />
       )}
       {problem !== undefined && (
@@ -212,7 +247,8 @@ function receiptOf(output: ExecuteProposalOutput) {
 
 /**
  * execute_proposal: the receipt once the world verified the booking, "checking" while it can't
- * tell yet, and the same approval card again when nobody tapped Approve.
+ * tell yet, the same approval card again when nobody tapped Approve, and the voided (or expired)
+ * card with a fresh one under it when the provider changed the terms or the hold ran out.
  */
 export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   const parsed = ExecuteProposalOutputSchema.safeParse(result);
@@ -226,6 +262,16 @@ export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   const output = parsed.data;
   const booking = receiptOf(output);
   if (output.kind === "not_approved" && output.proposal !== null) return <LiveApprovalCard card={output.proposal} />;
+  if (output.freshProposal !== null && output.proposal !== null) {
+    // The terms changed or the hold ran out: the old card (voided or expired, old value beside new)
+    // and right under it the fresh card, which needs its own tap.
+    return (
+      <>
+        <LiveApprovalCard card={output.proposal} />
+        <LiveApprovalCard card={output.freshProposal} />
+      </>
+    );
+  }
   if (booking !== undefined && output.bookingId !== null && (output.kind === "booked" || output.kind === "already_booked")) {
     return (
       <div className="my-3">

@@ -4,9 +4,9 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done (PR #13)
 
-- [ ] Eval "price changed on hold": no booking is made against the old grant; a new card shows the new price; a booking happens only after the second click
-- [ ] Eval "slot changed after approval": same pattern
-- [ ] Eval "hold expired": `book` returns `hold_expired`, the agent re-holds and re-proposes, and nothing is booked without a fresh approval
-- [ ] The user-facing message names the old and new values
+- [x] Eval "price changed on hold": no booking is made against the old grant; a new card shows the new price; a booking happens only after the second click
+- [x] Eval "slot changed after approval": same pattern
+- [x] Eval "hold expired": `book` returns `hold_expired`, the agent re-holds and re-proposes, and nothing is booked without a fresh approval
+- [x] The user-facing message names the old and new values

@@ -1,4 +1,5 @@
 import type { Grant } from "../../core/approval/grant";
+import type { ProposalInvalidation } from "../../core/approval/invalidation";
 import type { BookingTerms, Proposal, ProposalStatus } from "../../core/approval/proposal";
 import type { ProposalQuery, ProposalStore } from "../../core/ports/proposal-store";
 import { migrate, type Database, type Migration } from "./database";
@@ -39,6 +40,16 @@ export const PROPOSAL_MIGRATIONS: readonly Migration[] = [
       consumed_at_ms INTEGER
     );`,
   },
+  // Ticket 06: a grant whose terms changed before it was used is voided, never consumed, and the
+  // proposal it was for keeps what changed and which proposal replaced it.
+  {
+    id: "0600_grant_voids",
+    sql: "ALTER TABLE grants ADD COLUMN voided_at_ms INTEGER;",
+  },
+  {
+    id: "0601_proposal_invalidations",
+    sql: "ALTER TABLE proposals ADD COLUMN invalidation_json TEXT;",
+  },
 ];
 
 interface ProposalRow {
@@ -50,6 +61,7 @@ interface ProposalRow {
   status: string;
   created_at_ms: number;
   booking_id: string | null;
+  invalidation_json: string | null;
 }
 
 interface GrantRow {
@@ -60,6 +72,7 @@ interface GrantRow {
   issued_at_ms: number;
   expires_at_ms: number;
   consumed_at_ms: number | null;
+  voided_at_ms: number | null;
 }
 
 function proposalFrom(row: ProposalRow): Proposal {
@@ -72,6 +85,7 @@ function proposalFrom(row: ProposalRow): Proposal {
     status: row.status as ProposalStatus,
     createdAtMs: row.created_at_ms,
     ...(row.booking_id === null ? {} : { bookingId: row.booking_id }),
+    ...(row.invalidation_json === null ? {} : { invalidation: JSON.parse(row.invalidation_json) as ProposalInvalidation }),
   };
 }
 
@@ -84,6 +98,7 @@ function grantFrom(row: GrantRow): Grant {
     issuedAtMs: row.issued_at_ms,
     expiresAtMs: row.expires_at_ms,
     ...(row.consumed_at_ms === null ? {} : { consumedAtMs: row.consumed_at_ms }),
+    ...(row.voided_at_ms === null ? {} : { voidedAtMs: row.voided_at_ms }),
   };
 }
 
@@ -99,9 +114,9 @@ export class SqliteProposalStore implements ProposalStore {
     // `seq` orders proposals by when they were first saved; an update keeps it.
     this.#db
       .prepare(
-        `INSERT INTO proposals (proposal_id, session_id, user_id, action, fingerprint, terms_json, status, created_at_ms, booking_id, seq)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM proposals))
-         ON CONFLICT (proposal_id) DO UPDATE SET status = excluded.status, booking_id = excluded.booking_id`,
+        `INSERT INTO proposals (proposal_id, session_id, user_id, action, fingerprint, terms_json, status, created_at_ms, booking_id, invalidation_json, seq)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM proposals))
+         ON CONFLICT (proposal_id) DO UPDATE SET status = excluded.status, booking_id = excluded.booking_id, invalidation_json = excluded.invalidation_json`,
       )
       .run(
         proposal.proposalId,
@@ -113,6 +128,7 @@ export class SqliteProposalStore implements ProposalStore {
         proposal.status,
         proposal.createdAtMs,
         proposal.bookingId ?? null,
+        proposal.invalidation === undefined ? null : JSON.stringify(proposal.invalidation),
       );
   }
 
@@ -164,7 +180,14 @@ export class SqliteProposalStore implements ProposalStore {
 
   async consumeGrant(grantId: string, atMs: number): Promise<boolean> {
     const result = this.#db
-      .prepare("UPDATE grants SET consumed_at_ms = ? WHERE grant_id = ? AND consumed_at_ms IS NULL")
+      .prepare("UPDATE grants SET consumed_at_ms = ? WHERE grant_id = ? AND consumed_at_ms IS NULL AND voided_at_ms IS NULL")
+      .run(atMs, grantId);
+    return Number(result.changes) === 1;
+  }
+
+  async voidGrant(grantId: string, atMs: number): Promise<boolean> {
+    const result = this.#db
+      .prepare("UPDATE grants SET voided_at_ms = ? WHERE grant_id = ? AND consumed_at_ms IS NULL AND voided_at_ms IS NULL")
       .run(atMs, grantId);
     return Number(result.changes) === 1;
   }

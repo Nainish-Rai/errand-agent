@@ -189,7 +189,57 @@ describe("release a hold (not a model tool: core calls it when a proposal is dec
   });
 });
 
+describe("re-read a hold (not a model tool: core calls it before using a grant)", () => {
+  it("returns the hold as quoted while nothing changed", async () => {
+    const world = worldFor("happy_path");
+    const { hold } = await heldSlot(world);
+    expect(await world.getHold(hold.holdId)).toEqual({ kind: "held", hold });
+  });
+
+  it("price_changed_on_hold: the provider raises the held price, once", async () => {
+    const world = worldFor("price_changed_on_hold");
+    const { hold } = await heldSlot(world);
+    const revised = { ...hold, quotedPriceInr: Math.round(hold.quotedPriceInr * 1.2) };
+    expect(await world.getHold(hold.holdId)).toEqual({ kind: "held", hold: revised });
+    expect(await world.getHold(hold.holdId)).toEqual({ kind: "held", hold: revised });
+    await world.book(hold.holdId, "key-revised");
+    expect((await world.listBookings("dev-user")).find((b) => b.slot.start === hold.slot.start)?.priceInr).toBe(revised.quotedPriceInr);
+  });
+
+  it("slot_changed_after_approval: the provider moves the held visit to a later free slot, once", async () => {
+    const world = worldFor("slot_changed_after_approval");
+    const { hold } = await heldSlot(world);
+    const first = await world.getHold(hold.holdId);
+    if (first.kind !== "held") throw new Error(first.kind);
+    expect(Date.parse(first.hold.slot.start)).toBeGreaterThan(Date.parse(hold.slot.start));
+    expect(first.hold.quotedPriceInr).toBe(hold.quotedPriceInr);
+    expect(await world.getHold(hold.holdId)).toEqual(first);
+  });
+
+  it("reports a hold past its expiry as expired, and a booked one as gone", async () => {
+    const clock = new FixedClock(START);
+    const world = worldFor("happy_path", 42, clock);
+    const { hold } = await heldSlot(world);
+    clock.advance(HOLD_LIFETIME_MS + 1);
+    expect(await world.getHold(hold.holdId)).toEqual({ kind: "hold_expired", hold });
+
+    const fresh = await heldSlot(world);
+    await world.book(fresh.hold.holdId, "key-gone");
+    expect(await world.getHold(fresh.hold.holdId)).toEqual({ kind: "hold_not_found" });
+  });
+});
+
 describe("book", () => {
+  it("hold_expired: the first book finds its hold lapsed, books nothing, and the slot can be held and booked again", async () => {
+    const world = worldFor("hold_expired");
+    const { provider, hold } = await heldSlot(world);
+    expect(await world.book(hold.holdId, "key-lapsed")).toEqual({ kind: "hold_expired" });
+    expect(await world.getBookingStatus("key-lapsed")).toEqual({ kind: "not_found" });
+    const again = await world.holdSlot(provider.id, hold.slot);
+    if (again.kind !== "held") throw new Error(again.kind);
+    expect((await world.book(again.hold.holdId, "key-again")).kind).toBe("booked");
+  });
+
   it("books once per idempotency key, however often it is repeated", async () => {
     const world = worldFor("happy_path");
     const { hold } = await heldSlot(world);

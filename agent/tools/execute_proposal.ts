@@ -14,6 +14,8 @@ export default withRunBudget(
     description:
       "Carry out the approval card's booking. Call it whenever the person says to go ahead, by tapping or typing. " +
       "It books only if they tapped Approve on the card; otherwise it books nothing and the card is shown again. " +
+      "If the provider changed the price, time or provider since the tap, or the hold ran out, it books nothing " +
+      "and shows a new card that needs a new tap; tell the person what changed, old and new values. " +
       "Relay its message: say Booked only when it returns booked, with the booking ID.",
     label: { start: () => "Booking with the provider" },
     inputSchema: ExecuteProposalInputSchema,

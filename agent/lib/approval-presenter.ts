@@ -5,9 +5,11 @@ import type {
   ProposalCard,
   ProposalView,
   ProposeActionOutput,
+  TermChangeView,
 } from "@errand/contracts";
 
 import type { Grant } from "../../src/core/approval/grant";
+import type { TermChange } from "../../src/core/approval/invalidation";
 import type { Proposal } from "../../src/core/approval/proposal";
 import type { ServiceCatalog } from "../../src/core/ports/service-catalog";
 import type { ExecuteProposalOutcome } from "../../src/core/use-cases/execute-proposal";
@@ -64,7 +66,19 @@ function presentGrant(grant: Grant) {
     fingerprint: grant.fingerprint,
     expiresAt: new Date(grant.expiresAtMs).toISOString(),
     consumed: grant.consumedAtMs !== undefined,
+    voided: grant.voidedAtMs !== undefined,
   };
+}
+
+function presentTermChange(change: TermChange): TermChangeView {
+  switch (change.field) {
+    case "price":
+      return { field: "price", from: change.from, to: change.to };
+    case "slot":
+      return { field: "slot", from: { ...change.from }, to: { ...change.to } };
+    case "provider":
+      return { field: "provider", from: { ...change.from }, to: { ...change.to } };
+  }
 }
 
 export function presentProposalView(standing: ProposalStanding): ProposalView {
@@ -77,6 +91,14 @@ export function presentProposalView(standing: ProposalStanding): ProposalView {
     holdSecondsLeft: Math.floor(standing.holdLeftMs / 1_000),
     bookingId: proposal.bookingId ?? null,
     grant: grant === undefined ? null : presentGrant(grant),
+    invalidation:
+      proposal.invalidation === undefined
+        ? null
+        : {
+            changes: proposal.invalidation.changes.map(presentTermChange),
+            replacedBy: proposal.invalidation.replacedBy,
+            at: new Date(proposal.invalidation.atMs).toISOString(),
+          },
   };
 }
 
@@ -152,6 +174,23 @@ export function presentProposeOutcome(outcome: ProposeBookingOutcome): ProposeAc
   }
 }
 
+function changeClause(change: TermChange): string {
+  switch (change.field) {
+    case "price":
+      return `the price went from ${rupees(change.from)} to ${rupees(change.to)}`;
+    case "slot":
+      return `the time went from ${when(change.from.start)} to ${when(change.to.start)}`;
+    case "provider":
+      return `the provider went from ${change.from.providerName} to ${change.to.providerName}`;
+  }
+}
+
+/** "The price went from ₹899 to ₹1,050 and the time went from … to …". */
+function whatChanged(changes: readonly TermChange[]): string {
+  const sentence = changes.map(changeClause).join(" and ");
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
 function executeMessage(outcome: ExecuteProposalOutcome): string {
   switch (outcome.kind) {
     case "booked":
@@ -182,13 +221,41 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
       return "The provider didn't answer in time, so I'm verifying whether the booking went through. I'll tell you as soon as I know.";
     case "booking_failed":
       return "The provider couldn't take the booking, so nothing was booked.";
+    case "approval_invalidated": {
+      const price = rupees(outcome.freshProposal.terms.priceInr);
+      return (
+        `${whatChanged(outcome.changes)} after you approved, so I booked nothing. ` +
+        `A new card shows the new terms: tap Approve ${price} on it if you still want it.`
+      );
+    }
+    case "hold_reproposed": {
+      const price = rupees(outcome.freshProposal.terms.priceInr);
+      const changed = outcome.changes.length === 0 ? "" : ` ${whatChanged(outcome.changes)}.`;
+      return (
+        "The hold on that slot ran out before the booking went through, so nothing was booked. " +
+        `I've held the slot again.${changed} Tap Approve ${price} on the new card to book it.`
+      );
+    }
+    case "hold_lost":
+      return "The hold on that slot ran out and the slot is no longer free, so nothing was booked. Pick another option.";
   }
 }
 
+function freshProposalOf(outcome: ExecuteProposalOutcome): Proposal | undefined {
+  return outcome.kind === "approval_invalidated" || outcome.kind === "hold_reproposed" ? outcome.freshProposal : undefined;
+}
+
+function changesOf(outcome: ExecuteProposalOutcome): readonly TermChange[] {
+  return outcome.kind === "approval_invalidated" || outcome.kind === "hold_reproposed" ? outcome.changes : [];
+}
+
 export function presentExecuteOutcome(outcome: ExecuteProposalOutcome): ExecuteProposalOutput {
+  const fresh = freshProposalOf(outcome);
   return {
     kind: outcome.kind,
     proposal: outcome.kind === "no_proposal" ? null : presentProposalCard(outcome.proposal),
+    changes: changesOf(outcome).map(presentTermChange),
+    freshProposal: fresh === undefined ? null : presentProposalCard(fresh),
     bookingId: outcome.kind === "booked" || outcome.kind === "already_booked" ? outcome.bookingId : null,
     message: executeMessage(outcome),
   };

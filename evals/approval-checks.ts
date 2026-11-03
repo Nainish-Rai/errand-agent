@@ -22,8 +22,9 @@ export function executionsIn(turn: ChatTurn | undefined): ExecuteProposalOutput[
 }
 
 /**
- * The approval cards a turn put on screen, in order: every proposal propose_action returned, and
- * every card execute_proposal handed back because nobody had tapped Approve.
+ * The approval cards a turn put on screen, in order: every proposal propose_action returned, every
+ * card execute_proposal handed back because nobody had tapped Approve, and the voided (or expired)
+ * card with the fresh one under it when the terms changed or the hold ran out.
  */
 export function cardsIn(turn: ChatTurn | undefined): ProposalCard[] {
   return (turn?.toolCalls ?? []).flatMap((call) => {
@@ -34,6 +35,7 @@ export function cardsIn(turn: ChatTurn | undefined): ProposalCard[] {
     }
     if (call.name === "execute_proposal") {
       const output = ExecuteProposalOutputSchema.parse(call.output);
+      if (output.proposal !== null && output.freshProposal !== null) return [output.proposal, output.freshProposal];
       return output.kind === "not_approved" && output.proposal !== null ? [output.proposal] : [];
     }
     return [];
@@ -59,6 +61,25 @@ export function expectedFingerprint(terms: Pick<BookingTermsView, "providerId" |
 export function fingerprintOfBooking(booking: BookingView): string | undefined {
   if (booking.approval === null) return undefined;
   return expectedFingerprint({ ...booking, holdId: booking.approval.holdId });
+}
+
+const istFormat = new Intl.DateTimeFormat("en-IN", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "Asia/Kolkata",
+});
+
+/** A slot's start as the person reads it: "Thu, 5 Nov, 8:00 am IST". */
+export function istLabel(start: string): string {
+  return `${istFormat.format(new Date(start))} IST`;
+}
+
+/** "₹1,050". */
+export function rupeeLabel(amount: number): string {
+  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export interface BookingChanges {

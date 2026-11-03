@@ -109,6 +109,7 @@ describe("suite manifests", () => {
     const files = fs.readdirSync(directory).filter((file) => file.endsWith(".json"));
     expect(files.sort()).toEqual([
       "approval-card.json",
+      "approval-invalidation.json",
       "chat-search.json",
       "clarify-errand.json",
       "design-system.json",

@@ -11,7 +11,7 @@ import { moved, sessionPlace, withoutHold, type ProposalDependencies } from "./p
 export type DeclineProposalOutcome =
   | { readonly kind: "declined"; readonly proposal: Proposal }
   | { readonly kind: "proposal_not_found" }
-  /** The booking was already under way; declining can't undo it. */
+  /** The booking was already under way (declining can't undo it), or the proposal was voided and replaced. */
   | { readonly kind: "too_late"; readonly proposal: Proposal; readonly status: ProposalStatus };
 
 function backToOptions(errand: Errand | undefined, proposal: Proposal, deps: ProposalDependencies): Errand | undefined {
@@ -27,7 +27,8 @@ async function declined(
 ): Promise<{ readonly outcome: DeclineProposalOutcome; readonly errand?: Errand }> {
   if (proposal.status === "declined") return { outcome: { kind: "declined", proposal } };
   const grant = await deps.proposals.grantOf(proposal.proposalId);
-  if (isExecutionStarted(proposal) || (grant !== undefined && isConsumed(grant))) {
+  // A voided proposal's hold now backs the fresh proposal that replaced it, so it isn't this one's to release.
+  if (isExecutionStarted(proposal) || proposal.status === "voided" || (grant !== undefined && isConsumed(grant))) {
     return { outcome: { kind: "too_late", proposal, status: proposal.status } };
   }
   const declinedProposal: Proposal = { ...proposal, status: "declined" };

@@ -257,7 +257,7 @@ function Panel({ theme }: { readonly theme: Theme }) {
         <Caption>approved</Caption>
         <ApprovalCard proposal={booking} provider={ravi} state={{ status: "approved" }} />
         <Caption>voided · old price beside new</Caption>
-        <ApprovalCard proposal={booking} provider={ravi} state={{ status: "voided", change: { field: "price", from: 899, to: 1050 } }} />
+        <ApprovalCard proposal={booking} provider={ravi} state={{ status: "voided", changes: [{ field: "price", from: 899, to: 1050 }] }} />
         <Caption>expired</Caption>
         <ApprovalCard proposal={booking} provider={ravi} state={{ status: "expired", expiredAt: "09:12" }} />
         <Caption>declined · the hold is released</Caption>

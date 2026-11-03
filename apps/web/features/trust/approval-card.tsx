@@ -45,13 +45,15 @@ export type ApprovalProposal =
 /** What changed since the user saw the proposal. Any change voids it; nothing is committed. */
 export type ApprovalChange =
   | { readonly field: "price"; readonly from: number; readonly to: number }
-  | { readonly field: "slot"; readonly from: string; readonly to: string };
+  | { readonly field: "slot"; readonly from: string; readonly to: string }
+  | { readonly field: "provider"; readonly from: string; readonly to: string };
 
 export type ApprovalState =
   | { readonly status: "pending"; /** e.g. "8:42 left" on the slot hold. */ readonly holdLeft?: string }
   | { readonly status: "approving" }
   | { readonly status: "approved" }
-  | { readonly status: "voided"; readonly change: ApprovalChange }
+  /** Every term that changed, old value beside new; at least one. */
+  | { readonly status: "voided"; readonly changes: readonly [ApprovalChange, ...ApprovalChange[]] }
   | { readonly status: "expired"; /** e.g. "09:12". */ readonly expiredAt: string }
   /** The person declined (or asked for other options); the hold was released. */
   | { readonly status: "declined" };
@@ -148,11 +150,14 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
   return rows;
 }
 
+const changeLabels = { price: "Price changed ", slot: "Time changed ", provider: "Provider changed " } as const;
+const reviewLabels = { price: "Review new price", slot: "Review new time", provider: "Review new provider" } as const;
+
 function ChangeLine({ change }: { readonly change: ApprovalChange }) {
   const [from, to] = change.field === "price" ? [formatRupees(change.from), formatRupees(change.to)] : [change.from, change.to];
   return (
     <>
-      {change.field === "price" ? "Price changed " : "Time changed "}
+      {changeLabels[change.field]}
       <s className="font-mono text-fg-meta">{from}</s> <span aria-hidden>→</span>
       <span className="sr-only">to</span> <span className="font-mono">{to}</span>.{" "}
     </>
@@ -202,13 +207,15 @@ export function ApprovalCard(props: ApprovalCardProps) {
         <TrustCard label={title} tone="voided">
           <TrustHeader title={title} status={<Badge variant="tag">voided</Badge>} />
           <Notice tone="err" lead={<span aria-hidden className="text-err">✕</span>}>
-            <ChangeLine change={state.change} />
+            {state.changes.map((change) => (
+              <ChangeLine key={change.field} change={change} />
+            ))}
             {nothingDone[proposal.kind]}
           </Notice>
           <DetailTable faded rows={detailRows(proposal, provider, undefined)} />
           <TrustActions>
             <Button variant="primary" onClick={props.onReviewChange}>
-              {state.change.field === "price" ? "Review new price" : "Review new time"}
+              {reviewLabels[state.changes[0].field]}
             </Button>
             <Button variant="secondary" onClick={props.onOtherOptions}>
               Other options
