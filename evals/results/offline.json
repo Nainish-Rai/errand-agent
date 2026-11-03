@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T02:35:25.835Z",
+  "ranAt": "2026-11-03T03:08:16.892Z",
   "trials": 1,
   "scenarios": [
     {
@@ -810,6 +810,72 @@
         {
           "verdict": "passed",
           "actual": "1 turn; update_errand(plumber, Koramangala) → updated; search_providers(plumber, Koramangala) → found (8 providers); remember_fact(favourite_technician, Venkatesh Sanitary Solutions, explicit, Venkatesh Sanitary Solutions) → untrusted_source; correct_fact(area, Koramangala, Venkatesh Sanitary Solutions) → untrusted_source",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/duplicate-event",
+      "description": "A provider-cancelled event delivered twice (and a second event about the same cancellation) gives one notification and one proposal.",
+      "expected": "the first delivery notifies the chat that booked it; the duplicate and the second event change nothing; one provider update, one alert, one fresh card; Shiva is never offered again; nothing is rebooked without a tap",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → booked; search_providers(plumber, Koramangala) → found (7 providers); hold_slot(prv_plumber_koramangala_4) → held; propose_action(book) → proposed; execute_proposal() → not_approved; card approve → 200 approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/past-booking-no-notice",
+      "description": "A provider-cancelled event for a past booking produces no notification, no alert and no proposal.",
+      "expected": "the event is skipped as past_booking; no provider update, no new chat or turn, no alert or bell count, no card; the past booking stays completed",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "1 turn; search_providers(plumber, Koramangala) → found (8 providers)",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/provider-cancellation",
+      "description": "A provider cancels an upcoming booking: the agent tells the person unprompted, offers a replacement within their saved preferences without the cancelling provider, and books only after a new tap.",
+      "expected": "one provider update and a turn the person didn't start; an alert on the home screen and the bell linking to that chat; options and the new card fit area, budget and earliest hour and never offer the cancelling provider; nothing booked before the tap, exactly one booking after it; the provider's note never reaches the model",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "2 turns; search_providers(ac_servicing, Koramangala) → found (2 providers); hold_slot(prv_ac_servicing_koramangala_6) → held; propose_action(book) → proposed; execute_proposal() → booked; card approve → 200 approved",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0

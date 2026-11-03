@@ -1,6 +1,6 @@
 {
   "mode": "replay",
-  "ranAt": "2026-11-03T02:35:59.342Z",
+  "ranAt": "2026-11-03T03:08:50.878Z",
   "trials": 1,
   "scenarios": [
     {
@@ -672,6 +672,54 @@
           "verdict": "skipped",
           "failures": [],
           "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/duplicate-event",
+      "description": "A provider-cancelled event delivered twice (and a second event about the same cancellation) gives one notification and one proposal.",
+      "expected": "the first delivery notifies the chat that booked it; the duplicate and the second event change nothing; one provider update, one alert, one fresh card; Shiva is never offered again; nothing is rebooked without a tap",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/past-booking-no-notice",
+      "description": "A provider-cancelled event for a past booking produces no notification, no alert and no proposal.",
+      "expected": "the event is skipped as past_booking; no provider update, no new chat or turn, no alert or bell count, no card; the past booking stays completed",
+      "attempts": [
+        {
+          "verdict": "skipped",
+          "failures": [],
+          "skipReason": "No recording yet. Record one with ERRAND_EVAL_MODE=live ERRAND_EVAL_RECORD=1 (pnpm eval:record).",
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/proactive/provider-cancellation",
+      "description": "A provider cancels an upcoming booking: the agent tells the person unprompted, offers a replacement within their saved preferences without the cancelling provider, and books only after a new tap.",
+      "expected": "one provider update and a turn the person didn't start; an alert on the home screen and the bell linking to that chat; options and the new card fit area, budget and earliest hour and never offer the cancelling provider; nothing booked before the tap, exactly one booking after it; the provider's note never reaches the model",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "3 turns; search_providers(ac_servicing, Koramangala) → found (2 providers); get_provider_insight() → completed; hold_slot(prv_ac_servicing_koramangala_6) → held; propose_action(book) → proposed; execute_proposal() → booked; card approve → 200 approved",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
           "pendingInvariants": []
         }
       ]
