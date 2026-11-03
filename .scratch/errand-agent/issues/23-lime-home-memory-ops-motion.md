@@ -4,7 +4,7 @@
 
 **Blocked by:** 20
 
-**Status:** done (PR #PRNUM)
+**Status:** done (PR #27)
 
 - [x] Home, memory and ops match v3 in light and dark; screenshots are attached
 - [x] The person's chat never shows the trace rail; the operator-only suites still pass
