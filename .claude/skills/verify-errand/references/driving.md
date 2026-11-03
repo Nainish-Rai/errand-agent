@@ -19,7 +19,7 @@ $V screenshot results.png --viewport
 | Command | What it does |
 | --- | --- |
 | `goto /ROUTE`, `reload` | navigate within the run's web app (only its own origin) |
-| `click`, `hover TARGET` | act on exactly one element (an ambiguous match fails) |
+| `click`, `hover TARGET` | act on exactly one element (an ambiguous match fails); `click --clicks 2` double-clicks |
 | `fill TARGET --value TEXT` | replace a field's value |
 | `type TEXT`, `key KEY` | type into the focused element; press `Enter`, `Escape`, `ControlOrMeta+A` … |
 | `wait TARGET [--state visible\|hidden\|attached\|detached]` | wait for a state |
@@ -55,7 +55,7 @@ seen (`found 3, expected 8`, `text is "…"`).
 `api GET|POST|PUT|PATCH|DELETE /api/v1/...` goes through `packages/client`, so the body is parsed
 against the contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`,
 `GET /sessions/:id/trace`, `GET /sessions/:id/context`, `GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`,
-`GET /proposals/:id`, `GET /bookings`, `GET /memory`, `PATCH /memory/:key`,
+`GET /proposals/:id`, `GET /bookings`, `GET /action-intents`, `GET /sessions/:id/action-intents`, `GET /memory`, `PATCH /memory/:key`,
 `DELETE /memory/:key`, `POST /memory/:id/confirm`, `POST /dev/scenario`, `PUT /dev/model-script`,
 `PUT /dev/run-limits`, `PUT /dev/world-fault`, `PUT /dev/memory` (seed the person's memory), `GET /home` (the home summary), `POST /sessions/:id/errand` (draft the errand from the composer's chips). `sessions/current` is the chat session the page
 opened (read from its `/eve/v1/session/…` requests). When a ticket adds a route to the client,

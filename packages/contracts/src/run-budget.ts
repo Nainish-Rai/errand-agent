@@ -36,10 +36,15 @@ export const WorldOperationSchema = z.enum([
   "reschedule",
 ]);
 
-/** A world operation made slow, or made to throw an error nobody planned for. */
+/**
+ * A world operation made slow, made to throw an error nobody planned for, or (`pause_after`) left
+ * to take effect in the world with its reply held back, so a harness can kill the backend between
+ * the call and the moment its reply is recorded.
+ */
 export const WorldFaultSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("slow"), operation: WorldOperationSchema, delayMs: z.number().int().positive().max(600_000) }),
   z.object({ kind: z.literal("throw"), operation: WorldOperationSchema }),
+  z.object({ kind: z.literal("pause_after"), operation: WorldOperationSchema }),
 ]);
 
 /** PUT /api/v1/dev/world-fault. Lasts until the next scenario switch; `null` clears it. */
@@ -49,6 +54,11 @@ export const InjectWorldFaultRequestSchema = z.object({
 
 export const InjectWorldFaultResponseSchema = InjectWorldFaultRequestSchema;
 
+/** GET /api/v1/dev/world-fault: the fault in force, and how many calls a `pause_after` is holding. */
+export const GetWorldFaultResponseSchema = InjectWorldFaultRequestSchema.extend({
+  pausedCalls: z.number().int().nonnegative(),
+});
+
 export type RunOutcomeKind = z.infer<typeof RunOutcomeKindSchema>;
 export type BudgetLimit = z.infer<typeof BudgetLimitSchema>;
 export type RunLimits = z.infer<typeof RunLimitsSchema>;
@@ -57,3 +67,4 @@ export type SetRunLimitsResponse = z.infer<typeof SetRunLimitsResponseSchema>;
 export type WorldFault = z.infer<typeof WorldFaultSchema>;
 export type InjectWorldFaultRequest = z.infer<typeof InjectWorldFaultRequestSchema>;
 export type InjectWorldFaultResponse = z.infer<typeof InjectWorldFaultResponseSchema>;
+export type GetWorldFaultResponse = z.infer<typeof GetWorldFaultResponseSchema>;

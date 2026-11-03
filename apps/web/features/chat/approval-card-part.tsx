@@ -18,6 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ApprovalCard, BookingReceipt, type ApprovalChange, type ApprovalProposal, type ApprovalState } from "@/features/trust";
 
 import { appApi } from "./backend";
+import { NextOptions, RunningExecution, VerifyingExecution } from "./booking-progress";
 import { useSendText } from "./send-text";
 
 // The fixed approval card inside the assistant-ui thread. The tool result only says which
@@ -252,19 +253,14 @@ function receiptOf(output: ExecuteProposalOutput) {
 }
 
 /**
- * execute_proposal: the receipt once the world verified the booking, "checking" while it can't
- * tell yet, the same approval card again when nobody tapped Approve, and the voided (or expired)
- * card with a fresh one under it when the provider changed the terms or the hold ran out.
+ * execute_proposal: the receipt once the world verified the booking, "Checking with the provider…"
+ * while it can't tell yet (until the ledger settles it), the same approval card again when nobody
+ * tapped Approve, and the voided (or expired) card with a fresh one under it when the provider
+ * changed the terms or the hold ran out.
  */
 export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
   const parsed = ExecuteProposalOutputSchema.safeParse(result);
-  if (result === undefined || !parsed.success) {
-    return (
-      <div className="my-2 flex items-center gap-2 text-label text-fg-meta">
-        <Spinner /> Checking the approval…
-      </div>
-    );
-  }
+  if (result === undefined || !parsed.success) return <RunningExecution />;
   const output = parsed.data;
   const booking = receiptOf(output);
   if (output.kind === "not_approved" && output.proposal !== null) return <LiveApprovalCard card={output.proposal} />;
@@ -285,17 +281,12 @@ export const ExecutionPart: ToolCallMessagePartComponent = ({ result }) => {
       </div>
     );
   }
-  if (booking !== undefined && output.kind === "verifying") {
-    return (
-      <div className="my-3">
-        <BookingReceipt booking={booking} state={{ status: "checking" }} />
-      </div>
-    );
-  }
+  if (booking !== undefined && output.kind === "verifying") return <VerifyingExecution output={output} booking={booking} />;
   if (booking !== undefined && (output.kind === "slot_taken" || output.kind === "booking_failed")) {
     return (
-      <div className="my-3">
+      <div className="my-3 flex flex-col gap-3">
         <BookingReceipt booking={booking} state={{ status: "failed", reason: output.message }} />
+        {output.options !== undefined && output.options.length > 0 && <NextOptions options={output.options} />}
       </div>
     );
   }

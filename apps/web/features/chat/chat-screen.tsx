@@ -14,6 +14,7 @@ import { MemoryPanel } from "@/features/memory-panel/memory-panel";
 import { TracePanel } from "@/features/trace-panel/trace-panel";
 
 import { backendUrl } from "./backend";
+import { BookingSessionProvider } from "./booking-progress";
 import { SendTextProvider } from "./send-text";
 import { Thread } from "./thread";
 import { useEveAssistantRuntime } from "./use-eve-assistant-runtime";
@@ -95,7 +96,9 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
                 <RailToggle rail={rail} shows="trace" onChange={setRail} />
               </ButtonGroup>
             </div>
-            <Thread />
+            <BookingSessionProvider sessionId={sessionId}>
+              <Thread />
+            </BookingSessionProvider>
           </div>
           {rail === "memory" && <MemoryPanel backendUrl={backendUrl} activity={activity} onClose={() => setRail(undefined)} />}
           {rail === "trace" && <TracePanel backendUrl={backendUrl} sessionId={sessionId} activity={activity} onClose={() => setRail(undefined)} />}

@@ -45,7 +45,7 @@ const TARGET = ["role", "name", "text", "label", "testid", "nth", "timeoutMs"];
 const STEP_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   goto: [],
   reload: [],
-  click: TARGET,
+  click: [...TARGET, "clicks"],
   hover: TARGET,
   fill: [...TARGET, "value"],
   type: [],

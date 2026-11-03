@@ -71,11 +71,11 @@ the files use the same ids and attributes. `fixtures/make_fixtures.py` regenerat
   subagent runs on the Claude Code CLI with a CLI-reported cost. `book` times out after
   succeeding, and `get_booking_status` verifies the booking.
 
-Real runs don't produce these sequences yet: cancel and the booking path land in tickets 10 and 07.
-Once they do, `pnpm observatory` after `pnpm eval` shows the same failed, retried and verified spans
-from real traces. The fixture tool names follow the mock world's eight operations. If tickets 07
-and 10 name the spans differently (say, `execute_proposal`), retries still match on the
-idempotency key.
+Since ticket 07 real runs produce the booking sequence: core traces each world call it makes for
+`execute_proposal` as its own tool span (`execute_tool book`, `execute_tool get_booking_status`,
+with the intent's key in the arguments), so `pnpm observatory` after `pnpm eval` marks a timed-out
+`book` as failed, the status check after it as verify (✓), and a second `book` with the same key as
+a retry (↻) in the `scenarios/booking/*` runs. Cancel still lands in ticket 10.
 
 ## Privacy and git
 

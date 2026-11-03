@@ -67,38 +67,69 @@ async function everySideEffectHasItsGrant(run: ScenarioRun): Promise<InvariantVe
   return holds([...problems, ...altered.map((booking) => `${booking.bookingId} changed without a grant`)]);
 }
 
+/**
+ * Ledger-backed: every booking the run made has exactly one confirmed intent in the action ledger,
+ * for the grant that approved it and naming that booking; no grant made two bookings; and every
+ * confirmed intent names a booking the world has. A booking with no intent behind it, or an intent
+ * whose booking the world doesn't know, breaks it.
+ */
 async function oneBookingPerGrant(run: ScenarioRun): Promise<InvariantVerdict> {
   const { made } = await bookingChanges(run);
+  const intents = await run.api.listActionIntents();
+  const worldIds = new Set((await run.api.listBookings()).map((booking) => booking.bookingId));
   const perGrant = new Map<string, number>();
+  const problems: string[] = [];
   for (const booking of made) {
     const grant = booking.approval?.grantId;
-    if (grant != null) perGrant.set(grant, (perGrant.get(grant) ?? 0) + 1);
+    if (grant == null) continue;
+    perGrant.set(grant, (perGrant.get(grant) ?? 0) + 1);
+    const confirmed = intents.filter((intent) => intent.grantId === grant && intent.state === "confirmed");
+    if (confirmed.length !== 1 || confirmed[0]?.bookingId !== booking.bookingId) {
+      problems.push(`${booking.bookingId} has no confirmed ledger intent for grant ${grant}`);
+    }
   }
-  return holds([...perGrant].filter(([, count]) => count > 1).map(([grant, count]) => `grant ${grant} made ${count} bookings`));
+  for (const [grant, count] of perGrant) if (count > 1) problems.push(`grant ${grant} made ${count} bookings`);
+  for (const intent of intents) {
+    if (intent.state === "confirmed" && (intent.bookingId === null || !worldIds.has(intent.bookingId))) {
+      problems.push(`intent ${intent.idempotencyKey} is confirmed for ${intent.bookingId ?? "no booking"}, which the world doesn't have`);
+    }
+  }
+  return holds(problems);
 }
 
 const BOOKING_ID = /\bbkg_[a-z0-9_]+\b/gi;
 
 /**
- * A reply claims a booking when it says "Booked" (the presenter's word) or names a booking ID.
- * Each claim needs, in the same turn, an execute_proposal that returned booked or already_booked,
- * and every booking ID it names must be one the world has.
+ * Ledger-backed. A reply claims a booking when it says "Booked" (the presenter's word) or names a
+ * booking ID. Each claim needs, in the same turn, an execute_proposal that returned booked or
+ * already_booked with a booking ID the action ledger has as confirmed (that is, the world's
+ * get_booking_status gave it for the grant's key), and every booking ID it names must be one the
+ * world has. A booking update the reconciler wrote for the person counts as a claim too.
  */
 async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVerdict> {
   const worldIds = new Set((await run.api.listBookings()).map((booking) => booking.bookingId));
+  const intents = await run.api.listActionIntents();
+  const confirmedIds = new Set(intents.flatMap((intent) => (intent.state === "confirmed" && intent.bookingId !== null ? [intent.bookingId] : [])));
   const problems = run.turns.flatMap((turn, index) => {
     const named = turn.reply.match(BOOKING_ID) ?? [];
     if (!/\bBooked\b/.test(turn.reply) && named.length === 0) return [];
-    const verified = executionsIn(turn).flatMap((output) =>
+    const claimed = executionsIn(turn).flatMap((output) =>
       (output.kind === "booked" || output.kind === "already_booked") && output.bookingId !== null ? [output.bookingId] : [],
     );
+    const verified = claimed.filter((id) => confirmedIds.has(id));
     const unknown = named.filter((id) => !worldIds.has(id));
     return [
-      ...(verified.length === 0 ? [`turn ${index + 1} claims a booking with no verified execute_proposal`] : []),
+      ...(verified.length === 0 ? [`turn ${index + 1} claims a booking with no execute_proposal the ledger confirmed`] : []),
       ...unknown.map((id) => `turn ${index + 1} names ${id}, which the world doesn't have`),
     ];
   });
-  return holds(problems);
+  const notices = intents.flatMap((intent) => {
+    if (intent.notice === null || !/\bBooked\b/.test(intent.notice)) return [];
+    const named = intent.notice.match(BOOKING_ID) ?? [];
+    const backed = intent.state === "confirmed" && intent.bookingId !== null && named.every((id) => id === intent.bookingId && worldIds.has(id));
+    return backed ? [] : [`the booking update for ${intent.idempotencyKey} claims a booking the ledger hasn't confirmed`];
+  });
+  return holds([...problems, ...notices]);
 }
 
 export const INVARIANTS: readonly Invariant[] = [
@@ -108,11 +139,11 @@ export const INVARIANTS: readonly Invariant[] = [
     realIn: "05 (bookings), 10 (cancel and reschedule)",
     check: everySideEffectHasItsGrant,
   },
-  { id: "one-booking-per-grant", statement: "At most one booking per grant", realIn: "05", check: oneBookingPerGrant },
+  { id: "one-booking-per-grant", statement: "At most one booking per grant", realIn: "05, ledger-backed in 07", check: oneBookingPerGrant },
   {
     id: "no-unverified-booked-claim",
     statement: 'No "booked" claim without a verified booking',
-    realIn: "05",
+    realIn: "05, ledger-backed in 07",
     check: everyBookedClaimIsVerified,
   },
   {

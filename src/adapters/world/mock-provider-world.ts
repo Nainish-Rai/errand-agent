@@ -22,6 +22,7 @@ import { AREAS, resolveArea, resolveService, SERVICES } from "./seed/catalog";
 import { istDateOf, istHourOf, seededSlotsOn, seedProviders, type SeededProvider } from "./seed/seed-providers";
 import { drawFor } from "./seed/seeded-random";
 import type { Scenario } from "./scenarios/scenarios";
+import type { HoldRecord, KeyRecord, WorldState, WorldStateStore } from "./world-state";
 
 export const HOLD_LIFETIME_MS = 10 * 60 * 1_000;
 export const DEV_USER_ID = "dev-user";
@@ -35,24 +36,18 @@ export interface MockWorldOptions {
   readonly seed: number;
   readonly scenario: Scenario;
   readonly clock: Clock;
+  /**
+   * Where the world keeps its state. A provider doesn't forget a booking because our backend
+   * crashed, so every change is saved before the call returns; a restart restores it from here.
+   */
+  readonly store?: WorldStateStore;
+  /** The state a restart restores; absent, the world starts freshly seeded. */
+  readonly state?: WorldState;
 }
 
-interface HoldRecord extends Hold {
-  consumed: boolean;
-  /** The scenario's revision of the held terms has been applied (it applies once per hold). */
-  revised?: boolean;
+function slotKey(providerId: string, slot: Slot): string {
+  return `${providerId}|${Date.parse(slot.start)}`;
 }
-
-/** What one idempotency key committed, so a repeat returns it instead of acting again. */
-type KeyRecord =
-  | { readonly operation: "book"; readonly holdId: string; readonly outcome: BookingStatusOutcome }
-  | { readonly operation: "cancel"; readonly bookingId: string; readonly outcome: CancelOutcome }
-  | {
-      readonly operation: "reschedule";
-      readonly bookingId: string;
-      readonly slotStart: string;
-      readonly outcome: RescheduleOutcome;
-    };
 
 function istDateAt(instant: Date): string {
   return new Date(instant.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
@@ -76,7 +71,8 @@ function invalidRangeReason(range: DateRange): string | undefined {
 
 /**
  * The mock provider network behind the eight fixed tools. Deterministic: every draw comes from the
- * seed, the scenario and the call's own identifiers. State lives in memory for the process.
+ * seed, the scenario and the call's own identifiers. State is saved to its store on every change
+ * and restored at startup: a provider outlives our backend.
  */
 export class MockProviderWorld implements ProviderWorld {
   readonly #seed: number;
@@ -88,6 +84,9 @@ export class MockProviderWorld implements ProviderWorld {
   readonly #keys = new Map<string, KeyRecord>();
   readonly #bookAttempts = new Map<string, number>();
   readonly #cancelAttempts = new Map<string, number>();
+  /** Slots someone else booked first (a `slot_taken`): no longer free for anyone. */
+  readonly #takenSlots = new Set<string>();
+  readonly #store: WorldStateStore | undefined;
   #nextId = 1;
   #holdLapsed = false;
 
@@ -95,10 +94,47 @@ export class MockProviderWorld implements ProviderWorld {
     this.#seed = options.seed;
     this.#scenario = options.scenario;
     this.#clock = options.clock;
+    this.#store = options.store;
     this.#providers = new Map(seedProviders(options.seed, options.scenario.reviewInjection).map((provider) => [provider.id, provider]));
-    if (options.scenario.seedsBookingHistory) {
-      for (const booking of this.#seedPastBookings()) this.#bookings.set(booking.bookingId, booking);
-    }
+    if (options.state === undefined) {
+      if (options.scenario.seedsBookingHistory) {
+        for (const booking of this.#seedPastBookings()) this.#bookings.set(booking.bookingId, booking);
+      }
+      this.#saved();
+    } else this.#restore(options.state);
+  }
+
+  /** Everything the world has committed, as plain data. */
+  snapshot(): WorldState {
+    return {
+      seed: this.#seed,
+      scenario: this.#scenario.name,
+      nextId: this.#nextId,
+      holds: [...this.#holds.values()].map((hold) => ({ ...hold })),
+      bookings: [...this.#bookings.values()],
+      keys: [...this.#keys],
+      bookAttempts: [...this.#bookAttempts],
+      cancelAttempts: [...this.#cancelAttempts],
+      takenSlots: [...this.#takenSlots],
+      holdLapsed: this.#holdLapsed,
+    };
+  }
+
+  #restore(state: WorldState): void {
+    this.#nextId = state.nextId;
+    for (const hold of state.holds) this.#holds.set(hold.holdId, { ...hold });
+    for (const booking of state.bookings) this.#bookings.set(booking.bookingId, booking);
+    for (const [key, record] of state.keys) this.#keys.set(key, record);
+    for (const [key, count] of state.bookAttempts) this.#bookAttempts.set(key, count);
+    for (const [key, count] of state.cancelAttempts) this.#cancelAttempts.set(key, count);
+    for (const slot of state.takenSlots) this.#takenSlots.add(slot);
+    this.#holdLapsed = state.holdLapsed ?? false;
+  }
+
+  /** Commits the world's state, so the change survives a crash of the process that asked for it. */
+  #saved<T>(result?: T): T {
+    this.#store?.save(this.snapshot());
+    return result as T;
   }
 
   get scenario(): Scenario {
@@ -152,7 +188,7 @@ export class MockProviderWorld implements ProviderWorld {
     };
     this.#holds.set(hold.holdId, hold);
     const { consumed: _consumed, ...visible } = hold;
-    return { kind: "held", hold: visible };
+    return this.#saved({ kind: "held", hold: visible });
   }
 
   async releaseHold(holdId: string): Promise<ReleaseHoldOutcome> {
@@ -160,18 +196,23 @@ export class MockProviderWorld implements ProviderWorld {
     if (hold === undefined || hold.consumed) return { kind: "hold_not_found" };
     // A released hold is spent: the slot is free again and `book` can no longer use it.
     hold.consumed = true;
-    return { kind: "released" };
+    return this.#saved({ kind: "released" });
   }
 
   async getHold(holdId: string): Promise<GetHoldOutcome> {
     const stored = this.#holds.get(holdId);
     if (stored === undefined || stored.consumed) return { kind: "hold_not_found" };
-    const hold = this.#revised(stored);
+    // A revision is a change on the provider's side, so it is saved like any other.
+    const hold = this.#saved(this.#revised(stored));
     const { consumed: _consumed, revised: _revised, ...visible } = hold;
     return this.#clock.now().getTime() > Date.parse(hold.expiresAt) ? { kind: "hold_expired", hold: visible } : { kind: "held", hold: visible };
   }
 
   async book(holdId: string, idempotencyKey: string): Promise<BookOutcome> {
+    return this.#saved(this.#booked(holdId, idempotencyKey));
+  }
+
+  #booked(holdId: string, idempotencyKey: string): BookOutcome {
     const recorded = this.#keys.get(idempotencyKey);
     if (recorded !== undefined) return this.#replayBook(recorded, holdId);
 
@@ -192,6 +233,8 @@ export class MockProviderWorld implements ProviderWorld {
 
     if (result === "slot_taken") {
       hold.consumed = true;
+      // Someone else booked it: the slot is gone for everyone, so the next search won't offer it.
+      this.#takenSlots.add(slotKey(hold.providerId, hold.slot));
       this.#keys.set(idempotencyKey, {
         operation: "book",
         holdId,
@@ -219,6 +262,10 @@ export class MockProviderWorld implements ProviderWorld {
   }
 
   async cancel(bookingId: string, idempotencyKey: string): Promise<CancelOutcome> {
+    return this.#saved(this.#cancelled(bookingId, idempotencyKey));
+  }
+
+  #cancelled(bookingId: string, idempotencyKey: string): CancelOutcome {
     const recorded = this.#keys.get(idempotencyKey);
     if (recorded !== undefined) {
       return recorded.operation === "cancel" && recorded.bookingId === bookingId
@@ -239,6 +286,10 @@ export class MockProviderWorld implements ProviderWorld {
   }
 
   async reschedule(bookingId: string, newSlot: Slot, idempotencyKey: string): Promise<RescheduleOutcome> {
+    return this.#saved(this.#rescheduled(bookingId, newSlot, idempotencyKey));
+  }
+
+  #rescheduled(bookingId: string, newSlot: Slot, idempotencyKey: string): RescheduleOutcome {
     const recorded = this.#keys.get(idempotencyKey);
     if (recorded !== undefined) {
       return recorded.operation === "reschedule" &&
@@ -369,7 +420,7 @@ export class MockProviderWorld implements ProviderWorld {
       (booking) =>
         booking.providerId === providerId && booking.status === "upcoming" && Date.parse(booking.slot.start) === start,
     );
-    return held || booked;
+    return held || booked || this.#takenSlots.has(slotKey(providerId, slot));
   }
 
   #canonicalSlot(providerId: string, slot: Slot): Slot {

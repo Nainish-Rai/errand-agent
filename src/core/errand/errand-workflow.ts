@@ -42,6 +42,8 @@ export type TransitionReason =
   | "awaiting_verification"
   | "booking_verified"
   | "booking_failed"
+  /** Someone else got the slot first; the errand goes back to its options for a new pick and a new approval. */
+  | "slot_taken"
   | "cancelled_by_user"
   /** The run ended `failed` (an unexpected tool error, an exhausted retry), so the errand did too. */
   | "run_failed";
@@ -53,8 +55,9 @@ const ALLOWED: Readonly<Record<ErrandState, readonly ErrandState[]>> = {
   holding: ["awaiting_approval", "choosing", "failed", "cancelled"],
   awaiting_approval: ["executing", "choosing", "holding", "cancelled", "failed"],
   // A hold that ran out under `book` is held again (holding) or, if the slot is gone, lost (choosing).
+  // A taken slot is not a failed errand either: the person picks again, and that needs a new approval.
   executing: ["verifying", "done", "failed", "holding", "choosing"],
-  verifying: ["done", "failed"],
+  verifying: ["done", "choosing", "failed"],
   done: [],
   failed: [],
   cancelled: [],

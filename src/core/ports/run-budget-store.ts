@@ -26,4 +26,9 @@ export interface RunBudgetStore {
    */
   settle(settled: SettledRun): Promise<{ readonly outcome: RunOutcome; readonly recorded: boolean }>;
   findOutcome(run: RunKey): Promise<RunOutcome | undefined>;
+  /**
+   * Runs that started (they have a budget) and never settled. At startup these are the runs the
+   * last process died in the middle of: nothing else will ever give them an outcome.
+   */
+  unsettled(): Promise<readonly RunKey[]>;
 }

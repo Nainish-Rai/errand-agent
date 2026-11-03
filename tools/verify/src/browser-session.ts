@@ -227,9 +227,12 @@ export class BrowserSession {
       case "reload":
         await this.#page.reload({ waitUntil: "load" });
         return { ok: true, url: cleanUrl(this.#page.url()) };
-      case "click":
-        await this.#unique(target).click({ timeout: timeoutOf(options) });
-        return { ok: true, target: describeTarget(target) };
+      case "click": {
+        // --clicks 2 is a real double click (two clicks in one gesture), as an impatient person makes.
+        const clicks = integerOption(options, "clicks", 1, 3) ?? 1;
+        await this.#unique(target).click({ timeout: timeoutOf(options), clickCount: clicks });
+        return { ok: true, target: describeTarget(target), ...(clicks === 1 ? {} : { clicks }) };
+      }
       case "hover":
         await this.#unique(target).hover({ timeout: timeoutOf(options) });
         return { ok: true, target: describeTarget(target) };

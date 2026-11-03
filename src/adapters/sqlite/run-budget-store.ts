@@ -113,6 +113,13 @@ export class SqliteRunBudgetStore implements RunBudgetStore {
     return row?.outcome == null ? undefined : (JSON.parse(row.outcome) as RunOutcome);
   }
 
+  async unsettled(): Promise<readonly RunKey[]> {
+    const rows = this.#db
+      .prepare("SELECT session_id, turn_id FROM run_budgets WHERE outcome IS NULL ORDER BY started_at_ms")
+      .all() as unknown as readonly Pick<BudgetRow, "session_id" | "turn_id">[];
+    return rows.map((row) => ({ sessionId: row.session_id, turnId: row.turn_id }));
+  }
+
   #row(run: RunKey): BudgetRow | undefined {
     return this.#db
       .prepare("SELECT * FROM run_budgets WHERE session_id = ? AND turn_id = ?")
