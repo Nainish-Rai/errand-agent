@@ -13,6 +13,7 @@ import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
 
 import { ExecutionPart, ProposalCardPart } from "./approval-card-part";
+import { ProviderInsight } from "./provider-insight";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
 
@@ -51,6 +52,7 @@ function AssistantMessage() {
               update_errand: QuickReplies,
               propose_action: ProposalCardPart,
               execute_proposal: ExecutionPart,
+              get_provider_insight: ProviderInsight,
             },
             Fallback: ToolActivity,
           },

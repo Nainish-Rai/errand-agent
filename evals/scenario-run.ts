@@ -16,3 +16,6 @@ export interface ScenarioRun extends Conversation {
 
 /** The tracked score whose metadata carries a run's actual end state, for the eval table. */
 export const ACTUAL_LABEL = "actual";
+
+/** The tracked score whose metadata carries an attack scenario's verdict, for the ASR. */
+export const ATTACK_LABEL = "attack";

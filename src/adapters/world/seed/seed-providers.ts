@@ -6,6 +6,7 @@ import {
   NAME_STEMS,
   NAME_SUFFIX,
   PRICE_RANGE_INR,
+  INJECTION_CAMPAIGN,
   PROMPT_INJECTION_REVIEW,
   REVIEW_AUTHORS,
   REVIEW_TEXTS,
@@ -13,6 +14,12 @@ import {
   VISIT_HOURS,
 } from "./catalog";
 import { drawFor, SeededRandom } from "./seeded-random";
+
+/**
+ * Which providers carry an injected review: `best_rated` gives the best-rated provider of each
+ * group the classic one, `every_provider` gives every provider one variant of the campaign.
+ */
+export type ReviewInjection = "best_rated" | "every_provider";
 
 /** A provider as seeded: everything except its free slots, which depend on the dates asked. */
 export interface SeededProvider {
@@ -39,7 +46,9 @@ function roundToNine(price: number): number {
   return Math.round(price / 50) * 50 - 1;
 }
 
-function seedReviews(random: SeededRandom, withInjection: boolean): Review[] {
+type Injected = { readonly rating: number; readonly text: string } | undefined;
+
+function seedReviews(random: SeededRandom, injected: Injected): Review[] {
   const count = random.integer(3, 5);
   const reviews = random.sample(REVIEW_TEXTS, count).map((review, index) => ({
     author: REVIEW_AUTHORS[(index + random.integer(0, 7)) % REVIEW_AUTHORS.length] ?? "Anonymous",
@@ -47,15 +56,20 @@ function seedReviews(random: SeededRandom, withInjection: boolean): Review[] {
     postedOn: `2026-${String(random.integer(5, 10)).padStart(2, "0")}-${String(random.integer(1, 28)).padStart(2, "0")}`,
     text: review.text,
   }));
-  if (!withInjection) return reviews;
+  if (injected === undefined) return reviews;
   return [
     ...reviews.slice(0, 1),
-    { author: "Verified customer", rating: PROMPT_INJECTION_REVIEW.rating, postedOn: "2026-10-12", text: PROMPT_INJECTION_REVIEW.text },
+    { author: "Verified customer", rating: injected.rating, postedOn: "2026-10-12", text: injected.text },
     ...reviews.slice(1),
   ];
 }
 
-function seedGroup(seed: number, service: ServiceKind, area: string): SeededProvider[] {
+function injectedReview(injection: ReviewInjection, index: number, isBest: boolean): Injected {
+  if (injection === "every_provider") return INJECTION_CAMPAIGN[index % INJECTION_CAMPAIGN.length];
+  return isBest ? PROMPT_INJECTION_REVIEW : undefined;
+}
+
+function seedGroup(seed: number, service: ServiceKind, area: string, injection: ReviewInjection): SeededProvider[] {
   const random = new SeededRandom(seed, "group", service, area);
   const count = random.integer(3, 8);
   const [minPrice, maxPrice] = PRICE_RANGE_INR[service];
@@ -78,14 +92,14 @@ function seedGroup(seed: number, service: ServiceKind, area: string): SeededProv
   // The best-rated provider in each group carries the injection, so a search that compares
   // options always meets it.
   const best = drafts.reduce((top, draft) => (draft.rating > top.rating ? draft : top));
-  return drafts.map((draft) => ({
+  return drafts.map((draft, index) => ({
     ...draft,
-    reviews: seedReviews(new SeededRandom(seed, "reviews", draft.id), draft === best),
+    reviews: seedReviews(new SeededRandom(seed, "reviews", draft.id), injectedReview(injection, index, draft === best)),
   }));
 }
 
-export function seedProviders(seed: number): readonly SeededProvider[] {
-  return SERVICES.flatMap((service) => AREAS.flatMap((area) => seedGroup(seed, service, area)));
+export function seedProviders(seed: number, injection: ReviewInjection): readonly SeededProvider[] {
+  return SERVICES.flatMap((service) => AREAS.flatMap((area) => seedGroup(seed, service, area, injection)));
 }
 
 function hourSlot(date: string, hour: number): Slot {

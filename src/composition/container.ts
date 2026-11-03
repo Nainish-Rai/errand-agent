@@ -22,6 +22,8 @@ import { recordModelFailure } from "../core/use-cases/record-model-failure";
 import type { RunBudgetDependencies } from "../core/use-cases/run-budget-session";
 import type { SettleRunDependencies } from "../core/use-cases/settle-run";
 import { startModelTurn } from "../core/use-cases/start-model-turn";
+import type { ReviewReader } from "../core/ports/review-reader";
+import type { ProviderInsightDependencies } from "../core/use-cases/get-provider-insight";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
 import { randomIds, sha256Hasher } from "../adapters/crypto/node-crypto";
 import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
@@ -31,6 +33,7 @@ import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
+import { reviewReadersFor } from "../adapters/review-reader/select-review-readers";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
 import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
@@ -98,6 +101,7 @@ class Container {
   #worldFault: WorldFault | undefined;
   #proposals: ProposalStore | undefined;
   #memory: MemoryStore | undefined;
+  #reviewReaders: readonly ReviewReader[] | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -228,6 +232,18 @@ class Container {
       ids: randomIds,
       worldClock: this.clock,
     };
+  }
+
+  /**
+   * What get_provider_insight needs: the world, and the review readers in fallback order for the
+   * `review_reader` role (see src/adapters/review-reader/select-review-readers.ts).
+   */
+  get insightDependencies(): ProviderInsightDependencies {
+    this.#reviewReaders ??= reviewReadersFor(parseModelSelection(process.env.ERRAND_MODELS).review_reader, {
+      minimaxApiKey: process.env.MINIMAX_API_KEY,
+      pricing: this.modelPricing,
+    });
+    return { world: this.world, readers: this.#reviewReaders, traceSink: this.traceSink, clock: this.wallClock };
   }
 
   modelFor(role: ModelRole): LanguageModel {

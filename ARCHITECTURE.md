@@ -80,6 +80,13 @@ through the same client package the web uses. If evals pass, any client that spe
 | `apps/*` | `packages/client`, `packages/contracts`, `packages/design-tokens` (its generated CSS and types), UI libraries | `src/`, `agent/` |
 | `evals/` | `packages/client`, `packages/contracts`, `src/adapters/world` (seeding and state assertions), `src/adapters/models` and `src/adapters/tracing/price-table` (the simulated user's model and its cost) | `agent/`, the rest of `src/` (tests depend inward; nothing depends on tests) |
 
+**The review reader is not an eve subagent.** It reads untrusted reviews, so it must have no tools
+and answer only in a schema. An eve declared subagent runs eve's turn loop, and a per-call model
+override needs an AI Gateway id, so the fallback from Claude Code to MiniMax couldn't be expressed.
+It is instead one no-tools model call behind a core port (`ReviewReader`), with the fallback order and
+the schema gate as core rules (`get-provider-insight.ts`, `review/provider-insight.ts`). See
+[docs/notes/review-reader-remaining-risk.md](docs/notes/review-reader-remaining-risk.md).
+
 A dependency-cruiser rule set enforces this table in `pnpm check`. When it is first added, it is shown to
 fail on a planted violation (`src/core` importing `eve`), and that run is the proof the check works.
 
@@ -101,14 +108,13 @@ errand-agent/
 │   │   └── rebook-after-cancellation.md
 │   ├── tools/                            # one file per model-callable tool, each a thin adapter
 │   │   ├── search-providers.ts
-│   │   ├── get-provider-insight.ts       # calls the review-reader, returns schema only
+│   │   ├── get_provider_insight.ts       # calls the review reader, returns schema only
 │   │   ├── hold-slot.ts
 │   │   ├── propose-action.ts             # book | cancel | reschedule → fixed approval card
 │   │   ├── execute-proposal.ts           # refuses without a valid grant
 │   │   ├── list-bookings.ts
 │   │   ├── remember-fact.ts · correct-fact.ts · forget-fact.ts
 │   │   └── present-ui.ts · ask-ui.ts     # OpenUI generative surfaces
-│   ├── subagents/review-reader/          # no tools; Claude Code CLI; strict output schema
 │   ├── memory/preferences.ts             # eve memory provider → BuildModelContext
 │   └── channels/
 │       ├── eve.ts                        # chat API config (CORS, auth)
@@ -120,17 +126,19 @@ errand-agent/
 │   │   ├── booking/           action-intent.ts · reconciliation.ts
 │   │   ├── budget/            run-budget.ts · outcome.ts
 │   │   ├── memory/            memory-fact.ts · context-selection.ts
+│   │   ├── review/            provider-insight.ts (the insight schema and the gate the reader's answer passes)
 │   │   ├── use-cases/         one file per operation, verb-noun:
 │   │   │                      propose-action · approve-proposal · decline-proposal · execute-proposal
 │   │   │                      reconcile-pending-actions · handle-provider-cancelled
 │   │   │                      remember-fact · correct-memory-fact · forget-memory-fact · confirm-inferred-fact
 │   │   │                      build-model-context · get-home-summary · get-availability · get-spend
 │   │   └── ports/             provider-world · action-ledger · proposal-store · memory-store
-│   │                          clock · id-source · trace-sink · event-publisher
+│   │                          clock · id-source · trace-sink · event-publisher · review-reader
 │   ├── adapters/
 │   │   ├── world/             mock-provider-world.ts (the 8 fixed tools) · scenarios/ · seed/ · assets/ (WebP + CREDITS.md)
 │   │   ├── sqlite/            database.ts · migrations/ · *-store.ts (one per port)
 │   │   ├── models/            minimax.ts · claude-code.ts · scripted.ts · select-model.ts
+│   │   ├── review-reader/     the quarantined review reader: no tools, Claude Code CLI then MiniMax, strict schema
 │   │   └── tracing/           jsonl-trace-sink.ts · sanitize.ts · prices.json · context-log-middleware.ts
 │   └── composition/           container.ts — the only place that constructs adapters
 ├── packages/

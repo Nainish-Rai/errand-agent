@@ -20,6 +20,7 @@
     "check:layers": "depcruise --config .dependency-cruiser.cjs agent src packages apps/web/app apps/web/features apps/web/components evals scripts tools",
     "check:tests": "vitest run",
     "smoke:claude-code": "tsx scripts/smoke-claude-code.ts",
+    "smoke:review-reader": "tsx scripts/smoke-review-reader.ts",
     "smoke:search": "tsx scripts/smoke-search-in-chat.ts",
     "verify": "control-errand",
     "verify:install-skill": "node tools/verify/bin/install-skill.js",

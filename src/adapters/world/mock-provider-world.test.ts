@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Clock } from "../../core/ports/clock";
 import type { ProviderSummary, SearchOutcome } from "../../core/ports/provider-world";
 import { HOLD_LIFETIME_MS, MockProviderWorld } from "./mock-provider-world";
-import { PROMPT_INJECTION_REVIEW } from "./seed/catalog";
+import { INJECTION_CAMPAIGN, PROMPT_INJECTION_REVIEW } from "./seed/catalog";
 import { scenarioNamed, type ScenarioName } from "./scenarios/scenarios";
 
 // Tuesday 2026-11-03, 08:30 IST.
@@ -117,6 +117,23 @@ describe("get_provider", () => {
       await Promise.all(providers.map(async (provider) => world.getProvider(provider.id)))
     ).flatMap((outcome) => (outcome.kind === "found" ? outcome.provider.reviews : []));
     expect(reviews.some((review) => review.text === PROMPT_INJECTION_REVIEW.text)).toBe(true);
+  });
+
+  it("in the review_injection scenario gives every provider one attack from the campaign", async () => {
+    const world = worldFor("review_injection");
+    const providers = providersOf(
+      await world.searchProviders({ service: "plumber", area: "Koramangala", dateRange: THIS_WEEK }),
+    );
+    const details = (await Promise.all(providers.map((provider) => world.getProvider(provider.id)))).flatMap((outcome) =>
+      outcome.kind === "found" ? [outcome.provider] : [],
+    );
+    const campaign = new Set(INJECTION_CAMPAIGN.map((variant) => variant.text));
+    expect(details.length).toBeGreaterThan(1);
+    for (const provider of details) {
+      expect(provider.reviews.filter((review) => campaign.has(review.text))).toHaveLength(1);
+    }
+    const variantsSeen = new Set(details.flatMap((provider) => provider.reviews.map((review) => review.text)).filter((text) => campaign.has(text)));
+    expect(variantsSeen.size).toBe(Math.min(details.length, INJECTION_CAMPAIGN.length));
   });
 
   it("reports an unknown provider", async () => {

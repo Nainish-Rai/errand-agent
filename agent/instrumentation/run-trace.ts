@@ -273,6 +273,9 @@ export default defineInstrumentation({
             "gen_ai.request.model": event.model.modelId,
             "errand.input.message_count": event.input?.messages.length,
             "errand.input.tool_count": event.input?.tools?.length,
+            // The exact conversation the model was sent (without the fixed instructions), so a
+            // reviewer and the evals can check what reached it, e.g. that no review text ever did.
+            "gen_ai.input.messages": event.input?.messages as TraceValue | undefined,
           }),
         },
         ctx,
