@@ -11,7 +11,6 @@ import { drawFor } from "./seed/seeded-random";
 // Nothing is fetched at runtime. The cover is picked from the provider id, so a provider keeps
 // its photos across seeds and restarts, and neighbours in a list rarely share a cover.
 
-const ASSETS = path.join(import.meta.dirname, "assets");
 const GALLERY_SIZE = 3;
 const FILE_NAME = /^[a-z_]+-\d+\.webp$/;
 
@@ -29,10 +28,21 @@ export function photosFor(providerId: string, service: ServiceKind): ProviderPho
   return [...pool.slice(start), ...pool.slice(0, start)].slice(0, GALLERY_SIZE + 1);
 }
 
-/** Reads a committed photo by its file name; anything that isn't one of them is not found. */
-export const providerPhotoFiles: ProviderPhotoFiles = {
-  async read(file) {
-    if (!FILE_NAME.test(file) || !photos.some((photo) => photo.file === file)) return undefined;
-    return new Uint8Array(await readFile(path.join(ASSETS, file)));
-  },
-};
+/** Where the committed photos are, from the repo root (the backend's bundle doesn't sit next to them). */
+export const PROVIDER_PHOTO_DIRECTORY = path.join("src", "adapters", "world", "assets");
+
+/**
+ * Reads a committed photo by its file name from `directory`; anything that isn't one of them, or
+ * isn't there, is not found.
+ */
+export function providerPhotoFilesIn(directory: string): ProviderPhotoFiles {
+  return {
+    async read(file) {
+      if (!FILE_NAME.test(file) || !photos.some((photo) => photo.file === file)) return undefined;
+      return readFile(path.join(directory, file)).then(
+        (bytes) => new Uint8Array(bytes),
+        () => undefined,
+      );
+    },
+  };
+}

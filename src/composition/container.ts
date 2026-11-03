@@ -56,7 +56,7 @@ import { faultyWorld, WorldPause, type WorldFault } from "../adapters/world/faul
 import { DEV_USER_ID, MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { isScenarioName, scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
-import { providerPhotoFiles } from "../adapters/world/provider-photos";
+import { PROVIDER_PHOTO_DIRECTORY, providerPhotoFilesIn } from "../adapters/world/provider-photos";
 import { generatedUiInstructions, openUiLangReader } from "../adapters/generated-ui/openui-lang-reader";
 
 // Main: the only place that constructs adapters. The agent and its channels ask this module for
@@ -349,7 +349,7 @@ class Container {
   readonly generatedUiInstructions: string = generatedUiInstructions();
 
   /** The committed provider photos the app API serves. */
-  readonly providerPhotoFiles: ProviderPhotoFiles = providerPhotoFiles;
+  readonly providerPhotoFiles: ProviderPhotoFiles = providerPhotoFilesIn(path.resolve(process.cwd(), PROVIDER_PHOTO_DIRECTORY));
 
   modelFor(role: ModelRole): LanguageModel {
     const selection = parseModelSelection(process.env.ERRAND_MODELS);

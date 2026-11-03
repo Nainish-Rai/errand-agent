@@ -6,7 +6,7 @@ import { defineScenario } from "../../scenario";
 
 // Choose on a provider card sends "I'll take <name>, <earliest slot>." as the person. The agent
 // holds that slot and shows the fixed approval card; nothing is booked by the Choose. Only the
-// tap on Approve on the card books, once.
+// tap on Approve on the card books, once. The card's photo is served by the backend.
 
 export default defineScenario({
   id: "scenarios/generated-ui/choose-holds-and-shows-the-card",
@@ -20,6 +20,12 @@ export default defineScenario({
     "Choose sends \"I'll take Shiva Sanitary Solutions, <its earliest slot>.\"; that turn holds the slot and shows the card with no execute; after Approve exactly one booking for the held slot",
   async expect(t, run) {
     t.succeeded();
+    // The card's photo is served by the backend itself (committed files, nothing fetched at runtime).
+    const [cover] = (await run.api.getProvider(CHEAPEST_PLUMBER.providerId)).photos;
+    const photo = cover === undefined ? undefined : await t.target.fetch(cover.src);
+    t.check([photo?.status, photo?.headers.get("content-type"), ((await photo?.arrayBuffer())?.byteLength ?? 0) > 1_000], equals([200, "image/webp", true])).label(
+      "the card's photo is served as WebP",
+    );
     t.check(run.uiTaps.map((tap) => tap.sent), equals(["I'll take Shiva Sanitary Solutions, Thu, 5 Nov, 8:00 am IST."])).label(
       "Choose sends the card's name and earliest slot",
     );

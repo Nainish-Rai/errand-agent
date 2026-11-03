@@ -103,7 +103,7 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
   const left = exclusionsLine(output.excluded.overBudget, output.excluded.outsideTimeWindow);
   return (
     <div className="flex flex-col">
-      <ProviderChoiceCards title={`Best options for ${label}`} choices={choices} more={more} />
+      <ProviderChoiceCards title={`Options for ${label}`} everyoneLabel={label} choices={choices} more={more} />
       {left !== undefined && <p className="-mt-1 mb-2 text-label text-fg-meta">{left}</p>}
     </div>
   );

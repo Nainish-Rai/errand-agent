@@ -101,11 +101,14 @@ export function ProviderChoiceCards({
   choices,
   more = [],
   title,
+  everyoneLabel,
 }: {
   readonly choices: readonly ChoiceInput[];
   /** Further options, shown only in the "See all" carousel. */
   readonly more?: readonly ChoiceInput[];
   readonly title?: string;
+  /** What "See all" lists, e.g. "plumber in Koramangala": names its region and counts it. */
+  readonly everyoneLabel?: string;
 }) {
   const everyone = [...choices, ...more];
   const providers = useProviders(everyone.map((choice) => choice.providerId));
@@ -124,10 +127,26 @@ export function ProviderChoiceCards({
   const row = bind(choices);
   const all = bind(everyone);
   const toggle = (providerId: string) => setDetails((open) => (open === providerId ? undefined : providerId));
-  const carousel = showAll || row.length > ROW;
+  const card = (choice: BoundChoice) => (
+    <ChoiceCard choice={choice} detailsOpen={details === choice.providerId} onDetails={() => toggle(choice.providerId)} />
+  );
+  const carousel = (choicesShown: readonly BoundChoice[], label: string) => (
+    <Carousel variant="sunk" showButtons aria-label={label} className="openui-carousel">
+      <CarouselContent role="list">
+        {choicesShown.map((choice) => (
+          <CarouselItem key={choice.providerId} role="listitem" className="w-60 flex-none">
+            {card(choice)}
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious icon={<ChevronLeft />} aria-label="Previous options" />
+      <CarouselNext icon={<ChevronRight />} aria-label="Next options" />
+    </Carousel>
+  );
+  const label = title ?? "Provider options";
 
   return (
-    <section aria-label={title ?? "Provider options"} data-testid="provider-choices" className="my-3 flex flex-col gap-2">
+    <section aria-label={label} data-testid="provider-choices" className="my-3 flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <p className="m-0 text-label text-fg-meta">{title ?? "Options"}</p>
         {all.length > row.length && (
@@ -136,24 +155,22 @@ export function ProviderChoiceCards({
           </Button>
         )}
       </div>
-      {carousel ? (
-        <Carousel variant="sunk" showButtons aria-label="All options" className="openui-carousel">
-          <CarouselContent>
-            {(showAll ? all : row).map((choice) => (
-              <CarouselItem key={choice.providerId} className="w-60 flex-none">
-                <ChoiceCard choice={choice} detailsOpen={details === choice.providerId} onDetails={() => toggle(choice.providerId)} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious icon={<ChevronLeft />} aria-label="Previous options" />
-          <CarouselNext icon={<ChevronRight />} aria-label="Next options" />
-        </Carousel>
+      {showAll ? null : row.length > ROW ? (
+        carousel(row, label)
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-3">
           {row.map((choice) => (
-            <ChoiceCard key={choice.providerId} choice={choice} detailsOpen={details === choice.providerId} onDetails={() => toggle(choice.providerId)} />
+            <li key={choice.providerId} className="min-w-0">
+              {card(choice)}
+            </li>
           ))}
-        </div>
+        </ul>
+      )}
+      {showAll && (
+        <section aria-label={everyoneLabel === undefined ? "All options" : `Search results for ${everyoneLabel}`} className="flex flex-col gap-1.5">
+          <p className="m-0 text-label text-fg-meta">{everyoneLabel === undefined ? `All ${all.length}` : `All ${all.length} ${everyoneLabel}`}</p>
+          {carousel(all, "All options")}
+        </section>
       )}
       {details !== undefined && byId.has(details) && <ProviderDetailsPanel providerId={details} />}
     </section>
