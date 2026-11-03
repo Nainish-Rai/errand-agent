@@ -737,7 +737,7 @@
     },
     {
       "id": "home-service-tiles",
-      "title": "Home: Book a service tiles and the suggestions carry service photos; a tile fills the composer",
+      "title": "Home: the Book a service tiles and the suggestion pills carry service photos; a tile sends its request",
       "setup": [
         {
           "command": "api",
@@ -800,9 +800,18 @@
             "count": 3
           },
           "args": [
-            "role=group[name=\"Suggestions\"] >> role=img"
+            "role=group[name=\"Suggestions\"] >> css=[data-image-state=loaded]"
           ],
-          "note": "each suggestion carries its service's photo"
+          "note": "each suggestion pill carries its service's 24px photo"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "button",
+            "name": "Plumber for a leaking kitchen tap this week",
+            "state": "visible"
+          },
+          "note": "the pill's photo is decorative, so its name is still its words"
         },
         {
           "command": "screenshot",
@@ -813,17 +822,18 @@
         {
           "command": "click",
           "args": [
-            "role=group[name=\"Services\"] >> role=button[name=\"AC servicing\"]"
+            "role=group[name=\"Services\"] >> role=button[name=\"AC servicing: Service my AC this week\"]"
           ]
         },
         {
           "command": "assert",
           "options": {
-            "role": "textbox",
-            "name": "Describe your errand",
-            "value": "AC servicing this week"
+            "text": "Service my AC this week"
           },
-          "note": "the tile puts its errand in the composer"
+          "args": [
+            "body"
+          ],
+          "note": "the tile sent its request as the person"
         },
         {
           "command": "network",

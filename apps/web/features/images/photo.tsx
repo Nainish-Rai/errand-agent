@@ -29,11 +29,13 @@ type PhotoProps = {
   readonly fallback: ReactNode;
   /** Width and corner radius, e.g. "w-10 rounded-sm". */
   readonly className?: string;
+  /** Beside text that already says what it shows (a suggestion pill): alt="" so the name stays the words. */
+  readonly decorative?: boolean;
 };
 
 type Load = "loading" | "loaded" | "failed";
 
-export function Photo({ imageKey, ratio, fallback, className }: PhotoProps) {
+export function Photo({ imageKey, ratio, fallback, className, decorative = false }: PhotoProps) {
   const photo = registeredPhoto(imageKey);
   const file = photo === undefined ? undefined : (photo.files[ratio] ?? photo.files.landscape ?? photo.files.square ?? photo.files.wide);
   const [load, setLoad] = useState<{ readonly src: string | undefined; readonly state: Load }>({ src: file?.src, state: "loading" });
@@ -63,7 +65,7 @@ export function Photo({ imageKey, ratio, fallback, className }: PhotoProps) {
           src={file.src}
           width={file.width}
           height={file.height}
-          alt={photo?.alt ?? ""}
+          alt={decorative ? "" : (photo?.alt ?? "")}
           decoding="async"
           loading="lazy"
           draggable={false}

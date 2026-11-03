@@ -8,6 +8,7 @@ import { MemorySheet } from "@/features/memory-panel/memory-sheet";
 
 import { Composer, useErrandComposer } from "./composer";
 import { AlertsList, InProgressList, UpcomingList } from "./home-lists";
+import { useServicePhotos } from "./service-photos";
 import { FollowUps, ServiceTiles } from "./service-tiles";
 import { TopBar } from "./top-bar";
 import { HOME_POLL_MS, useHomeSummary } from "./use-home-summary";
@@ -69,6 +70,7 @@ export function HomeScreen() {
   const composer = useErrandComposer(summary);
   const [memoryOpen, setMemoryOpen] = useState(false);
   const nowMs = useNow(1_000);
+  const photos = useServicePhotos();
 
   const focusComposer = () => composer.input.current?.focus();
   const settled = !composer.sending;
@@ -83,7 +85,7 @@ export function HomeScreen() {
           <Presence>
             {settled && (
               <Reveal key="suggestions">
-                <FollowUps suggestions={SUGGESTIONS} disabled={composer.sending} onPick={composer.send} />
+                <FollowUps suggestions={SUGGESTIONS} disabled={composer.sending} onPick={composer.send} mediaFor={photos.suggestion} />
               </Reveal>
             )}
           </Presence>
@@ -93,7 +95,7 @@ export function HomeScreen() {
         <Presence>
           {settled && (
             <Reveal key="lists" rise={0} className="flex flex-col gap-8">
-              <ServiceTiles disabled={composer.sending} onPick={composer.send} />
+              <ServiceTiles disabled={composer.sending} onPick={composer.send} mediaFor={photos.tile} />
               <Presence>
                 {summary !== undefined && summary.working.length > 0 && (
                   <Reveal key="in-progress">
