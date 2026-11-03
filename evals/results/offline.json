@@ -1,6 +1,6 @@
 {
   "mode": "offline",
-  "ranAt": "2026-11-03T15:12:42.774Z",
+  "ranAt": "2026-11-03T15:52:23.228Z",
   "trials": 1,
   "scenarios": [
     {
@@ -301,6 +301,28 @@
         {
           "verdict": "passed",
           "actual": "card: prv_electrician_koramangala_1 at 2026-11-04T11:00:00+05:30",
+          "costUsd": {
+            "agent": 0,
+            "simulatedUser": 0
+          },
+          "generatedUi": {
+            "calls": 0,
+            "parsed": 0,
+            "drawn": 0
+          },
+          "failures": [],
+          "pendingInvariants": []
+        }
+      ]
+    },
+    {
+      "id": "scenarios/booking/new-job-after-booking",
+      "description": "In a booked chat, a different job shows the New errand card: no retype paragraph, nothing booked or held, and the card's move starts the new chat's errand.",
+      "expected": "the last turn searches AC servicing in HSR Layout and is refused not_editable (the New errand card), its reply asks nobody to retype; one booking (the plumber), no new hold; the card's move drafts AC servicing in HSR Layout in a new chat linked both ways, and the plumber errand stays done",
+      "attempts": [
+        {
+          "verdict": "passed",
+          "actual": "4 turns; search_providers(plumber, Koramangala) → found (8 providers); hold_slot(prv_plumber_koramangala_5) → held; propose_action(book) → proposed; execute_proposal() → booked; search_providers(ac_servicing, HSR Layout) → not_editable; card approve → 200 approved",
           "costUsd": {
             "agent": 0,
             "simulatedUser": 0
