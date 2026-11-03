@@ -4,11 +4,11 @@
 
 **Blocked by:** 02, 03
 
-**Status:** ready-for-agent
+**Status:** done (PR #7)
 
-- [ ] Core tests: patching one field leaves the other fields unchanged, and illegal transitions are refused
-- [ ] Eval "only missing details asked": a fully specified request produces no clarifying question; a request missing the area produces exactly one question, about the area
-- [ ] Eval "correction keeps context": after changing the date, service, area and budget are unchanged in the errand state
-- [ ] Eval: no option shown is outside the budget or time window
-- [ ] State transitions appear in the trace panel
-- [ ] Out-of-scope or nonsense input gets a clear "can't help with that" reply, covered by an adversarial-input eval
+- [x] Core tests: patching one field leaves the other fields unchanged, and illegal transitions are refused
+- [x] Eval "only missing details asked": a fully specified request produces no clarifying question; a request missing the area produces exactly one question, about the area
+- [x] Eval "correction keeps context": after changing the date, service, area and budget are unchanged in the errand state
+- [x] Eval: no option shown is outside the budget or time window
+- [x] State transitions appear in the trace panel
+- [x] Out-of-scope or nonsense input gets a clear "can't help with that" reply, covered by an adversarial-input eval

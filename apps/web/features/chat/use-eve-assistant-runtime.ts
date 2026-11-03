@@ -35,5 +35,16 @@ export function useEveAssistantRuntime(session: ClientSession) {
     },
   });
 
-  return { runtime, error: agent.error };
+  return {
+    runtime,
+    error: agent.error,
+    /** Sends text as the person, the same way the composer does (quick-reply chips use it). */
+    sendText: async (text: string) => {
+      await agent.send(text);
+    },
+    /** The session eve is streaming, which the trace panel follows from the first message on. */
+    sessionId: agent.session?.sessionId ?? session.id,
+    /** Grows with every event the session streams, so the trace panel can refresh at once. */
+    activity: agent.events.length,
+  };
 }

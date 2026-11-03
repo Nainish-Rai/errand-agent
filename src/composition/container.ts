@@ -3,10 +3,14 @@ import path from "node:path";
 import type { LanguageModel } from "ai";
 
 import type { Clock } from "../core/ports/clock";
+import type { ErrandStore } from "../core/ports/errand-store";
+import type { ServiceCatalog } from "../core/ports/service-catalog";
+import type { ErrandDependencies } from "../core/use-cases/errand-session";
 import type { ModelPricing } from "../core/ports/model-pricing";
 import type { ProviderWorld } from "../core/ports/provider-world";
 import type { TraceSink } from "../core/ports/trace-sink";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
+import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { createModel, parseModelSelection, type ModelRole } from "../adapters/models/select-model";
 import { JsonlTraceSink } from "../adapters/tracing/jsonl-trace-sink";
@@ -14,6 +18,7 @@ import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
 import { MockProviderWorld } from "../adapters/world/mock-provider-world";
 import { scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
+import { worldCatalog } from "../adapters/world/world-catalog";
 
 // Main: the only place that constructs adapters. The agent and its channels ask this module for
 // use-case dependencies and never import an adapter themselves.
@@ -46,6 +51,11 @@ function runtimeSecrets(): (string | undefined)[] {
 
 class Container {
   readonly clock: Clock;
+  /**
+   * The real time, never pinned. Trace spans and events are stamped with it, so everything on the
+   * trace's timeline (and the trace route's "now") uses one clock even when evals pin `clock`.
+   */
+  readonly wallClock: Clock = systemClock;
   /** True when ERRAND_CLOCK_START set the clock, so sessions read it instead of their own time. */
   readonly isClockPinned: boolean;
   /** The offline model's script, loaded per scenario through the dev-only model-script route. */
@@ -55,6 +65,8 @@ class Container {
     sanitizer: new Sanitizer({ secrets: runtimeSecrets() }),
   });
   readonly modelPricing: ModelPricing = new PriceTable();
+  readonly errands: ErrandStore = new InMemoryErrandStore();
+  readonly catalog: ServiceCatalog = worldCatalog;
   #world: MockProviderWorld;
   #settings: WorldSettings;
 
@@ -77,6 +89,11 @@ class Container {
     this.#settings = settings;
     this.#world = this.#buildWorld(settings);
     return settings;
+  }
+
+  /** What the errand use cases need. Transitions are stamped with the trace's wall clock. */
+  get errandDependencies(): ErrandDependencies & { readonly world: ProviderWorld } {
+    return { errands: this.errands, catalog: this.catalog, traceSink: this.traceSink, clock: this.wallClock, world: this.world };
   }
 
   modelFor(role: ModelRole): LanguageModel {

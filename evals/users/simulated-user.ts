@@ -23,6 +23,8 @@ function instructionsFor(goal: string): string {
     "You are role-playing a user of a home-services errand assistant in Bengaluru, India.",
     `Your goal: ${goal}`,
     "Write only what this user would type in the chat: short, plain and in the first person.",
+    // Seen live: without this the simulator sometimes narrates ("First message sent. Waiting…").
+    "`message` is the literal text you send. Never describe or narrate what you are doing or waiting for.",
     "Never play the assistant, never invent the assistant's replies, never mention you are simulated.",
     "Answer the assistant's questions from your goal. Set done to true once the goal is met or the assistant can't help.",
   ].join("\n");

@@ -1,0 +1,81 @@
+{
+  "scenario": "scenarios/clarify/missing-area-asks-one-question",
+  "recordedAt": "2026-11-03T00:10:04.407Z",
+  "evalRunId": "e29d1a5a-b303-4a61-ab85-984848147698",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "I need a plumber this week to fix a leaking kitchen tap."
+    },
+    {
+      "say": "Koramangala."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that sorted for you.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Which part of Bengaluru are you in?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "area": "Koramangala"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are your options for a Koramangala plumber this week:\n\n**Venkatesh Sanitary Solutions** — ₹499, rated 4.8 (241 reviews)\nBest match and earliest slot: Wed, 4 Nov, 10:00 am IST\n\n**Shiva Sanitary Solutions** — ₹399, rated 4.5 (133 reviews)\nCheapest option, earliest slot: Thu, 5 Nov, 8:00 am IST\n\nBooking isn't enabled yet — but I can narrow these down further if you'd like a specific budget, time of day, or a female technician."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.00368334,
+    "simulatedUser": 0.029973
+  }
+}

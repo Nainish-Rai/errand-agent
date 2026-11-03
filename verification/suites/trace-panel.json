@@ -10,6 +10,12 @@
       "setup": [
         {
           "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
           "args": ["POST", "/api/v1/dev/scenario"],
           "options": { "body": { "scenario": "default", "seed": 42 } }
         }
@@ -102,6 +108,101 @@
           "command": "assert",
           "options": { "role": "complementary", "name": "Run trace", "state": "visible" },
           "note": "Show trace brings it back"
+        }
+      ]
+    },
+    {
+      "id": "open-panel-follows-first-message",
+      "title": "With the panel open before the first message, it shows the turn as soon as it runs",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "complementary",
+            "name": "Run trace",
+            "text": "0 model calls · 0 tool calls"
+          },
+          "note": "open and empty before any message"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 8
+          },
+          "note": "the turn ran"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "complementary",
+            "name": "Run trace",
+            "text": "2 model calls · 1 tool calls",
+            "timeoutMs": 3000
+          },
+          "note": "the open panel follows the session from its first message, within a poll"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=tree[name=\"Steps\"] >> role=treeitem[name*=\"search_providers tool\"]"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the tool span is drawn"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Errand states",
+            "text": "searching → choosing"
+          },
+          "note": "the errand's transitions show beside the waterfall"
         }
       ]
     }

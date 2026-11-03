@@ -10,8 +10,15 @@ module.exports = {
       name: "core-imports-only-core",
       comment: "src/core is pure: no eve, SQLite, AI SDK, React, Zod, contracts or Node built-ins.",
       severity: "error",
-      from: { path: "^src/core/" },
+      from: { path: "^src/core/", pathNot: "\\.test\\.ts$" },
       to: { pathNot: "^src/core/" },
+    },
+    {
+      name: "core-tests-import-only-core-and-vitest",
+      comment: "Core's unit tests drive core with in-memory ports: core and the test runner, nothing else.",
+      severity: "error",
+      from: { path: "^src/core/.*\\.test\\.ts$" },
+      to: { pathNot: ["^src/core/", npm("vitest")] },
     },
     {
       name: "adapters-and-composition-stay-inward",

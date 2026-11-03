@@ -60,7 +60,7 @@ The Claude Code provider has no AI SDK tool calling, so it is refused for `main`
 
 ## Run traces
 
-Every run writes `traces/<sessionId>.jsonl` (gitignored; set `ERRAND_TRACE_DIR` to move it). Each line is one span, written when it starts and again when it settles, with OpenTelemetry GenAI names: `invoke_agent` per turn, `agent.step` per model run, `chat <model>` per model call (tokens, latency, `errand.cost.usd`) and `execute_tool <name>` per tool call (arguments, result, latency, error). Phone numbers, emails and keys are removed before a line is written. MiniMax cost is estimated from [prices.json](src/adapters/tracing/prices.json); Claude Code CLI calls record the cost the CLI reports. `GET /api/v1/sessions/:id/trace` serves a trace, and the chat's side panel draws it as a live waterfall (agents-ui `trace-waterfall`).
+Every run writes `traces/<sessionId>.jsonl` (gitignored; set `ERRAND_TRACE_DIR` to move it). Each line is one span, written when it starts and again when it settles, with OpenTelemetry GenAI names: `invoke_agent` per turn, `agent.step` per model run, `chat <model>` per model call (tokens, latency, `errand.cost.usd`) and `execute_tool <name>` per tool call (arguments, result, latency, error). Phone numbers, emails and keys are removed before a line is written. MiniMax cost is estimated from [prices.json](src/adapters/tracing/prices.json); Claude Code CLI calls record the cost the CLI reports. Errand state transitions are written to the same file as `state_transition` events, attached to the tool call that made them. Every time on a trace (spans, events and the route's "now") comes from the wall clock, even when the evals pin `ERRAND_CLOCK_START`. `GET /api/v1/sessions/:id/trace` serves a trace, and the chat's side panel draws it as a live waterfall (agents-ui `trace-waterfall`) with the errand's states above it; it follows the chat's session from the first message and refetches on every session event.
 
 ## Browser verification
 
@@ -80,6 +80,15 @@ pnpm verify -- --run $RUN cleanup                                    # daemonExi
 ## Observability dashboard
 
 `pnpm observatory` after `pnpm eval` (or after any local session) reads the run traces and writes one HTML file. It shows every session with its turns, model and tool spans, tokens, latency, errors, retries and cost (estimated for MiniMax, CLI-reported for Claude Code). `--traces <dir>` reads another run's trace directory. `--fixtures` adds two fixture sessions: a cancel that gets a 503 and is retried, and a book that times out after succeeding and is then verified. Real runs produce those sequences once tickets 07 and 10 land. `--claude-sessions` renders the Claude Code sessions that built this repo, with prompts cut to 10-word redacted snippets, then checks the HTML against the raw transcripts. The dashboard comes from [harness-observatory](https://github.com/Nainish-Rai/harness-observatory) (MIT). Generated files go to `observatory/out/`, which git ignores. See [observatory/README.md](observatory/README.md) for what changed from the original and which dashboard to commit for the submission.
+
+## The errand
+
+Every chat session has one errand (`src/core/errand/`): service, area, time window (dates, and optionally hours), budget and preferences. Service, area and time window are required; budget and preferences narrow the options but are never asked for.
+
+- `update_errand` patches only the fields it names; a correction such as "actually Saturday" changes the time window and nothing else. It returns the errand, the fields still missing and `question`: the one or two fields the agent may ask about next, with quick replies the chat renders as suggestion chips.
+- `search_providers` writes its service, area and dates to the errand, searches the world, and core drops every provider over budget or with no free slot in the time window before tagging two or three options Best match, Cheapest and Earliest.
+- The workflow is an explicit state machine (`errand-workflow.ts`): `gathering → searching → choosing → holding → awaiting_approval → executing → verifying → done`, plus `failed` and `cancelled`. Ticket 04 drives the first three; any move the table doesn't allow is refused as an `illegal_transition` outcome. Every transition is a `state_transition` event in the run trace, and the trace panel lists them under "Errand states".
+- `GET /api/v1/sessions/:id/errand` serves the errand. Errands live in memory for now, so a backend restart forgets them.
 
 ## Layout
 
@@ -125,4 +134,4 @@ The global invariants from [SPEC.md](SPEC.md) run after every scenario. Until th
 
 ## Mock world
 
-`src/adapters/world` implements the assignment's eight tools (`search_providers`, `get_provider`, `hold_slot`, `book`, `get_booking_status`, `cancel`, `reschedule`, `list_bookings`) with their failure behaviour. Every outcome is a function of a seed and a named scenario (`default`, `happy_path`, `slot_taken`, `timeout_after_success`, `timeout_without_booking`, `price_changed_on_hold`, `reschedule_conflict`). Switch with `POST /api/v1/dev/scenario {"scenario":"…","seed":42}`. Only `search_providers` is exposed to the agent so far.
+`src/adapters/world` implements the assignment's eight tools (`search_providers`, `get_provider`, `hold_slot`, `book`, `get_booking_status`, `cancel`, `reschedule`, `list_bookings`) with their failure behaviour. Every outcome is a function of a seed and a named scenario (`default`, `happy_path`, `slot_taken`, `timeout_after_success`, `timeout_without_booking`, `price_changed_on_hold`, `reschedule_conflict`). Switch with `POST /api/v1/dev/scenario {"scenario":"…","seed":42}`. Only `search_providers` is exposed to the agent so far, through the errand (see above).

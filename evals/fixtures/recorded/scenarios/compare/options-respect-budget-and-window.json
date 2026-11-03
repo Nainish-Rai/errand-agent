@@ -1,0 +1,65 @@
+{
+  "scenario": "scenarios/compare/options-respect-budget-and-window",
+  "recordedAt": "2026-11-03T00:13:10.300Z",
+  "evalRunId": "3a62ffd9-d52f-4848-9b1b-2f3657b4925d",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Need a plumber in Koramangala this week, mornings only. Budget is under ₹800."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that sorted. Let me note the details and pull up providers.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10",
+                    "earliest_hour": 8,
+                    "latest_hour": 12
+                  },
+                  "budget_inr": 800
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Found two plumbers that fit your budget and morning window:\n\n**Venkatesh Sanitary Solutions** — Best match & earliest\n₹499 · rated 4.8 (241 reviews) · earliest slot Wed, 4 Nov, 10:00–11:00 am IST\n\n**Shiva Sanitary Solutions** — Cheapest\n₹399 · rated 4.5 (133 reviews) · earliest slot Thu, 5 Nov, 8:00–9:00 am IST\n\nWant me to narrow these down further, or shall we go with one of them? Booking itself comes next."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0025328399999999997,
+    "simulatedUser": 0.0151692
+  }
+}

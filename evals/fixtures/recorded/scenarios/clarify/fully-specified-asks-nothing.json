@@ -1,0 +1,70 @@
+{
+  "scenario": "scenarios/clarify/fully-specified-asks-nothing",
+  "recordedAt": "2026-11-03T00:14:04.825Z",
+  "evalRunId": "2c9d45d9-d36e-4e89-99b6-fde2f3c48f4f",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need a plumber for my kitchen tap in Koramangala. Can you help? I'm looking for someone this week, mornings only, and my budget is under ₹1,500."
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that set up for you.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10",
+                    "earliest_hour": 8,
+                    "latest_hour": 12
+                  }
+                }
+              },
+              {
+                "name": "update_errand",
+                "input": {
+                  "budget_inr": 1500
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here's what fits your kitchen tap job in Koramangala — all under ₹1,500, mornings this week:\n\n**Venkatesh Sanitary Solutions** — ⭐ Best match & earliest₹499 · Rated 4.8 (241 reviews) · Wed, 4 Nov, 10:00 am IST\nVerified, same-day service, senior technician\n\n**Shiva Sanitary Solutions** — 💰 Cheapest\n₹399 · Rated 4.5 (133 reviews) · Thu, 5 Nov, 8:00 am IST\nSenior technician\n\nBoth come in well under your ₹1,500 budget. Venkatesh has the stronger rating and can get there today; Shiva is the better price with an early 8:00 am slot tomorrow.\n\nBooking comes next — just tell me which one you'd like and I'll get it arranged."
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.0029324399999999997,
+    "simulatedUser": 0.0114927
+  }
+}
