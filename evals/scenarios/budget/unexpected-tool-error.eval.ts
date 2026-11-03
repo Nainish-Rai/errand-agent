@@ -37,7 +37,7 @@ export default defineScenario({
   },
   async expect(t, run) {
     t.succeeded();
-    const [traced] = await tracedRuns(run.api, run.sessionId);
+    const [traced] = await tracedRuns(run.operatorApi, run.sessionId);
     const outcome = traced?.outcomes[0];
     await t.require(outcome !== undefined, equals(true));
     t.check(outcome?.kind, equals("failed")).label("the run ends failed");
@@ -49,7 +49,7 @@ export default defineScenario({
     );
 
     // No side effect: the failed search is the last tool call, and the errand only ever failed.
-    const trace = await settledTrace(run.api, run.sessionId);
+    const trace = await settledTrace(run.operatorApi, run.sessionId);
     const tools = trace.spans.filter((span) => span.kind === "tool").map((span) => `${span.name} ${span.status}`);
     t.check(tools, equals(["execute_tool update_errand ok", "execute_tool search_providers error"])).label(
       "nothing runs after the error",

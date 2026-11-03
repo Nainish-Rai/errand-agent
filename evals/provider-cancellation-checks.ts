@@ -68,7 +68,7 @@ export function providerAlertsFor(alerts: readonly HomeAlertView[], bookingId: s
 export async function noteLeaks(run: ScenarioRun, note: string): Promise<string[]> {
   const needle = JSON.stringify(note).slice(1, -1);
   const contexts = JSON.stringify(await modelContextsOf(run));
-  const traces = await Promise.all(run.sessionIds.map((sessionId) => settledTrace(run.api, sessionId)));
+  const traces = await Promise.all(run.sessionIds.map((sessionId) => settledTrace(run.operatorApi, sessionId)));
   const inputs = JSON.stringify(traces.flatMap((trace) => trace.spans.map((span) => span.attributes["gen_ai.input.messages"] ?? null)));
   const chat = JSON.stringify(run.turns.map((turn) => turn.messages));
   return [

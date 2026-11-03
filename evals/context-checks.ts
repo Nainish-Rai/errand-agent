@@ -8,11 +8,11 @@ import { settledTrace } from "./session-trace";
 // context" checks it against the memory the API serves, not against what the log says about itself.
 
 /** Every model call's logged context in the run, oldest first, after each session's trace settles. */
-export async function modelContextsOf(run: Pick<ScenarioRun, "api" | "sessionIds">): Promise<ModelCallContext[]> {
+export async function modelContextsOf(run: Pick<ScenarioRun, "operatorApi" | "sessionIds">): Promise<ModelCallContext[]> {
   const calls: ModelCallContext[] = [];
   for (const sessionId of run.sessionIds) {
-    await settledTrace(run.api, sessionId);
-    calls.push(...(await run.api.getSessionContext(sessionId)).calls);
+    await settledTrace(run.operatorApi, sessionId);
+    calls.push(...(await run.operatorApi.getSessionContext(sessionId)).calls);
   }
   return calls;
 }
@@ -63,7 +63,7 @@ export function leaksIn(call: ModelCallContext, memory: ListMemoryResponse): str
 const SHOWN_PROBLEMS = 3;
 
 /** Every leak in the run, the first few spelled out, so the eval table's note stays readable. */
-export async function factsLeakedIntoContext(run: Pick<ScenarioRun, "api" | "sessionIds">): Promise<string[]> {
+export async function factsLeakedIntoContext(run: Pick<ScenarioRun, "api" | "operatorApi" | "sessionIds">): Promise<string[]> {
   const memory = await run.api.listMemory();
   const problems = (await modelContextsOf(run)).flatMap((call) => leaksIn(call, memory));
   if (problems.length <= SHOWN_PROBLEMS) return problems;

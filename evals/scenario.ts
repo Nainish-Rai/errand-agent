@@ -10,6 +10,7 @@ import { checkInvariants } from "./invariants";
 import { evalMode, isRecording, serverEnvironmentFor, type EvalMode } from "./modes";
 import { modelIdIn, modelScriptFrom, readRecording, writeRecording, type Recording } from "./recording";
 import { ACTUAL_LABEL, ATTACK_LABEL, type ScenarioRun } from "./scenario-run";
+import { operatorClient } from "./operator";
 import { settledTrace } from "./session-trace";
 import { ScriptedUser } from "./users/scripted-user";
 import { ReturningUser } from "./users/returning-user";
@@ -123,9 +124,9 @@ export function describeRun(run: ScenarioRun): string {
   return [`${run.turns.length} turn${run.turns.length === 1 ? "" : "s"}`, ...tools, ...taps, ...clicks].join("; ");
 }
 
-async function agentCostUsd(api: ApiClient, sessionIds: readonly string[]): Promise<number> {
+async function agentCostUsd(operatorApi: ApiClient, sessionIds: readonly string[]): Promise<number> {
   let total = 0;
-  for (const sessionId of sessionIds) total += (await settledTrace(api, sessionId)).totals.costUsd;
+  for (const sessionId of sessionIds) total += (await settledTrace(operatorApi, sessionId)).totals.costUsd;
   return total;
 }
 
@@ -133,6 +134,7 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
   const mode = evalMode();
   const api = new ApiClient({ baseUrl: t.target.url });
   const chat = new ChatClient({ baseUrl: t.target.url });
+  const operatorApi = await operatorClient(t.target.url);
   const plan = await planFor(t, mode, definition);
 
   // A scenario switch resets the run limits and clears any world fault, so set them after it.
@@ -160,12 +162,13 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
     ...conversation,
     mode,
     api,
+    operatorApi,
     bookingsBefore,
     world: plan.world,
     clockStart: serverEnvironmentFor(mode).ERRAND_CLOCK_START,
     toolCalls: conversation.turns.flatMap((turn) => turn.toolCalls),
   };
-  const costUsd = { agent: await agentCostUsd(api, run.sessionIds), simulatedUser: plan.user.costUsd };
+  const costUsd = { agent: await agentCostUsd(operatorApi, run.sessionIds), simulatedUser: plan.user.costUsd };
   const actual = (definition.actual ?? describeRun)(run);
   const uiCalls = generatedUiCalls(run.turns);
   const generatedUi = {
