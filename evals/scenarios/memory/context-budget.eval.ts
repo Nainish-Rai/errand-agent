@@ -19,11 +19,14 @@ export default defineScenario({
   memory: CONTEXT_BUDGET_MEMORY,
   user: CONVERSATION.map(({ say }) => ({ say })),
   goal:
-    "You are comparing home services across Bengaluru this week. Ask, one message at a time, for plumbers in Koramangala, " +
-    "electricians in Indiranagar, AC servicing in Whitefield, carpenters in Jayanagar and cleaners in BTM Layout. " +
-    "Then say you'll go with an electrician in Jayanagar this week within your usual budget and not before your usual time. " +
-    "Once you see options for that you are done; don't book anything.",
-  maxSimulatedMessages: 6,
+    "You are comparing home services across Bengaluru this week. Ask, one short message at a time and nothing else, for: " +
+    "plumbers in Koramangala, electricians in Indiranagar, AC servicing in Whitefield, carpenters in Jayanagar, cleaners in " +
+    "BTM Layout, plumbers in Malleshwaram, electricians in Electronic City, AC servicing in Koramangala and carpenters in " +
+    "Indiranagar. Then say you'll go with an electrician in Jayanagar this week within your usual budget and not before your " +
+    "usual time. Once you see options for that you are done; don't book anything.",
+  maxSimulatedMessages: 10,
+  // Ten simulated messages, each a Claude Code CLI call (about 12 s) and a few MiniMax calls.
+  liveTimeoutMs: 900_000,
   model: { turns: [...CONVERSATION_SCRIPT] },
   expected:
     "every model call fits the 40k cap and its split; the oldest exchanges are dropped whole and summarised; the memory sent holds only current, relevant facts (budget and earliest start by the end), never a superseded, forgotten or unconfirmed one",

@@ -54,7 +54,7 @@ seen (`found 3, expected 8`, `text is "…"`).
 
 `api GET|POST|PUT|PATCH|DELETE /api/v1/...` goes through `packages/client`, so the body is parsed
 against the contracts. Known routes: `GET /providers?ids=`, `GET /providers/:id`,
-`GET /sessions/:id/trace`, `GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`,
+`GET /sessions/:id/trace`, `GET /sessions/:id/context`, `GET /sessions/:id/errand`, `GET /sessions/:id/proposals`, `GET /proposals?status=`,
 `GET /proposals/:id`, `GET /bookings`, `GET /memory`, `PATCH /memory/:key`,
 `DELETE /memory/:key`, `POST /memory/:id/confirm`, `POST /dev/scenario`, `PUT /dev/model-script`,
 `PUT /dev/run-limits`, `PUT /dev/world-fault`, `PUT /dev/memory` (seed the person's memory), `GET /home` (the home summary), `POST /sessions/:id/errand` (draft the errand from the composer's chips). `sessions/current` is the chat session the page
@@ -76,7 +76,8 @@ $V api POST /api/v1/dev/scenario --body '{"scenario":"slot_taken","seed":42}'
   per provider; theme button `Switch to light theme` / `Switch to dark theme`.
 - Trace panel: toggle button `Hide trace` / `Show trace` (`aria-pressed`); `complementary "Run trace"`
   with summary `N model calls · N tool calls · …`, close button `Close the trace`, `tree "Steps"`
-  with `treeitem`s named `chat errand-script …` (model) and `search_providers tool …` (tool).
+  with `treeitem`s named `chat errand-script …` (model) and `search_providers tool …` (tool);
+  region `Context log` with a `Turn N context` button and region per turn (ticket 12).
 - Approval card in chat (ticket 05): region `Approve booking`, buttons `Approve ₹PRICE`, `Other options`,
   `Decline`; after Approve the card reads `Approved` and the receipt is region `Booked`.
 - Approval invalidation (ticket 06): a voided card is `section[aria-label="Approve booking"]:has-text("voided")`
