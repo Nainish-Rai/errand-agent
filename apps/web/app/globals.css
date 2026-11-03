@@ -149,6 +149,13 @@
   }
 }
 
+/* Lime's scope rule gives its element --text-sm. The scope is <html> here (as in v3), where that would make 1rem
+ * 14px and shrink Tailwind's rem-based 4px spacing grid, and every rem width, by an eighth. The root keeps the
+ * browser's size (so a reader's own font-size setting still counts); body text is --text-sm (base layer below). */
+html.lime {
+  font-size: revert;
+}
+
 /* Inferred facts, estimates and heuristic scores: a dashed edge in Errand's inferred tone. Explicit facts never. */
 @utility inferred {
   border-style: dashed;

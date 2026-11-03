@@ -41,7 +41,9 @@ durations in ms and the curves as numbers, for script animation such as `motion/
 
 Every role that is a `var()` is declared on `:root`, `[data-theme="light"]` and `[data-theme="dark"]`, so a
 panel can force either theme inside the other (the `/design` route does). Lime's base, glow and
-forced-colors rules are vendored verbatim in `apps/web/app/lime.css`; `<html>` carries `class="lime"`.
+forced-colors rules are vendored verbatim in `apps/web/app/lime.css`; `<html>` carries `class="lime"`. Lime's scope
+rule gives its element `--text-sm`, which on `<html>` would make 1rem 14px and shrink Tailwind's rem-based spacing, so
+`globals.css` keeps the root at the browser's size and sets body text to `--text-sm`.
 
 | Group | Tokens |
 |---|---|

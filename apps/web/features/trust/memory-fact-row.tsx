@@ -27,24 +27,27 @@ export function MemoryFactRow({ fact, onCorrect, onForget, onConfirm }: MemoryFa
   return (
     <div
       data-origin={fact.origin}
-      className={cn("flex items-center gap-2 rounded-md border bg-surface px-2 py-1.5", inferred ? "inferred" : "border-line")}
+      className={cn("flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border bg-surface px-2 py-1.5", inferred ? "inferred" : "border-line")}
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <div className={cn("truncate", inferred ? "text-warn-text" : "text-fg")}>{fact.statement}</div>
         <div className="text-xs text-fg-3">{fact.source}</div>
       </div>
-      <Badge variant={inferred ? "inferred" : "tag"}>{fact.origin}</Badge>
-      {onConfirm !== undefined && (
-        <Button size="sm" variant="secondary" onClick={onConfirm}>
-          Confirm
+      {/* The badge and actions move under the fact as one group when the rail is too narrow, never off its edge. */}
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <Badge variant={inferred ? "inferred" : "tag"}>{fact.origin}</Badge>
+        {onConfirm !== undefined && (
+          <Button size="sm" variant="secondary" onClick={onConfirm}>
+            Confirm
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={onCorrect}>
+          Correct
         </Button>
-      )}
-      <Button size="sm" variant="ghost" onClick={onCorrect}>
-        Correct
-      </Button>
-      <Button size="sm" variant="ghost" onClick={onForget}>
-        Forget
-      </Button>
+        <Button size="sm" variant="ghost" onClick={onForget}>
+          Forget
+        </Button>
+      </div>
     </div>
   );
 }
