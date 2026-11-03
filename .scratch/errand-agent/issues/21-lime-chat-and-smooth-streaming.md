@@ -11,9 +11,9 @@ Use Streamdown's animation and assistant-ui's smoothing where they fit; build on
 
 **Status:** ready-for-agent
 
-- [ ] A bursty stream (uneven chunk sizes and gaps) reveals evenly: an automated test drives a fake stream and asserts the lag bound, that no already-shown word re-renders, and that nothing is left wrapped at the end
-- [ ] Under reduced motion, words appear with no blur or rise
-- [ ] Screen readers get the answer once: the message is `aria-busy` while streaming
-- [ ] The approval card states, the tracker steps and the receipt match v3; the approve labels stay "Approve ₹<price>", "Approve move" and "Approve free cancellation"
-- [ ] Each view has exactly one lime action; the existing approval, booking, reschedule and cancellation suites still pass
+- [x] A bursty stream (uneven chunk sizes and gaps) reveals evenly: an automated test drives a fake stream and asserts the lag bound, that no already-shown word re-renders, and that nothing is left wrapped at the end
+- [x] Under reduced motion, words appear with no blur or rise
+- [x] Screen readers get the answer once: the message is `aria-busy` while streaming
+- [x] The approval card states, the tracker steps and the receipt match v3; the approve labels stay "Approve ₹<price>", "Approve move" and "Approve free cancellation"
+- [x] Each view has exactly one lime action; the existing approval, booking, reschedule and cancellation suites still pass
 - [ ] A mid-stream screenshot and a mid-animation approval screenshot from a verify-errand run are attached
