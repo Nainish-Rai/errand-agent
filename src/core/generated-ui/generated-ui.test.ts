@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { GeneratedUiReading, UiNode } from "../ports/generated-ui-reader";
-import { judgeAskedUi, judgePresentedUi, providerIdsIn } from "./generated-ui";
+import { factIdsIn, judgeAskedUi, judgePresentedUi, providerIdsIn } from "./generated-ui";
 import { isCommitPhrase } from "./library-rules";
 
 function read(nodes: UiNode[], foreign: string[] = []): GeneratedUiReading {
@@ -44,9 +44,12 @@ describe("generated UI may ask and show, never commit", () => {
     expect(isCommitPhrase("Show evening slots")).toBe(false);
   });
 
-  it("refuses a component whose data isn't served yet", () => {
-    const verdict = judgePresentedUi(read([{ component: "ReviewInsight", props: { providerId: "prv_1" } }]), []);
-    expect(verdict).toMatchObject({ kind: "refused", problems: [{ kind: "pending_component", component: "ReviewInsight" }] });
+  it("draws a review insight and asks about inferred facts, by id", () => {
+    expect(judgePresentedUi(read([{ component: "ReviewInsight", props: { providerId: "prv_1" } }]), []).kind).toBe("drawable");
+    const card = read([{ component: "PreferenceCard", props: { factIds: ["fact_1"] } }]);
+    expect(factIdsIn(card.kind === "read" ? card.nodes : [])).toEqual(["fact_1"]);
+    expect(judgeAskedUi(card, [], []).kind).toBe("drawable");
+    expect(judgeAskedUi(card, [{ kind: "not_an_inferred_fact", factId: "fact_1" }], [])).toMatchObject({ kind: "refused" });
   });
 
   it("keeps asking out of present and showing-only out of ask", () => {

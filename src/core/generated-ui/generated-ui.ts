@@ -9,14 +9,14 @@ import { COMPONENT_RULES, isCommitPhrase } from "./library-rules";
 
 export type UiProblem =
   | { readonly kind: "unknown_component"; readonly component: string }
-  | { readonly kind: "pending_component"; readonly component: string; readonly pendingOn: string }
   | { readonly kind: "action_not_allowed"; readonly what: string }
   | { readonly kind: "commit_phrase"; readonly component: string; readonly text: string }
   | { readonly kind: "ask_in_present"; readonly component: string }
   | { readonly kind: "nothing_to_ask" }
   | { readonly kind: "asks_known_field"; readonly field: string }
   | { readonly kind: "unknown_provider"; readonly providerId: string }
-  | { readonly kind: "unknown_booking"; readonly bookingId: string };
+  | { readonly kind: "unknown_booking"; readonly bookingId: string }
+  | { readonly kind: "not_an_inferred_fact"; readonly factId: string };
 
 export type GeneratedUiVerdict =
   | { readonly kind: "drawable"; readonly components: readonly string[]; readonly warnings: readonly string[] }
@@ -32,13 +32,11 @@ function textsIn(value: unknown): string[] {
 function libraryProblems(node: UiNode): UiProblem[] {
   const rule = COMPONENT_RULES[node.component];
   if (rule === undefined) return [{ kind: "unknown_component", component: node.component }];
-  const pending: UiProblem[] =
-    rule.pendingOn === undefined ? [] : [{ kind: "pending_component", component: node.component, pendingOn: rule.pendingOn }];
   const commits: UiProblem[] = rule.tappableTextProps
     .flatMap((prop) => textsIn(node.props[prop]))
     .filter(isCommitPhrase)
     .map((text) => ({ kind: "commit_phrase", component: node.component, text }));
-  return [...pending, ...commits];
+  return commits;
 }
 
 function structuralProblems(nodes: readonly UiNode[], foreign: readonly string[]): UiProblem[] {
@@ -65,6 +63,11 @@ export function providerIdsIn(nodes: readonly UiNode[]): string[] {
 /** Every booking id the program names, for the world to confirm. */
 export function bookingIdsIn(nodes: readonly UiNode[]): string[] {
   return idsIn(nodes, (component) => COMPONENT_RULES[component]?.bookingIdProps ?? []);
+}
+
+/** Every memory fact id the program names, for the person's memory to confirm. */
+export function factIdsIn(nodes: readonly UiNode[]): string[] {
+  return idsIn(nodes, (component) => COMPONENT_RULES[component]?.factIdProps ?? []);
 }
 
 function verdictOf(reading: Extract<GeneratedUiReading, { kind: "read" }>, problems: readonly UiProblem[]): GeneratedUiVerdict {

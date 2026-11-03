@@ -2,7 +2,16 @@
 
 import { useAuiState } from "@assistant-ui/react";
 import { providersShownBySearch, type ApiClient } from "@errand/client";
-import type { BookingView, ErrandView, GetAvailabilityResponse, GetSpendResponse, ProviderDetails } from "@errand/contracts";
+import {
+  GetProviderInsightOutputSchema,
+  type BookingView,
+  type ErrandView,
+  type GetAvailabilityResponse,
+  type GetSpendResponse,
+  type ListMemoryResponse,
+  type ProviderDetails,
+  type ProviderInsightView,
+} from "@errand/contracts";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 // What generated components read the world through: the app API client (read-only routes only)
@@ -78,6 +87,34 @@ export function useSpend(months: number): Loaded<GetSpendResponse> {
 export function useBookings(): Loaded<readonly BookingView[]> {
   const { api } = useGeneratedUiHost();
   return useRead("bookings", () => api.listBookings());
+}
+
+export function useMemory(): Loaded<ListMemoryResponse> {
+  const { api } = useGeneratedUiHost();
+  return useRead("memory", () => api.listMemory());
+}
+
+type ToolPart = { readonly type: string; readonly toolName?: string; readonly result?: unknown };
+
+function insightsIn(parts: readonly ToolPart[]): ProviderInsightView[] {
+  return parts.flatMap((part) => {
+    if (part.type !== "tool-call" || part.toolName !== "get_provider_insight") return [];
+    const output = GetProviderInsightOutputSchema.safeParse(part.result);
+    return output.success ? output.data.insights.flatMap((result) => (result.kind === "insight" ? [result.insight] : [])) : [];
+  });
+}
+
+/**
+ * The provider's review insight, as get_provider_insight returned it in this conversation (core's
+ * closed sets and numbers, never review text), and whether this reply already shows it.
+ */
+export function useReviewInsight(providerId: string): { readonly insight: ProviderInsightView | undefined; readonly shownInReply: boolean } {
+  const messages = useAuiState((state) => state.thread.messages);
+  const parts = useAuiState((state) => state.message.parts);
+  return useMemo(() => {
+    const latest = messages.flatMap((message) => insightsIn(message.content as readonly ToolPart[])).findLast((insight) => insight.providerId === providerId);
+    return { insight: latest, shownInReply: insightsIn(parts).some((insight) => insight.providerId === providerId) };
+  }, [messages, parts, providerId]);
 }
 
 export function useErrand(): Loaded<ErrandView | null> {

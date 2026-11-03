@@ -26,7 +26,8 @@ import type { ReactNode } from "react";
 
 import { AskForm } from "./ask-form";
 import { PriceChart, SlotsPerDayChart, SpendChart } from "./charts";
-import { BookingPicker, FollowUps, NotYetAvailable, PickOne, SlotPicker } from "./pickers";
+import { PreferenceCard, ReviewInsight } from "./insight-and-preferences";
+import { BookingPicker, FollowUps, PickOne, SlotPicker } from "./pickers";
 import { useProvidersShownBySearch } from "./bound-data";
 import { ProviderChoiceCards } from "./provider-choice-cards";
 import { ProviderDetailsPanel } from "./provider-details";
@@ -124,7 +125,7 @@ export const generatedUiLibrary = createLibrary({
       name: "ReviewInsight",
       description: description("ReviewInsight"),
       props: ReviewInsightPropsSchema,
-      component: () => <NotYetAvailable what="Review insights" />,
+      component: ({ props }) => <ReviewInsight providerId={props.providerId} />,
     }),
     defineComponent({
       name: "SlotPicker",
@@ -157,7 +158,7 @@ export const generatedUiLibrary = createLibrary({
       name: "PreferenceCard",
       description: description("PreferenceCard"),
       props: PreferenceCardPropsSchema,
-      component: () => <NotYetAvailable what="Inferred preferences" />,
+      component: ({ props }) => <PreferenceCard factIds={props.factIds} />,
     }),
     defineComponent({
       name: "AskForm",

@@ -1,7 +1,8 @@
 import type { TracePlace } from "../errand/errand-workflow";
-import { bookingIdsIn, providerIdsIn, type GeneratedUiVerdict, type UiProblem } from "../generated-ui/generated-ui";
+import { bookingIdsIn, factIdsIn, providerIdsIn, type GeneratedUiVerdict, type UiProblem } from "../generated-ui/generated-ui";
 import type { Clock } from "../ports/clock";
 import type { ErrandStore } from "../ports/errand-store";
+import type { MemoryStore } from "../ports/memory-store";
 import type { GeneratedUiReader, GeneratedUiReading } from "../ports/generated-ui-reader";
 import type { ProviderWorld } from "../ports/provider-world";
 import type { TraceSink, TraceValue } from "../ports/trace-sink";
@@ -13,6 +14,8 @@ export interface GeneratedUiDependencies {
   readonly reader: GeneratedUiReader;
   readonly world: ProviderWorld;
   readonly errands: ErrandStore;
+  /** The person's memory, which a preference card's fact ids must name. */
+  readonly memory: MemoryStore;
   readonly traceSink: TraceSink;
   readonly clock: Clock;
 }
@@ -32,9 +35,21 @@ export async function unknownIdsIn(deps: GeneratedUiDependencies, reading: Gener
   );
   const bookingIds = bookingIdsIn(reading.nodes);
   const owned = bookingIds.length === 0 ? new Set<string>() : new Set((await deps.world.listBookings(userId)).map((booking) => booking.bookingId));
+  // A preference card asks to keep a guess, so it may only name the person's own inferred facts
+  // that still wait for their confirmation.
+  const factIds = factIdsIn(reading.nodes);
+  const pending =
+    factIds.length === 0
+      ? new Set<string>()
+      : new Set(
+          (await deps.memory.read(userId)).facts
+            .filter((fact) => fact.source === "inferred" && fact.status === "pending_confirmation")
+            .map((fact) => fact.id),
+        );
   return [
     ...providers.filter((provider) => !provider.found).map(({ providerId }): UiProblem => ({ kind: "unknown_provider", providerId })),
     ...bookingIds.filter((bookingId) => !owned.has(bookingId)).map((bookingId): UiProblem => ({ kind: "unknown_booking", bookingId })),
+    ...factIds.filter((factId) => !pending.has(factId)).map((factId): UiProblem => ({ kind: "not_an_inferred_fact", factId })),
   ];
 }
 
@@ -42,8 +57,6 @@ export function problemText(problem: UiProblem): string {
   switch (problem.kind) {
     case "unknown_component":
       return `unknown component ${problem.component}`;
-    case "pending_component":
-      return `${problem.component} waits on ticket ${problem.pendingOn}`;
     case "action_not_allowed":
       return `action not allowed: ${problem.what}`;
     case "commit_phrase":
@@ -58,6 +71,8 @@ export function problemText(problem: UiProblem): string {
       return `unknown provider ${problem.providerId}`;
     case "unknown_booking":
       return `unknown booking ${problem.bookingId}`;
+    case "not_an_inferred_fact":
+      return `${problem.factId} is not an inferred fact waiting for confirmation`;
   }
 }
 

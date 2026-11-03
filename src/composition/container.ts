@@ -342,7 +342,7 @@ class Container {
 
   /** What the present and ask (generated UI) use cases need: the OpenUI Lang reader and the world that confirms ids. */
   get generatedUiDependencies(): GeneratedUiDependencies {
-    return { reader: openUiLangReader, world: this.world, errands: this.errands, traceSink: this.traceSink, clock: this.wallClock };
+    return { reader: openUiLangReader, world: this.world, errands: this.errands, memory: this.memory, traceSink: this.traceSink, clock: this.wallClock };
   }
 
   /** The generated-UI library's part of the model's instructions (it counts toward the context budget). */

@@ -1,7 +1,6 @@
 import { GENERATED_UI_COMPONENTS, GENERATED_UI_ROOT } from "@errand/contracts";
 import { createLibrary, createParser, defineComponent, type ParseResult } from "@openuidev/lang-core";
 
-import { pendingComponents } from "../../core/generated-ui/library-rules";
 import type { GeneratedUiReader, GeneratedUiReading, UiNode } from "../../core/ports/generated-ui-reader";
 
 // OpenUI Lang on the server: the same component library the web app renders (packages/contracts
@@ -11,18 +10,13 @@ import type { GeneratedUiReader, GeneratedUiReading, UiNode } from "../../core/p
 // lang-core's runtime telemetry is opt-in (OPENUI_RUNTIME_TELEMETRY_ENABLED) and we never opt in;
 // its install-time script is not in pnpm's allowBuilds, so it never runs either.
 
-/** The whole library: what the parser accepts, so a pending component is refused by name. */
-const fullLibrary = createLibrary({
+/** The library: what the parser accepts and what the model is offered. */
+const library = createLibrary({
   components: GENERATED_UI_COMPONENTS.map((component) => defineComponent({ ...component, component: null })),
   root: GENERATED_UI_ROOT,
 });
 
-/** What the model is offered: the library without the components whose data isn't served yet. */
-const offeredLibrary = fullLibrary.extend({
-  components: { remove: pendingComponents().map(({ component }) => component) },
-});
-
-const parser = createParser(fullLibrary.toJSONSchema(), GENERATED_UI_ROOT);
+const parser = createParser(library.toJSONSchema(), GENERATED_UI_ROOT);
 
 /** Validation codes the parser recovers from by dropping what the model wrote. */
 const RECOVERED_CODES = new Set(["excess-args"]);
@@ -103,6 +97,7 @@ const RULES = [
   "search_providers' options already show as choice cards with photos: don't present the same options again.",
   "Use PriceChart only for 4 or more options. Use SlotsPerDayChart when the person asks when someone is free. Use SpendChart only when asked about spending.",
   "When update_errand returns a question, call ask_ui with AskForm listing exactly the question's fields, then end your turn.",
+  "ReviewInsight only for a provider get_provider_insight returned an insight for. PreferenceCard only in ask_ui, with the fact ids of inferred facts waiting for confirmation (remember_fact's fact.id).",
   "After ask_ui, end your turn and wait: the answer comes back as the person's next message.",
   "If a tool result says the UI was refused or didn't parse, answer in text instead.",
 ];
@@ -120,5 +115,5 @@ const EXAMPLES = [
 
 /** The library's part of the model's instructions. It counts toward the context budget. */
 export function generatedUiInstructions(): string {
-  return offeredLibrary.prompt({ preamble: PREAMBLE, additionalRules: RULES, examples: EXAMPLES });
+  return library.prompt({ preamble: PREAMBLE, additionalRules: RULES, examples: EXAMPLES });
 }

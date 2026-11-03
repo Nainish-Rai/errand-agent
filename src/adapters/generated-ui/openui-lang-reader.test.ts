@@ -1,7 +1,7 @@
 import { GENERATED_UI_COMPONENTS } from "@errand/contracts";
 import { describe, expect, it } from "vitest";
 
-import { COMPONENT_RULES, offeredComponents, pendingComponents } from "../../core/generated-ui/library-rules";
+import { COMPONENT_RULES } from "../../core/generated-ui/library-rules";
 import { generatedUiInstructions, openUiLangReader } from "./openui-lang-reader";
 
 const CARDS = [
@@ -53,10 +53,9 @@ describe("the component library", () => {
     for (const component of GENERATED_UI_COMPONENTS) expect(component.name).not.toMatch(/approv|confirm|pay|checkout|grant|commit|book(it|now|button)|^book$/i);
   });
 
-  it("offers the model only the components whose data is served", () => {
+  it("offers the model every component of the library", () => {
     const instructions = generatedUiInstructions();
-    for (const name of offeredComponents()) expect(instructions).toContain(`${name}(`);
-    for (const { component } of pendingComponents()) expect(instructions).not.toContain(`${component}(`);
+    for (const name of Object.keys(COMPONENT_RULES)) expect(instructions).toContain(`${name}(`);
   });
 
   it("keeps its instructions within their share of the context budget", () => {

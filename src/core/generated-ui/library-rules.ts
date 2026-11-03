@@ -17,18 +17,18 @@ export type ComponentRole =
 
 export interface ComponentRule {
   readonly role: ComponentRole;
-  /** Set while the data it binds to isn't served yet: the model isn't offered it and it is refused. */
-  readonly pendingOn?: string;
   /** Props holding provider ids, which must name providers the world has. */
   readonly providerIdProps: readonly string[];
   /** Props holding booking ids, which must name bookings of this person. */
   readonly bookingIdProps: readonly string[];
+  /** Props holding memory fact ids, which must name this person's inferred facts awaiting confirmation. */
+  readonly factIdProps: readonly string[];
   /** Props whose text the person taps to send: never an approval or commit phrase. */
   readonly tappableTextProps: readonly string[];
 }
 
 function rule(role: ComponentRole, details: Partial<Omit<ComponentRule, "role">> = {}): ComponentRule {
-  return { role, providerIdProps: [], bookingIdProps: [], tappableTextProps: [], ...details };
+  return { role, providerIdProps: [], bookingIdProps: [], factIdProps: [], tappableTextProps: [], ...details };
 }
 
 export const COMPONENT_RULES: Readonly<Record<string, ComponentRule>> = {
@@ -39,29 +39,15 @@ export const COMPONENT_RULES: Readonly<Record<string, ComponentRule>> = {
   SlotsPerDayChart: rule("show", { providerIdProps: ["providerIds"] }),
   SpendChart: rule("show"),
   ProviderDetails: rule("show", { providerIdProps: ["providerId"] }),
-  ReviewInsight: rule("show", { providerIdProps: ["providerId"], pendingOn: "09 (review reader)" }),
+  ReviewInsight: rule("show", { providerIdProps: ["providerId"] }),
   SlotPicker: rule("ask", { providerIdProps: ["providerId"] }),
   PickOne: rule("ask"),
   PickOption: rule("part", { tappableTextProps: ["label"] }),
   BookingPicker: rule("ask", { bookingIdProps: ["bookingIds"] }),
-  PreferenceCard: rule("ask", { pendingOn: "11 (memory)" }),
+  PreferenceCard: rule("ask", { factIdProps: ["factIds"] }),
   AskForm: rule("ask"),
   FollowUps: rule("show", { tappableTextProps: ["suggestions"] }),
 };
-
-/** The components the model is offered: every one whose data is served. */
-export function offeredComponents(): string[] {
-  return Object.entries(COMPONENT_RULES)
-    .filter(([, details]) => details.pendingOn === undefined)
-    .map(([name]) => name);
-}
-
-/** The components still waiting on another ticket's data, with that ticket. */
-export function pendingComponents(): { readonly component: string; readonly pendingOn: string }[] {
-  return Object.entries(COMPONENT_RULES).flatMap(([component, details]) =>
-    details.pendingOn === undefined ? [] : [{ component, pendingOn: details.pendingOn }],
-  );
-}
 
 // Words that would make a tappable chip look like the approval card's button. Approval happens
 // only on the fixed card, so generated UI may not offer it even as text to send.

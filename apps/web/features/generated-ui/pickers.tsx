@@ -150,6 +150,3 @@ export function FollowUps({ suggestions }: { readonly suggestions: readonly stri
  * preferences on ticket 11). The backend refuses programs that use them, so this only shows if a
  * stored program predates that rule; it says so instead of drawing guesses.
  */
-export function NotYetAvailable({ what }: { readonly what: string }) {
-  return <p className="my-2 text-label text-fg-meta">{what} aren't available yet.</p>;
-}

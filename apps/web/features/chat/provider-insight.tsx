@@ -73,7 +73,8 @@ function TagList({ label, items }: { readonly label: string; readonly items: rea
   );
 }
 
-function InsightCard({ insight }: { readonly insight: ProviderInsightView }) {
+/** One provider's insight as a list item; generated UI's ReviewInsight draws the same card. */
+export function InsightCard({ insight }: { readonly insight: ProviderInsightView }) {
   const flagged = insight.reviewsWithInstructions;
   return (
     <li>
