@@ -424,7 +424,7 @@ export class MockProviderWorld implements ProviderWorld {
   }
 
   #summaryOf(provider: SeededProvider, range: DateRange): ProviderSummary {
-    const { about: _about, cancellationTerms: _terms, reviews: _reviews, ...summary } = provider;
+    const { about: _about, cancellationTerms: _terms, cancellationPolicy: _policy, reviews: _reviews, ...summary } = provider;
     return { ...summary, freeSlots: this.#freeSlots(provider.id, range) };
   }
 

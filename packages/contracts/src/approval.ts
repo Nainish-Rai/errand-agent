@@ -34,11 +34,48 @@ export const BookingTermsViewSchema = z.object({
   cancellationTerms: z.string(),
 });
 
+/** What a cancellation card shows: the booking, its visit, and the fee cancelling costs now (`priceInr`). */
+export const CancellationTermsViewSchema = z.object({
+  action: z.literal("cancel"),
+  bookingId: z.string(),
+  providerId: z.string(),
+  providerName: z.string(),
+  service: ServiceKindSchema,
+  rating: z.number(),
+  slot: SlotSchema,
+  /** The fee for cancelling now, by the provider's rule: the money this approval moves. 0 inside the free window. */
+  priceInr: z.number(),
+  bookingPriceInr: z.number(),
+  cancellationTerms: z.string(),
+  expiresAt: z.string(),
+});
+
+/** What a reschedule card shows: the booking's visit now (`fromSlot`) next to the new one (`slot`). */
+export const RescheduleTermsViewSchema = z.object({
+  action: z.literal("reschedule"),
+  bookingId: z.string(),
+  providerId: z.string(),
+  providerName: z.string(),
+  service: ServiceKindSchema,
+  rating: z.number(),
+  fromSlot: SlotSchema,
+  slot: SlotSchema,
+  /** The booking's price, which a move doesn't change. */
+  priceInr: z.number(),
+  expiresAt: z.string(),
+});
+
+export const ProposalTermsViewSchema = z.discriminatedUnion("action", [
+  BookingTermsViewSchema,
+  CancellationTermsViewSchema,
+  RescheduleTermsViewSchema,
+]);
+
 /** A proposal as the agent sees it: no fingerprint, so nothing in the model's context can stand in for a click. */
 export const ProposalCardSchema = z.object({
   proposalId: z.string(),
   status: ProposalStatusSchema,
-  terms: BookingTermsViewSchema,
+  terms: ProposalTermsViewSchema,
 });
 
 export const GrantViewSchema = z.object({
@@ -71,7 +108,7 @@ export const ProposalViewSchema = ProposalCardSchema.extend({
   sessionId: z.string(),
   fingerprint: z.string(),
   createdAt: z.string(),
-  /** Seconds left on the hold by the world's clock; 0 once it has run out. */
+  /** Seconds left on the hold (a cancel or reschedule card's approval window) by the world's clock; 0 once it has run out. */
   holdSecondsLeft: z.number().int().nonnegative(),
   bookingId: z.string().nullable(),
   grant: GrantViewSchema.nullable(),
@@ -104,7 +141,11 @@ export const HoldSlotOutputSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const ProposeActionInputSchema = z.object({
-  action: z.literal("book").describe("What to propose. Only book is supported: it books the slot you just held."),
+  action: z
+    .enum(["book", "cancel", "reschedule"])
+    .describe("book: the slot you just held. cancel: an upcoming booking. reschedule: move an upcoming booking to a new slot."),
+  booking_id: z.string().min(1).nullish().describe("For cancel and reschedule: the bookingId from list_bookings."),
+  slot: SlotSchema.nullish().describe("For reschedule: the new slot, exactly as find_reschedule_slots returned it."),
 });
 
 export const ProposeActionOutputSchema = z.discriminatedUnion("kind", [
@@ -112,11 +153,25 @@ export const ProposeActionOutputSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("no_hold"), message: z.string() }),
   z.object({ kind: z.literal("hold_expired"), message: z.string() }),
   z.object({ kind: z.literal("provider_not_found"), message: z.string() }),
+  /** cancel or reschedule without the booking (or the new slot) to change. */
+  z.object({ kind: z.literal("missing_details"), missing: z.array(z.enum(["booking_id", "slot"])), message: z.string() }),
+  z.object({ kind: z.literal("booking_not_found"), message: z.string() }),
+  z.object({ kind: z.literal("not_changeable"), bookingId: z.string(), status: z.string(), message: z.string() }),
+  z.object({ kind: z.literal("same_slot"), bookingId: z.string(), message: z.string() }),
+  /** The provider doesn't have that slot free; these are its closest free slots that day. */
+  z.object({ kind: z.literal("slot_unavailable"), bookingId: z.string(), alternatives: z.array(SlotSchema), message: z.string() }),
 ]);
 
 export const ExecuteProposalInputSchema = z.object({});
 
 export const ExecuteOutcomeKindSchema = z.enum([
+  "cancelled",
+  "rescheduled",
+  "already_changed",
+  "reschedule_conflict",
+  "change_failed",
+  "change_verifying",
+  "booking_unavailable",
   "booked",
   "already_booked",
   "not_approved",
@@ -145,6 +200,8 @@ export const ExecuteProposalOutputSchema = z.object({
   bookingId: z.string().nullable(),
   /** Only on slot_taken: the next options. Picking one shows a new approval card. */
   options: z.array(ErrandOptionSchema).optional(),
+  /** Only on reschedule_conflict: the provider's other free slots that day; the first is on the fresh card. */
+  alternativeSlots: z.array(SlotSchema).optional(),
   /** What to tell the person, from the one outcome presenter. */
   message: z.string(),
 });
@@ -173,6 +230,21 @@ export const BookingApprovalViewSchema = z.object({
   grantConsumed: z.boolean(),
 });
 
+/** A cancel or reschedule that was carried out on a booking: its card, what it covered, and its grant. */
+export const BookingChangeViewSchema = z.object({
+  proposalId: z.string(),
+  action: z.enum(["cancel", "reschedule"]),
+  status: ProposalStatusSchema,
+  /** The visit the card showed: the booking's slot (cancel) or the new one (reschedule). */
+  slot: SlotSchema,
+  /** The fee (cancel) or the booking's price (reschedule) the card showed. */
+  priceInr: z.number(),
+  proposalFingerprint: z.string(),
+  grantId: z.string().nullable(),
+  grantFingerprint: z.string().nullable(),
+  grantConsumed: z.boolean(),
+});
+
 export const BookingViewSchema = z.object({
   bookingId: z.string(),
   providerId: z.string(),
@@ -185,23 +257,33 @@ export const BookingViewSchema = z.object({
   cancelledBy: z.enum(["provider", "person"]).nullable().optional(),
   /** Null when no approved proposal made it (the seeded history). */
   approval: BookingApprovalViewSchema.nullable(),
+  /** The approved cancels and reschedules carried out on it, oldest first. */
+  changes: z.array(BookingChangeViewSchema),
 });
 
 /** GET /bookings: the person's bookings as the world has them, oldest slot first. */
 export const ListBookingsResponseSchema = z.object({ bookings: z.array(BookingViewSchema) });
 
-/** The action ledger's record of one booking attempt: written before `book`, settled by `get_booking_status`. */
+/**
+ * The action ledger's record of one approved action: written before `book` (`cancel`, `reschedule`),
+ * settled by `get_booking_status` (by the booking's status in `list_bookings`, for a change).
+ */
 export const ActionIntentStateSchema = z.enum(["pending", "confirmed", "failed", "unknown"]);
 
 export const ActionIntentViewSchema = z.object({
   idempotencyKey: z.string(),
-  action: z.literal("book"),
+  action: z.enum(["book", "cancel", "reschedule"]),
   proposalId: z.string(),
   grantId: z.string(),
   sessionId: z.string(),
-  holdId: z.string(),
+  /** The hold a booking used; null for a cancel or reschedule. */
+  holdId: z.string().nullable(),
+  /** The booking a cancel or reschedule changes; null for a booking. */
+  targetBookingId: z.string().nullable(),
+  /** The slot a reschedule moves to. */
+  newSlot: SlotSchema.nullable(),
   state: ActionIntentStateSchema,
-  /** How many times `book` was sent, always with `idempotencyKey`. */
+  /** How many times `book` (`cancel`, `reschedule`) was sent, always with `idempotencyKey`. */
   attempts: z.number().int().nonnegative(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -241,6 +323,10 @@ export const CARD_FOLLOW_UPS = {
 
 export type ProposalStatus = z.infer<typeof ProposalStatusSchema>;
 export type BookingTermsView = z.infer<typeof BookingTermsViewSchema>;
+export type CancellationTermsView = z.infer<typeof CancellationTermsViewSchema>;
+export type RescheduleTermsView = z.infer<typeof RescheduleTermsViewSchema>;
+export type ProposalTermsView = z.infer<typeof ProposalTermsViewSchema>;
+export type BookingChangeView = z.infer<typeof BookingChangeViewSchema>;
 export type ProposalCard = z.infer<typeof ProposalCardSchema>;
 export type GrantView = z.infer<typeof GrantViewSchema>;
 export type TermChangeView = z.infer<typeof TermChangeViewSchema>;

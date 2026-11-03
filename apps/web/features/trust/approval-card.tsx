@@ -32,10 +32,20 @@ export type ApprovalProposal =
       /** The provider's own cancellation terms. */
       readonly cancellationTerms?: string;
     }
-  | { readonly kind: "cancel"; readonly service: string; readonly slot: string; readonly bookingId: string; readonly fee: number }
+  | {
+      readonly kind: "cancel";
+      readonly service: string;
+      readonly slot: string;
+      readonly bookingId: string;
+      /** What cancelling costs now, by the provider's rule; 0 inside the free window. */
+      readonly fee: number;
+      /** The provider's own cancellation terms the fee comes from. */
+      readonly cancellationTerms?: string;
+    }
   | {
       readonly kind: "reschedule";
       readonly service: string;
+      readonly bookingId?: string;
       readonly fromSlot: string;
       readonly toSlot: string;
       /** The price of the booking at the new time. */
@@ -77,6 +87,11 @@ const commitment = {
   cancel: "Approving cancels exactly this booking.",
   reschedule: "Approving moves exactly this booking.",
 } as const;
+const askAgain = {
+  book: "If the provider, time or price changes, I'll ask again.",
+  cancel: "If the booking or the fee changes, I'll ask again.",
+  reschedule: "If the booking or the new time changes, I'll ask again.",
+} as const;
 const nothingDone = { book: "Nothing was booked.", cancel: "Nothing was cancelled.", reschedule: "Nothing was moved." } as const;
 
 /** The money this approval moves: the price, or the fee for a cancellation. */
@@ -84,10 +99,20 @@ export function approvalAmount(proposal: ApprovalProposal): number {
   return proposal.kind === "cancel" ? proposal.fee : proposal.price;
 }
 
-/** "Approve ₹899". */
+/** "Approve ₹899"; a cancellation names its fee, or says it is free. */
 export function approveLabel(proposal: ApprovalProposal): string {
-  return `Approve ${formatRupees(approvalAmount(proposal))}`;
+  if (proposal.kind !== "cancel") return `Approve ${formatRupees(approvalAmount(proposal))}`;
+  return proposal.fee === 0 ? "Approve free cancellation" : `Approve ${formatRupees(proposal.fee)} fee`;
 }
+
+/** What the person approved, for the approved card's note. */
+function approvedWhat(proposal: ApprovalProposal): string {
+  return proposal.kind === "cancel" ? "the cancellation" : formatRupees(approvalAmount(proposal));
+}
+
+/** The buttons besides Approve: a booking offers other options; a change offers to keep the booking as it is. */
+const otherOptionsLabel = { book: "Other options", cancel: undefined, reschedule: "Other times" } as const;
+const declineLabel = { book: "Decline", cancel: "Keep booking", reschedule: "Keep current time" } as const;
 
 function providerValue(provider: ApprovalProvider): ReactNode {
   return (
@@ -125,10 +150,12 @@ function detailRows(proposal: ApprovalProposal, provider: ApprovalProvider, hold
       rows.push(
         { label: "Booking", value: proposal.bookingId, mono: true },
         { label: "When", value: proposal.slot, mono: true },
-        { label: "Fee", value: <Money amount={proposal.fee} /> },
+        { label: "Fee", value: proposal.fee === 0 ? "No fee" : <Money amount={proposal.fee} /> },
       );
+      if (proposal.cancellationTerms !== undefined) rows.push({ label: "Terms", value: proposal.cancellationTerms });
       break;
     case "reschedule":
+      if (proposal.bookingId !== undefined) rows.push({ label: "Booking", value: proposal.bookingId, mono: true });
       rows.push(
         {
           label: "When",
@@ -179,16 +206,20 @@ export function ApprovalCard(props: ApprovalCardProps) {
             status={approving ? <StatusMark kind="checking" label="Approving" /> : <StatusMark kind="needs-you" label="Needs you" />}
           />
           <DetailTable rows={detailRows(proposal, provider, state.status === "pending" ? state.holdLeft : undefined)} />
-          <TrustNote>{commitment[proposal.kind]} If the provider, time or price changes, I&apos;ll ask again.</TrustNote>
+          <TrustNote>
+            {commitment[proposal.kind]} {askAgain[proposal.kind]}
+          </TrustNote>
           <TrustActions>
             <Button variant="primary" loading={approving} onClick={props.onApprove}>
               {approving ? "Approving…" : approveLabel(proposal)}
             </Button>
-            <Button variant="secondary" disabled={approving} onClick={props.onOtherOptions}>
-              Other options
-            </Button>
+            {otherOptionsLabel[proposal.kind] !== undefined && (
+              <Button variant="secondary" disabled={approving} onClick={props.onOtherOptions}>
+                {otherOptionsLabel[proposal.kind]}
+              </Button>
+            )}
             <Button variant="ghost" disabled={approving} onClick={props.onDecline}>
-              Decline
+              {declineLabel[proposal.kind]}
             </Button>
           </TrustActions>
         </TrustCard>
@@ -199,7 +230,7 @@ export function ApprovalCard(props: ApprovalCardProps) {
         <TrustCard label={title}>
           <TrustHeader title={title} status={<StatusMark kind="ok" label="Approved" />} />
           <DetailTable rows={detailRows(proposal, provider, undefined)} />
-          <TrustNote>You approved {formatRupees(approvalAmount(proposal))}. I&apos;m confirming it with the provider now.</TrustNote>
+          <TrustNote>You approved {approvedWhat(proposal)}. I&apos;m confirming it with the provider now.</TrustNote>
         </TrustCard>
       );
     case "voided":

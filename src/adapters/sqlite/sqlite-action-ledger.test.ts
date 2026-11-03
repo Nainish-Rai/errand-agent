@@ -4,11 +4,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { attemptStarted, confirmedAs, type ActionIntent } from "../../core/booking/action-intent";
+import { attemptStarted, confirmedAs, type BookingIntent } from "../../core/booking/action-intent";
 import { openDatabase } from "./database";
 import { SqliteActionLedger } from "./sqlite-action-ledger";
 
-function intent(grantId: string, sessionId = "ses_1"): ActionIntent {
+function intent(grantId: string, sessionId = "ses_1"): BookingIntent {
   return {
     idempotencyKey: `book:${grantId}`,
     action: "book",

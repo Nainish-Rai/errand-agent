@@ -1,8 +1,10 @@
-import type { Proposal } from "./proposal";
+import type { ProposedAction } from "./fingerprint";
+import { approvalDeadlineOf, type Proposal } from "./proposal";
 
 // A grant is the person's permission to carry out one proposal, exactly as fingerprinted. It is
 // minted only from a click on the approval card (the app API's approve route is the one caller of
-// ApproveProposal), used at most once, and never outlives the hold it would book.
+// ApproveProposal), used at most once, and never outlives the hold it would book (or, for a cancel or
+// a reschedule, the card's own approval window).
 
 /** A grant left unused this long lapses even if the hold is still good. */
 export const GRANT_LIFETIME_MS = 5 * 60 * 1_000;
@@ -21,7 +23,7 @@ export interface Grant {
   readonly fingerprint: string;
   readonly userId: string;
   readonly issuedAtMs: number;
-  /** Never later than the hold's expiry. */
+  /** Never later than the hold's expiry (a change's approval window). */
   readonly expiresAtMs: number;
   /** Set when the grant is used; a used grant can't be used again. */
   readonly consumedAtMs?: number;
@@ -30,7 +32,7 @@ export interface Grant {
 }
 
 export function grantFor(proposal: Proposal, approval: UserApproval, grantId: string, nowMs: number): Grant {
-  const holdEndsMs = Date.parse(proposal.terms.holdExpiresAt);
+  const holdEndsMs = Date.parse(approvalDeadlineOf(proposal.terms));
   return {
     grantId,
     proposalId: proposal.proposalId,
@@ -54,9 +56,10 @@ export function isVoided(grant: Grant): boolean {
 }
 
 /**
- * The key `book` is called with. Derived from the grant, so the one grant can only ever produce
- * one booking: the world returns the first result for a repeated key instead of booking again.
+ * The key `book` (or `cancel`, or `reschedule`) is called with. Derived from the grant, so the one
+ * grant can only ever have one effect: the world returns the first result for a repeated key
+ * instead of acting again.
  */
-export function idempotencyKeyOf(grant: Grant): string {
-  return `book:${grant.grantId}`;
+export function idempotencyKeyOf(grant: Grant, action: ProposedAction): string {
+  return `${action}:${grant.grantId}`;
 }

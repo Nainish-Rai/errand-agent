@@ -42,6 +42,16 @@ export function cardsIn(turn: ChatTurn | undefined): ProposalCard[] {
   });
 }
 
+/** The hold a booking card is for; undefined on a cancel or reschedule card, which rests on a booking. */
+export function holdIdOf(card: Pick<ProposalCard, "terms">): string | undefined {
+  return card.terms.action === "book" ? card.terms.holdId : undefined;
+}
+
+/** When the card stops being approvable: the hold's expiry, or a change card's own window. */
+export function approvalDeadlineOf(card: Pick<ProposalCard, "terms">): string {
+  return card.terms.action === "book" ? card.terms.holdExpiresAt : card.terms.expiresAt;
+}
+
 /** The card the person would see last in the chat, as the web app's thread shows it. */
 export function latestCard(turns: readonly ChatTurn[]): ProposalCard | undefined {
   return turns.flatMap((turn) => cardsIn(turn)).at(-1);
@@ -54,6 +64,22 @@ export function latestCard(turns: readonly ChatTurn[]): ProposalCard | undefined
  */
 export function expectedFingerprint(terms: Pick<BookingTermsView, "providerId" | "slot" | "priceInr" | "holdId">): string {
   const text = JSON.stringify(["book", terms.providerId, terms.slot.start, terms.slot.end, terms.priceInr, terms.holdId]);
+  return `fp_${createHash("sha256").update(text, "utf8").digest("hex")}`;
+}
+
+/**
+ * The fingerprint of a cancel or reschedule, derived here independently of the backend: SHA-256 over
+ * [action, provider, slot start, slot end, price, booking ID], where the slot is the booking's
+ * (cancel) or the new one (reschedule) and the price is the fee (cancel) or the booking's price.
+ */
+export function expectedChangeFingerprint(terms: {
+  readonly action: "cancel" | "reschedule";
+  readonly providerId: string;
+  readonly slot: { readonly start: string; readonly end: string };
+  readonly priceInr: number;
+  readonly bookingId: string;
+}): string {
+  const text = JSON.stringify([terms.action, terms.providerId, terms.slot.start, terms.slot.end, terms.priceInr, terms.bookingId]);
   return `fp_${createHash("sha256").update(text, "utf8").digest("hex")}`;
 }
 

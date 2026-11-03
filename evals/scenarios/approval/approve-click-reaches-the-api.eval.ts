@@ -1,6 +1,7 @@
 import type { EveEvalContext } from "eve/evals";
 import { equals } from "eve/evals/expect";
 
+import { approvalDeadlineOf } from "../../approval-checks";
 import { ASK_FOR_PLUMBER, CHOOSE_CHEAPEST, executeTurn, HOLD_AND_PROPOSE_TURN, SEARCH_TURN } from "../../booking-conversation";
 import { defineScenario } from "../../scenario";
 
@@ -39,7 +40,7 @@ export default defineScenario({
     const proposal = await run.api.getProposal(proposalId);
     await t.require(proposal.grant !== null, equals(true));
     t.check(proposal.grant?.fingerprint, equals(proposal.fingerprint)).label("the grant is for the card's fingerprint");
-    t.check(Date.parse(proposal.grant?.expiresAt ?? "") <= Date.parse(proposal.terms.holdExpiresAt), equals(true)).label(
+    t.check(Date.parse(proposal.grant?.expiresAt ?? "") <= Date.parse(approvalDeadlineOf(proposal)), equals(true)).label(
       "the grant expires no later than the hold",
     );
 

@@ -1,5 +1,5 @@
 import type { BookingStatusOutcome, BookOutcome } from "../ports/provider-world";
-import { canAttemptAgain, isHoldOver, type ActionIntent } from "./action-intent";
+import { canAttemptAgain, isHoldOver, type BookingIntent } from "./action-intent";
 
 // The reconciliation matrix: what to do with an intent given what the world said. The world's
 // `get_booking_status` for the intent's key is the source of truth. `book`'s own reply is never
@@ -51,7 +51,7 @@ export interface StatusContext {
 }
 
 /** Settles the intent from the status the world gave for its key. */
-export function settleFromStatus(intent: ActionIntent, status: BookingStatusOutcome, context: StatusContext): Settlement {
+export function settleFromStatus(intent: BookingIntent, status: BookingStatusOutcome, context: StatusContext): Settlement {
   if (status.kind === "booked") {
     // A `booked` reply naming another booking than the status does is believed by neither.
     if (context.reply?.kind === "booked" && context.reply.bookingId !== status.bookingId) return { kind: "unknown" };

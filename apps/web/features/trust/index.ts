@@ -11,6 +11,7 @@ export {
   type ApprovalState,
 } from "./approval-card";
 export { BookingReceipt, type ReceiptBooking, type ReceiptState } from "./booking-receipt";
+export { ChangeReceipt, type ChangedBooking, type ChangeReceiptState } from "./change-receipt";
 export { ForgottenFactRow, InferredFactPrompt, MemoryFactRow, type MemoryFact } from "./memory-fact-row";
 export { ProviderCancelledAlert } from "./provider-cancelled-alert";
 export { VerificationBanner } from "./verification-banner";

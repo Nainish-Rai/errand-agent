@@ -12,8 +12,11 @@ export interface ActionIntentQuery {
  * two executions) working on the same intent can't overwrite each other.
  */
 export interface ActionLedger {
-  /** Stores the intent unless one with its key exists, and returns the stored one. */
-  record(intent: ActionIntent): Promise<ActionIntent>;
+  /**
+   * Stores the intent unless one with its key exists, and returns the stored one. The key names the
+   * action (`book:…`, `cancel:…`), so the stored intent is always the same kind as `intent`.
+   */
+  record<T extends ActionIntent>(intent: T): Promise<T>;
   find(idempotencyKey: string): Promise<ActionIntent | undefined>;
   /**
    * Saves `next` only if the stored intent is still at `next.version - 1`. False when someone else

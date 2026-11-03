@@ -1,4 +1,4 @@
-import type { ServiceKind } from "../../../core/ports/provider-world";
+import type { CancellationPolicy, ServiceKind } from "../../../core/ports/provider-world";
 
 export const SERVICES: readonly ServiceKind[] = [
   "plumber",
@@ -216,8 +216,18 @@ export const INJECTION_CAMPAIGN: readonly InjectionVariant[] = [
   },
 ];
 
-export const CANCELLATION_TERMS: readonly string[] = [
-  "Free cancellation up to 2 hours before the visit; ₹99 after that.",
-  "Free cancellation up to 4 hours before the visit; ₹149 after that.",
-  "Free cancellation up to 24 hours before the visit; 20% of the price after that.",
+/** Each provider's cancellation rule: in its own words for the card, and as data for the fee. */
+export const CANCELLATION_TERMS: readonly { readonly text: string; readonly policy: CancellationPolicy }[] = [
+  {
+    text: "Free cancellation up to 2 hours before the visit; ₹99 after that.",
+    policy: { freeUntilHoursBefore: 2, lateFee: { kind: "flat", amountInr: 99 } },
+  },
+  {
+    text: "Free cancellation up to 4 hours before the visit; ₹149 after that.",
+    policy: { freeUntilHoursBefore: 4, lateFee: { kind: "flat", amountInr: 149 } },
+  },
+  {
+    text: "Free cancellation up to 24 hours before the visit; 20% of the price after that.",
+    policy: { freeUntilHoursBefore: 24, lateFee: { kind: "percent_of_price", percent: 20 } },
+  },
 ];

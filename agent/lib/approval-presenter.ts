@@ -1,10 +1,12 @@
 import {
   VERIFYING_PROMISE,
   type ActionIntentView,
+  type BookingChangeView,
   type BookingView,
   type ExecuteProposalOutput,
   type HoldSlotOutput,
   type ProposalCard,
+  type ProposalTermsView,
   type ProposalView,
   type ProposeActionOutput,
   type TermChangeView,
@@ -12,15 +14,17 @@ import {
 
 import type { Grant } from "../../src/core/approval/grant";
 import type { TermChange } from "../../src/core/approval/invalidation";
-import type { Proposal } from "../../src/core/approval/proposal";
+import type { BookingChangeTerms, Proposal, ProposalTerms } from "../../src/core/approval/proposal";
 import type { ServiceCatalog } from "../../src/core/ports/service-catalog";
 import type { BookingOutcome } from "../../src/core/use-cases/book-approved-proposal";
 import type { ExecuteProposalOutcome } from "../../src/core/use-cases/execute-proposal";
 import type { HoldSlotOutcome } from "../../src/core/use-cases/hold-slot";
-import type { ApprovedBooking } from "../../src/core/use-cases/list-bookings";
+import type { BookingChangeOutcome } from "../../src/core/use-cases/change-approved-booking";
+import type { ApprovedBooking, BookingChangeApproval } from "../../src/core/use-cases/list-bookings";
 import type { ProposalStanding } from "../../src/core/use-cases/list-proposals";
 import type { ProposeBookingOutcome } from "../../src/core/use-cases/propose-booking";
-import type { ActionIntentStanding } from "../../src/core/use-cases/reconcile-pending-actions";
+import type { ProposeBookingChangeOutcome } from "../../src/core/use-cases/propose-booking-change";
+import type { ActionIntentStanding, BookingNotice } from "../../src/core/use-cases/reconcile-pending-actions";
 import { presentErrand, presentOptions } from "./errand-presenter";
 
 // Core's hold, proposal and booking outcomes to wire shapes, and the one place their user-facing
@@ -43,25 +47,47 @@ function rupees(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-export function presentProposalCard(proposal: Proposal): ProposalCard {
-  const { terms } = proposal;
-  return {
-    proposalId: proposal.proposalId,
-    status: proposal.status,
-    terms: {
-      action: terms.action,
-      providerId: terms.providerId,
-      providerName: terms.providerName,
-      service: terms.service,
-      rating: terms.rating,
-      area: terms.area,
-      slot: { start: terms.slot.start, end: terms.slot.end },
-      priceInr: terms.priceInr,
-      holdId: terms.holdId,
-      holdExpiresAt: terms.holdExpiresAt,
-      cancellationTerms: terms.cancellationTerms,
-    },
+function presentTerms(terms: ProposalTerms): ProposalTermsView {
+  const shared = {
+    providerId: terms.providerId,
+    providerName: terms.providerName,
+    service: terms.service,
+    rating: terms.rating,
+    slot: { start: terms.slot.start, end: terms.slot.end },
+    priceInr: terms.priceInr,
   };
+  switch (terms.action) {
+    case "book":
+      return {
+        ...shared,
+        action: "book",
+        area: terms.area,
+        holdId: terms.holdId,
+        holdExpiresAt: terms.holdExpiresAt,
+        cancellationTerms: terms.cancellationTerms,
+      };
+    case "cancel":
+      return {
+        ...shared,
+        action: "cancel",
+        bookingId: terms.bookingId,
+        bookingPriceInr: terms.bookingPriceInr,
+        cancellationTerms: terms.cancellationTerms,
+        expiresAt: terms.expiresAt,
+      };
+    case "reschedule":
+      return {
+        ...shared,
+        action: "reschedule",
+        bookingId: terms.bookingId,
+        fromSlot: { start: terms.fromSlot.start, end: terms.fromSlot.end },
+        expiresAt: terms.expiresAt,
+      };
+  }
+}
+
+export function presentProposalCard(proposal: Proposal): ProposalCard {
+  return { proposalId: proposal.proposalId, status: proposal.status, terms: presentTerms(proposal.terms) };
 }
 
 function presentGrant(grant: Grant) {
@@ -106,7 +132,21 @@ export function presentProposalView(standing: ProposalStanding): ProposalView {
   };
 }
 
-export function presentBooking({ booking, approval }: ApprovedBooking): BookingView {
+function presentBookingChange({ proposal, grant }: BookingChangeApproval): BookingChangeView {
+  return {
+    proposalId: proposal.proposalId,
+    action: proposal.terms.action,
+    status: proposal.status,
+    slot: { start: proposal.terms.slot.start, end: proposal.terms.slot.end },
+    priceInr: proposal.terms.priceInr,
+    proposalFingerprint: proposal.fingerprint,
+    grantId: grant?.grantId ?? null,
+    grantFingerprint: grant?.fingerprint ?? null,
+    grantConsumed: grant?.consumedAtMs !== undefined,
+  };
+}
+
+export function presentBooking({ booking, approval, changes }: ApprovedBooking): BookingView {
   return {
     bookingId: booking.bookingId,
     providerId: booking.providerId,
@@ -117,7 +157,7 @@ export function presentBooking({ booking, approval }: ApprovedBooking): BookingV
     status: booking.status,
     cancelledBy: booking.cancelledBy ?? null,
     approval:
-      approval === undefined
+      approval === undefined || approval.proposal.terms.action !== "book"
         ? null
         : {
             proposalId: approval.proposal.proposalId,
@@ -127,6 +167,7 @@ export function presentBooking({ booking, approval }: ApprovedBooking): BookingV
             grantFingerprint: approval.grant?.fingerprint ?? null,
             grantConsumed: approval.grant?.consumedAtMs !== undefined,
           },
+    changes: changes.map(presentBookingChange),
   };
 }
 
@@ -185,10 +226,70 @@ export function presentProposeOutcome(outcome: ProposeBookingOutcome): ProposeAc
   }
 }
 
-function changeClause(change: TermChange): string {
+/** "Approve ₹899" for a booking or a move; a cancellation's button names its fee, or says it's free. */
+export function approveButtonOf(terms: ProposalTerms): string {
+  if (terms.action !== "cancel") return `Approve ${rupees(terms.priceInr)}`;
+  return terms.priceInr === 0 ? "Approve free cancellation" : `Approve ${rupees(terms.priceInr)} fee`;
+}
+
+function proposedChangeMessage(terms: BookingChangeTerms): string {
+  const button = approveButtonOf(terms);
+  if (terms.action === "cancel") {
+    const fee = terms.priceInr === 0 ? "no cancellation fee" : `a cancellation fee of ${rupees(terms.priceInr)}`;
+    return (
+      `The cancellation card is on screen: ${terms.providerName}, ${when(terms.slot.start)}, booking ${terms.bookingId}, ${fee}. ` +
+      `Ask the person to check it and tap ${button} if it's right. Nothing is cancelled until they tap it.`
+    );
+  }
+  return (
+    `The reschedule card is on screen: ${terms.providerName}, booking ${terms.bookingId}, from ${when(terms.fromSlot.start)} ` +
+    `to ${when(terms.slot.start)}. Ask the person to check it and tap ${button} if it's right. Nothing moves until they tap it.`
+  );
+}
+
+export function presentProposeChangeOutcome(outcome: ProposeBookingChangeOutcome): ProposeActionOutput {
+  switch (outcome.kind) {
+    case "proposed":
+      return { kind: "proposed", proposal: presentProposalCard(outcome.proposal), message: proposedChangeMessage(outcome.proposal.terms) };
+    case "booking_not_found":
+      return { kind: "booking_not_found", message: "The person has no booking with that ID. Call list_bookings and use a bookingId from it." };
+    case "not_changeable":
+      return {
+        kind: "not_changeable",
+        bookingId: outcome.booking.bookingId,
+        status: outcome.booking.status,
+        message: `That booking is ${outcome.booking.status === "upcoming" ? "already under way" : outcome.booking.status}, so it can't be cancelled or moved.`,
+      };
+    case "same_slot":
+      return { kind: "same_slot", bookingId: outcome.booking.bookingId, message: "The booking is already at that time. Ask which time they want instead." };
+    case "slot_unavailable":
+      return {
+        kind: "slot_unavailable",
+        bookingId: outcome.booking.bookingId,
+        alternatives: outcome.alternatives.map((slot) => ({ start: slot.start, end: slot.end })),
+        message:
+          outcome.alternatives.length === 0
+            ? "The provider has no free slot that day. Ask the person for another day, then call find_reschedule_slots."
+            : `The provider doesn't have that slot free. Offer these instead: ${outcome.alternatives.map((slot) => when(slot.start)).join(", ")}.`,
+      };
+    case "provider_not_found":
+      return { kind: "provider_not_found", message: "The booking's provider no longer exists, so it can't be changed here." };
+  }
+}
+
+/** cancel or reschedule called without what it needs. */
+export function presentMissingChangeDetails(missing: readonly ("booking_id" | "slot")[]): ProposeActionOutput {
+  return {
+    kind: "missing_details",
+    missing: [...missing],
+    message: `Pass ${missing.join(" and ")}: the bookingId from list_bookings${missing.includes("slot") ? ", and a slot from find_reschedule_slots" : ""}.`,
+  };
+}
+
+function changeClause(change: TermChange, action: ProposalTerms["action"]): string {
   switch (change.field) {
     case "price":
-      return `the price went from ${rupees(change.from)} to ${rupees(change.to)}`;
+      return `the ${action === "cancel" ? "cancellation fee" : "price"} went from ${rupees(change.from)} to ${rupees(change.to)}`;
     case "slot":
       return `the time went from ${when(change.from.start)} to ${when(change.to.start)}`;
     case "provider":
@@ -197,9 +298,56 @@ function changeClause(change: TermChange): string {
 }
 
 /** "The price went from ₹899 to ₹1,050 and the time went from … to …". */
-function whatChanged(changes: readonly TermChange[]): string {
-  const sentence = changes.map(changeClause).join(" and ");
+function whatChanged(changes: readonly TermChange[], action: ProposalTerms["action"] = "book"): string {
+  const sentence = changes.map((change) => changeClause(change, action)).join(" and ");
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
+/** What did not happen, in the action's words: "nothing was booked", "nothing was cancelled", "nothing moved". */
+const NOTHING_DONE = { book: "nothing was booked", cancel: "nothing was cancelled", reschedule: "nothing was moved" } as const;
+
+const ACTION_NOUN = { book: "booking", cancel: "cancellation", reschedule: "move" } as const;
+
+function changeDescription(terms: BookingChangeTerms): string {
+  return terms.action === "cancel"
+    ? `your ${terms.providerName} visit on ${when(terms.slot.start)} (booking ${terms.bookingId})`
+    : `your ${terms.providerName} visit (booking ${terms.bookingId}) from ${when(terms.fromSlot.start)} to ${when(terms.slot.start)}`;
+}
+
+function feeClause(feeInr: number): string {
+  return feeInr === 0 ? "There's no cancellation fee." : `The cancellation fee was ${rupees(feeInr)}.`;
+}
+
+function bookingChangeMessage(outcome: BookingChangeOutcome): string {
+  switch (outcome.kind) {
+    case "cancelled": {
+      const { terms } = outcome.proposal;
+      return `Cancelled: ${changeDescription(terms)}. The provider's booking list confirms it. ${feeClause(terms.priceInr)}`;
+    }
+    case "rescheduled": {
+      const { terms } = outcome.proposal;
+      return `Moved: ${terms.providerName}, now ${when(terms.slot.start)} (was ${when(terms.fromSlot.start)}). Booking ID ${terms.bookingId}.`;
+    }
+    case "reschedule_conflict":
+      return outcome.freshProposal === undefined
+        ? `The provider can't take ${when(outcome.proposal.terms.slot.start)}, so nothing was moved, and it has no other free slot that day. Pick another day.`
+        : `The provider can't take ${when(outcome.proposal.terms.slot.start)}, so nothing was moved. ` +
+            `A new card offers ${when(outcome.freshProposal.terms.slot.start)} instead; tap Approve on it if that works, or pick another of the free slots.`;
+    case "change_failed":
+      return changeFailureMessage(outcome.proposal.terms.action, outcome.reason);
+    case "change_verifying":
+      return `I'm checking with the provider whether the ${ACTION_NOUN[outcome.proposal.terms.action]} went through. ${VERIFYING_PROMISE}`;
+  }
+}
+
+function changeFailureMessage(action: BookingChangeTerms["action"], reason: string): string {
+  if (reason === "service_unavailable") {
+    return `The provider's system kept failing, so ${NOTHING_DONE[action]}: your booking is as it was. I can try again with a new card.`;
+  }
+  if (reason === "booking_not_found" || reason === "booking_not_changeable") {
+    return `That booking can no longer be changed (it's done, cancelled or under way), so ${NOTHING_DONE[action]}.`;
+  }
+  return `The provider couldn't make the change, so ${NOTHING_DONE[action]}.`;
 }
 
 function executeMessage(outcome: ExecuteProposalOutcome): string {
@@ -209,19 +357,35 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
       const { terms } = outcome.proposal;
       return `Booked: ${terms.providerName}, ${when(terms.slot.start)}, ${rupees(terms.priceInr)}. Booking ID ${outcome.bookingId}.`;
     }
-    case "not_approved":
+    case "cancelled":
+    case "rescheduled":
+    case "reschedule_conflict":
+    case "change_failed":
+    case "change_verifying":
+      return bookingChangeMessage(outcome);
+    case "already_changed":
+      return outcome.proposal.terms.action === "cancel"
+        ? `That booking (${outcome.proposal.terms.bookingId}) is already cancelled; nothing new was done.`
+        : `That booking (${outcome.proposal.terms.bookingId}) was already moved; nothing new was done.`;
+    case "booking_unavailable":
+      return changeFailureMessage(outcome.proposal.terms.action === "cancel" ? "cancel" : "reschedule", "booking_not_changeable");
+    case "not_approved": {
+      const { terms } = outcome.proposal;
       return (
-        `Nothing is booked yet: only a tap on Approve ${rupees(outcome.proposal.terms.priceInr)} on the card can book it, ` +
-        "and a typed reply doesn't count. The card is shown again."
+        `Nothing is ${terms.action === "book" ? "booked" : "changed"} yet: only a tap on ${approveButtonOf(terms)} on the card can ` +
+        `approve the ${ACTION_NOUN[terms.action]}, and a typed reply doesn't count. The card is shown again.`
       );
+    }
     case "no_proposal":
       return "There is nothing to book yet. Choose an option first.";
     case "declined":
-      return "You declined this booking, so nothing was booked.";
+      return `You declined this ${ACTION_NOUN[outcome.proposal.terms.action]}, so ${NOTHING_DONE[outcome.proposal.terms.action]}.`;
     case "approval_expired":
-      return "The approval ran out before the booking was made, so nothing was booked. I can hold the slot again.";
+      return outcome.proposal.terms.action === "book"
+        ? "The approval ran out before the booking was made, so nothing was booked. I can hold the slot again."
+        : `The approval ran out before it was used, so ${NOTHING_DONE[outcome.proposal.terms.action]}. I can show a new card.`;
     case "fingerprint_mismatch":
-      return "The approval doesn't match this booking's details, so nothing was booked. I'll show a new card.";
+      return `The approval doesn't match this ${ACTION_NOUN[outcome.proposal.terms.action]}'s details, so ${NOTHING_DONE[outcome.proposal.terms.action]}. I'll show a new card.`;
     case "out_of_step":
       return "That approval is no longer current, so nothing was booked. Let's look at the options again.";
     case "slot_taken":
@@ -234,10 +398,10 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
     case "booking_failed":
       return failureMessage(outcome.reason);
     case "approval_invalidated": {
-      const price = rupees(outcome.freshProposal.terms.priceInr);
+      const { action } = outcome.freshProposal.terms;
       return (
-        `${whatChanged(outcome.changes)} after you approved, so I booked nothing. ` +
-        `A new card shows the new terms: tap Approve ${price} on it if you still want it.`
+        `${whatChanged(outcome.changes, action)} after you approved, so ${NOTHING_DONE[action]}. ` +
+        `A new card shows the new terms: tap ${approveButtonOf(outcome.freshProposal.terms)} on it if you still want it.`
       );
     }
     case "hold_reproposed": {
@@ -254,7 +418,10 @@ function executeMessage(outcome: ExecuteProposalOutcome): string {
 }
 
 function freshProposalOf(outcome: ExecuteProposalOutcome): Proposal | undefined {
-  return outcome.kind === "approval_invalidated" || outcome.kind === "hold_reproposed" ? outcome.freshProposal : undefined;
+  if (outcome.kind === "approval_invalidated" || outcome.kind === "hold_reproposed" || outcome.kind === "reschedule_conflict") {
+    return outcome.freshProposal;
+  }
+  return undefined;
 }
 
 function changesOf(outcome: ExecuteProposalOutcome): readonly TermChange[] {
@@ -272,8 +439,14 @@ function failureMessage(reason: string): string {
 }
 
 /** A settlement the reconciler reached outside the person's turn, as the booking update they are owed. */
-export function presentBookingNotice(outcome: BookingOutcome): string {
+export function presentBookingNotice(outcome: BookingNotice): string {
   switch (outcome.kind) {
+    case "cancelled":
+    case "rescheduled":
+    case "reschedule_conflict":
+    case "change_failed":
+    case "change_verifying":
+      return `Update on your booking: ${bookingChangeMessage(outcome)}`;
     case "booked": {
       const { terms } = outcome.proposal;
       return (
@@ -301,13 +474,15 @@ export function presentActionIntent({ intent, notice }: ActionIntentStanding): A
     proposalId: intent.proposalId,
     grantId: intent.grantId,
     sessionId: intent.sessionId,
-    holdId: intent.holdId,
+    holdId: intent.action === "book" ? intent.holdId : null,
+    targetBookingId: intent.action === "book" ? null : intent.targetBookingId,
+    newSlot: intent.action === "reschedule" ? { start: intent.newSlot.start, end: intent.newSlot.end } : null,
     state: intent.state,
     attempts: intent.attempts,
     createdAt: new Date(intent.createdAtMs).toISOString(),
     updatedAt: new Date(intent.updatedAtMs).toISOString(),
     lastAttemptAt: isoOrNull(intent.lastAttemptAtMs),
-    bookingId: intent.bookingId ?? null,
+    bookingId: (intent.action === "book" ? intent.bookingId : undefined) ?? null,
     failureReason: intent.failureReason ?? null,
     resolvedAt: isoOrNull(intent.resolvedAtMs),
     resolvedBy: intent.resolvedBy ?? null,
@@ -325,6 +500,7 @@ export function presentExecuteOutcome(outcome: ExecuteProposalOutcome): ExecuteP
     freshProposal: fresh === undefined ? null : presentProposalCard(fresh),
     bookingId: outcome.kind === "booked" || outcome.kind === "already_booked" ? outcome.bookingId : null,
     ...(outcome.kind === "slot_taken" ? { options: presentOptions(outcome.alternatives) } : {}),
+    ...(outcome.kind === "reschedule_conflict" ? { alternativeSlots: outcome.alternatives.map((slot) => ({ start: slot.start, end: slot.end })) } : {}),
     message: executeMessage(outcome),
   };
 }

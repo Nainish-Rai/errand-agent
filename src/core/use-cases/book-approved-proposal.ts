@@ -1,6 +1,6 @@
 import type { Grant } from "../approval/grant";
-import type { Proposal } from "../approval/proposal";
-import { bookingIntentFor, isResolved, ledgerEvent, type ActionIntent } from "../booking/action-intent";
+import type { BookingProposal } from "../approval/proposal";
+import { bookingIntentFor, isBookingIntent, isResolved, ledgerEvent, type BookingIntent } from "../booking/action-intent";
 import type { Errand } from "../errand/errand";
 import { selectOptions, type ErrandOption } from "../errand/errand-options";
 import type { ErrandState, TracePlace } from "../errand/errand-workflow";
@@ -20,12 +20,12 @@ export interface BookingDependencies extends ProposalDependencies {
 
 export type BookingOutcome =
   /** The world's status names this booking ID for the grant's key. */
-  | { readonly kind: "booked"; readonly proposal: Proposal; readonly bookingId: string; readonly intent: ActionIntent }
+  | { readonly kind: "booked"; readonly proposal: BookingProposal; readonly bookingId: string; readonly intent: BookingIntent }
   /** Someone else got the slot first. Nothing was booked; the next options are on screen, and picking one needs a new approval. */
-  | { readonly kind: "slot_taken"; readonly proposal: Proposal; readonly alternatives: readonly ErrandOption[]; readonly intent: ActionIntent }
+  | { readonly kind: "slot_taken"; readonly proposal: BookingProposal; readonly alternatives: readonly ErrandOption[]; readonly intent: BookingIntent }
   /** The world can't say yet whether it booked. Not booked, not failed; the reconciler settles it later. */
-  | { readonly kind: "verifying"; readonly proposal: Proposal; readonly intent: ActionIntent }
-  | { readonly kind: "booking_failed"; readonly proposal: Proposal; readonly reason: string; readonly intent: ActionIntent };
+  | { readonly kind: "verifying"; readonly proposal: BookingProposal; readonly intent: BookingIntent }
+  | { readonly kind: "booking_failed"; readonly proposal: BookingProposal; readonly reason: string; readonly intent: BookingIntent };
 
 export interface SettledBooking {
   /**
@@ -68,7 +68,7 @@ async function nextOptions(errand: Errand | undefined, deps: BookingDependencies
 /** What a settled (or still unsettled) intent means for its proposal, its errand and the person. */
 export async function settledBooking(
   deps: BookingDependencies,
-  request: { readonly errand: Errand | undefined; readonly proposal: Proposal; readonly intent: ActionIntent },
+  request: { readonly errand: Errand | undefined; readonly proposal: BookingProposal; readonly intent: BookingIntent },
 ): Promise<SettledBooking> {
   const { proposal, intent } = request;
   const { clock } = deps.errand;
@@ -82,7 +82,7 @@ export async function settledBooking(
     case "confirmed": {
       const bookingId = intent.bookingId;
       if (bookingId === undefined) throw new Error(`Confirmed intent ${intent.idempotencyKey} has no booking ID.`);
-      const executed: Proposal = { ...proposal, status: "executed", bookingId };
+      const executed: BookingProposal = { ...proposal, status: "executed", bookingId };
       await deps.proposals.saveProposal(executed);
       const next = movedIfExecuting(errand, deps, (current) => moved(withoutHold(current), "done", "booking_verified", clock));
       return { outcome: { kind: "booked", proposal: executed, bookingId, intent }, ...(next === undefined ? {} : { errand: next }) };
@@ -91,7 +91,7 @@ export async function settledBooking(
       // `book` itself found the hold run out (06): hold the slot again for a fresh card, in this
       // turn. Later, when the reconciler finds a hold ran out while verifying, the errand fails.
       if (intent.failureReason === "hold_expired" && errand?.state === "executing") return reproposeExpiredHold(errand, proposal, deps);
-      const failed: Proposal = { ...proposal, status: "failed" };
+      const failed: BookingProposal = { ...proposal, status: "failed" };
       await deps.proposals.saveProposal(failed);
       if (intent.failureReason === "slot_taken") {
         // Back to the options: the next pick is a new hold, a new card and a new approval.
@@ -105,7 +105,7 @@ export async function settledBooking(
     }
     case "pending":
     case "unknown": {
-      const verifying: Proposal = { ...proposal, status: "verifying" };
+      const verifying: BookingProposal = { ...proposal, status: "verifying" };
       await deps.proposals.saveProposal(verifying);
       const next =
         errand?.state === "executing" ? moved(errand, "verifying", "awaiting_verification", clock) : undefined;
@@ -115,7 +115,7 @@ export async function settledBooking(
 }
 
 /** What the ledger says about an intent someone else is carrying out, changing nothing. */
-function reportedOutcome(proposal: Proposal, intent: ActionIntent): BookingOutcome {
+function reportedOutcome(proposal: BookingProposal, intent: BookingIntent): BookingOutcome {
   if (intent.state === "confirmed" && intent.bookingId !== undefined) return { kind: "booked", proposal, bookingId: intent.bookingId, intent };
   if (intent.state === "failed" && intent.failureReason === "slot_taken") return { kind: "slot_taken", proposal, alternatives: [], intent };
   if (intent.state === "failed") return { kind: "booking_failed", proposal, reason: intent.failureReason ?? "unknown", intent };
@@ -129,7 +129,7 @@ function reportedOutcome(proposal: Proposal, intent: ActionIntent): BookingOutco
  */
 export async function bookApprovedProposal(
   deps: BookingDependencies,
-  request: { readonly errand: Errand; readonly proposal: Proposal; readonly grant: Grant; readonly place: TracePlace },
+  request: { readonly errand: Errand; readonly proposal: BookingProposal; readonly grant: Grant; readonly place: TracePlace },
 ): Promise<SettledBooking> {
   const { proposal, grant, place } = request;
   const fresh = bookingIntentFor(proposal, grant, deps.errand.clock.now().getTime());
@@ -142,10 +142,11 @@ export async function bookApprovedProposal(
     // Another execution used the grant between the checks and here, and is carrying out this same
     // intent (ACP's 409: in flight). Report what the ledger says, and leave the proposal and the
     // errand to that execution.
-    return { outcome: reportedOutcome(proposal, (await deps.ledger.find(intent.idempotencyKey)) ?? intent) };
+    const stored = await deps.ledger.find(intent.idempotencyKey);
+    return { outcome: reportedOutcome(proposal, stored !== undefined && isBookingIntent(stored) ? stored : intent) };
   }
 
-  const executing: Proposal = { ...proposal, status: "executing" };
+  const executing: BookingProposal = { ...proposal, status: "executing" };
   await deps.proposals.saveProposal(executing);
   const started = moved(request.errand, "executing", "approved", deps.errand.clock);
   const settled = await settleActionIntent(ledgerDependenciesOf(deps), { intent, place, by: "execution" });
@@ -159,12 +160,12 @@ export async function bookApprovedProposal(
  */
 export async function bookingOfUsedGrant(
   deps: BookingDependencies,
-  request: { readonly errand: Errand | undefined; readonly proposal: Proposal; readonly grant: Grant; readonly place: TracePlace },
+  request: { readonly errand: Errand | undefined; readonly proposal: BookingProposal; readonly grant: Grant; readonly place: TracePlace },
 ): Promise<SettledBooking> {
   const { proposal, grant, place } = request;
   // A grant used before the ledger existed (or by a crash in between) has no intent yet. A `book`
   // may have been sent, so it counts as one attempt and the status is read before anything else.
-  const unknown: ActionIntent = { ...bookingIntentFor(proposal, grant, deps.errand.clock.now().getTime()), attempts: 1 };
+  const unknown: BookingIntent = { ...bookingIntentFor(proposal, grant, deps.errand.clock.now().getTime()), attempts: 1 };
   const intent = await deps.ledger.record(unknown);
   const settled = isResolved(intent) ? intent : await settleActionIntent(ledgerDependenciesOf(deps), { intent, place, by: "execution" });
   return settledBooking(deps, { errand: request.errand, proposal, intent: settled });

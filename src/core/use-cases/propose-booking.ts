@@ -1,4 +1,4 @@
-import { bookingTermsOf, isAwaitingApproval, proposeTerms, type Proposal } from "../approval/proposal";
+import { bookingTermsOf, isAwaitingApproval, isBookingProposal, proposeTerms, type BookingProposal } from "../approval/proposal";
 import type { Errand } from "../errand/errand";
 import type { TracePlace } from "../errand/errand-workflow";
 import { traceNewTransitions } from "./errand-session";
@@ -10,7 +10,7 @@ import { moved, withoutHold, type ProposalDependencies } from "./proposal-sessio
 // same proposal again rather than making a second one.
 
 export type ProposeBookingOutcome =
-  | { readonly kind: "proposed"; readonly proposal: Proposal }
+  | { readonly kind: "proposed"; readonly proposal: BookingProposal }
   /** Nothing is held, so there is nothing to propose. */
   | { readonly kind: "no_hold" }
   /** The hold ran out before the card was shown; the errand is back to choosing. */
@@ -22,11 +22,12 @@ interface Proposed {
   readonly errand?: Errand;
 }
 
-async function proposalShownAgain(errand: Errand, deps: ProposalDependencies): Promise<Proposal | undefined> {
+async function proposalShownAgain(errand: Errand, deps: ProposalDependencies): Promise<BookingProposal | undefined> {
   if (errand.state !== "awaiting_approval") return undefined;
   const latest = await deps.proposals.latestProposalOf(errand.sessionId);
   const nowMs = deps.worldClock.now().getTime();
-  return latest !== undefined && latest.terms.holdId === errand.hold?.holdId && isAwaitingApproval(latest, nowMs) ? latest : undefined;
+  if (latest === undefined || !isBookingProposal(latest)) return undefined;
+  return latest.terms.holdId === errand.hold?.holdId && isAwaitingApproval(latest, nowMs) ? latest : undefined;
 }
 
 async function proposed(errand: Errand, userId: string, deps: ProposalDependencies): Promise<Proposed> {

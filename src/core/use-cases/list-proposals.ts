@@ -1,5 +1,5 @@
 import type { Grant } from "../approval/grant";
-import { currentStatus, type Proposal } from "../approval/proposal";
+import { approvalDeadlineOf, currentStatus, type Proposal } from "../approval/proposal";
 import type { Clock } from "../ports/clock";
 import type { ProposalQuery, ProposalStore } from "../ports/proposal-store";
 
@@ -9,7 +9,7 @@ import type { ProposalQuery, ProposalStore } from "../ports/proposal-store";
 export interface ProposalStanding {
   readonly proposal: Proposal;
   readonly grant?: Grant;
-  /** Milliseconds left on the hold, 0 once it has run out. */
+  /** Milliseconds left on the hold (a change's approval window), 0 once it has run out. */
   readonly holdLeftMs: number;
 }
 
@@ -21,7 +21,7 @@ async function standingOf(proposal: Proposal, deps: ProposalReader): Promise<Pro
   return {
     proposal: { ...proposal, status: currentStatus(proposal, nowMs) },
     ...(grant === undefined ? {} : { grant }),
-    holdLeftMs: Math.max(0, Date.parse(proposal.terms.holdExpiresAt) - nowMs),
+    holdLeftMs: Math.max(0, Date.parse(approvalDeadlineOf(proposal.terms)) - nowMs),
   };
 }
 
