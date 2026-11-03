@@ -1249,12 +1249,13 @@ html[data-motion="reduced"] .skel::after, html[data-motion="reduced"] .wf2 .bar.
 <section class="pattern" id="p-layout" aria-labelledby="h-layout">
   <div class="spec">
     <h3 id="h-layout">Layout motion <span class="tag info">new</span></h3>
-    <p class="rule">When the trace or memory rail opens, the chat moves to its new width with a layout animation, and the cards reflow. Nothing jumps.</p>
+    <p class="rule">When a rail opens, the chat moves to its new width with a layout animation, and the cards reflow. Nothing jumps. The person's chat has only the Memory rail; the trace rail exists only in the operator console (ticket 19), never in the person's chat.</p>
     <p class="mnote"><b>Motion</b>: FLIP. Each card and message records its box, the layout changes once, and each is animated back from its old box over <span class="mono">--dur-layout</span> on <span class="mono">--ease-snap</span>. The rail slides in 16px. Trace rows enter like agents-ui <span class="mono">trace-waterfall</span> (<span class="mono">--dur-row</span>, 45ms apart), their bars grow from the start time, and the running bar sweeps every 1600ms. Memory rows stagger in like <span class="mono">collapsible</span> items.</p>
-    <dl class="a11y"><dt>focus</dt><dd>Trace and Memory are toggle buttons (<span class="mono">aria-pressed</span>). Opening a rail doesn't move focus.</dd><dt>label</dt><dd>The rails are <span class="mono">complementary</span> regions named "Trace" and "Memory".</dd><dt>contrast</dt><dd>The rail is surface-card against the canvas chat, with an edge hairline.</dd><dt>motion</dt><dd>Under reduced motion, the layout snaps and the rail cross-fades.</dd></dl>
+    <dl class="a11y"><dt>focus</dt><dd>Memory (chat) and Trace (operator console) are toggle buttons (<span class="mono">aria-pressed</span>). Opening a rail doesn't move focus.</dd><dt>label</dt><dd>The rails are <span class="mono">complementary</span> regions named "Memory" and "Trace".</dd><dt>contrast</dt><dd>The rail is surface-card against the canvas chat, with an edge hairline.</dd><dt>motion</dt><dd>Under reduced motion, the layout snaps and the rail cross-fades.</dd></dl>
   </div>
   <div class="specimens">
-    <div class="spx span-all" style="max-width:780px"><p class="lbl">Chat with trace and memory rails · live, toggle Trace or Memory</p><div data-scene="layout"></div></div>
+    <div class="spx span-all" style="max-width:780px"><p class="lbl">Person's chat with the memory rail · live, toggle Memory</p><div data-scene="layout"></div></div>
+    <div class="spx span-all" style="max-width:780px"><p class="lbl">Operator console · transcript with the trace rail · live, toggle Trace</p><div data-scene="layout-ops"></div></div>
   </div>
 </section>
 
@@ -2154,8 +2155,8 @@ html[data-motion="reduced"] .skel::after, html[data-motion="reduced"] .wf2 .bar.
     keepIt();
   };
 
-  SCENES.layout = async function (host, ctx) {
-    host.innerHTML = '<div class="app"><div class="app-h"><b class="emph" style="font-weight:var(--weight-medium)">Plumber · Koramangala</b><span class="grow"></span><button class="btn sm" type="button" aria-pressed="false" data-rail="trace">Trace</button><button class="btn sm" type="button" aria-pressed="false" data-rail="memory">Memory</button></div>' +
+  function layoutScene(rails, title) { return async function (host, ctx) {
+    host.innerHTML = '<div class="app"><div class="app-h"><b class="emph" style="font-weight:var(--weight-medium)">' + title + '</b><span class="grow"></span>' + rails.map(function (r) { return '<button class="btn sm" type="button" aria-pressed="false" data-rail="' + r + '">' + (r === "trace" ? "Trace" : "Memory") + "</button>"; }).join("") + '</div>' +
       '<div class="app-b"><div class="chat"><div class="msg-user" data-f>Kitchen tap is leaking, need a plumber this week</div><p class="msg-agent" data-f style="margin:0">Three plumbers can come this week. Shiva Sanitary fits best.</p>' + cards() + '</div><aside class="rail" aria-label="Rail" hidden></aside></div></div>';
     var rail = host.querySelector(".rail"), chat = host.querySelector(".chat"), state = null;
     function railHtml(kind) {
@@ -2187,10 +2188,11 @@ html[data-motion="reduced"] .skel::after, html[data-motion="reduced"] .wf2 .bar.
       }
     }
     host.querySelector(".app-h").addEventListener("click", function (e) { var b = e.target.closest("[data-rail]"); if (b) setRail(state === b.dataset.rail ? null : b.dataset.rail); });
-    await ctx.wait(900); setRail("trace");
-    await ctx.wait(2600); setRail("memory");
-    await ctx.wait(2400); setRail(null);
-  };
+    for (var i = 0; i < rails.length; i++) { await ctx.wait(900); setRail(rails[i]); await ctx.wait(2400); }
+    setRail(null);
+  }; }
+  SCENES.layout = layoutScene(["memory"], "Plumber · Koramangala");
+  SCENES["layout-ops"] = layoutScene(["trace"], "Operator console · session wrun_01M6…");
 
   // ---------- journey ----------
   function frame(n, title, clock, body) {
