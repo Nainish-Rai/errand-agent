@@ -28,6 +28,7 @@ $V screenshot results.png --viewport
 | `locate TARGET [--operation click\|hover\|fill]` | match count, uniqueness, visibility, enabled, actionability and a ready suite step, without acting |
 | `viewport desktop\|laptop\|tablet\|phone\|WxH` | 1440×900, 1280×800, 834×1112, 390×844 |
 | `theme dark\|light` | the system color scheme the page sees (not the app's saved choice) |
+| `motion reduce\|no-preference` | the reduced-motion preference the page sees; under `reduce` Lime's durations are 0, so layout changes are instant (ticket 23) |
 | `screenshot`, `snapshot`, `network`, `logs`, `api` | evidence; see [evidence](evidence.md) |
 
 Every command accepts `--timeout-ms MS` (default 15000).
