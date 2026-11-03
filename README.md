@@ -32,7 +32,8 @@ pnpm eval
 | `pnpm eval:replay` | Recorded live runs played back with no network |
 | `pnpm eval:live` | MiniMax agent and a Claude Code simulated user, `ERRAND_EVAL_TRIALS` (default 3) trials each, with pass^k |
 | `pnpm eval:record` | A live run that also saves each scenario's first trial to `evals/fixtures/recorded/` |
-| `pnpm check` | Typecheck, layer rules (dependency-cruiser) and unit tests |
+| `pnpm check` | Typecheck, layer rules (dependency-cruiser), unit tests and the observatory checks |
+| `pnpm observatory` | Turns `traces/` into a single-file dashboard (`observatory/out/dashboard.html`) and prints its path. `--fixtures` adds the failure fixtures; `--claude-sessions` adds this repo's Claude Code build sessions, redacted |
 | `pnpm smoke:search` | With the backend running: sends "find a plumber in Koramangala this week" through `packages/client` and checks that `search_providers` ran |
 | `pnpm verify -- --run ID <command>` | Browser verification with `control-errand` (see below) |
 | `pnpm verify:install-skill` | Links the `verify-errand` agent skill into `~/.claude/skills` |
@@ -76,6 +77,10 @@ pnpm verify -- --run $RUN cleanup                                    # daemonExi
 
 `launch --live` uses MiniMax for the main model and reads the key from the Keychain (`errand-agent-minimax`) at launch only. Evidence (state, logs, `browser.jsonl`, screenshots, ARIA snapshots, the command journal and suite reports) stays in `~/.local/share/errand-verify/<run-id>/` after cleanup. Seed suites live in `verification/suites/`. The agent skill is [.claude/skills/verify-errand](.claude/skills/verify-errand/SKILL.md), with a [feature map](.claude/skills/verify-errand/features/README.md); every UI ticket ends with a verify-errand report. `pnpm verify -- --help` lists every command.
 
+## Observability dashboard
+
+`pnpm observatory` after `pnpm eval` (or after any local session) reads the run traces and writes one HTML file. It shows every session with its turns, model and tool spans, tokens, latency, errors, retries and cost (estimated for MiniMax, CLI-reported for Claude Code). `--traces <dir>` reads another run's trace directory. `--fixtures` adds two fixture sessions: a cancel that gets a 503 and is retried, and a book that times out after succeeding and is then verified. Real runs produce those sequences once tickets 07 and 10 land. `--claude-sessions` renders the Claude Code sessions that built this repo, with prompts cut to 10-word redacted snippets, then checks the HTML against the raw transcripts. The dashboard comes from [harness-observatory](https://github.com/Nainish-Rai/harness-observatory) (MIT). Generated files go to `observatory/out/`, which git ignores. See [observatory/README.md](observatory/README.md) for what changed from the original and which dashboard to commit for the submission.
+
 ## Layout
 
 ```
@@ -89,6 +94,7 @@ evals/            eve evals; each one is a client of the backend
 tools/verify/     control-errand: browser verification CLI and daemon (reaches the app only through the browser and packages/client)
 verification/     seed suites for control-errand
 .claude/skills/   verify-errand: the agent skill and its feature map
+observatory/      run dashboard (from harness-observatory, MIT): analyzer, template, fixtures
 ```
 
 The web app is a fork of eve's [`eve-chat-template`](https://github.com/vercel/eve/tree/main/apps/templates/eve-chat-template), stripped to local-development mode: no Slack, no Linear/Notion/Sentry connections, no Neon, no Upstash, no Vercel sign-in.

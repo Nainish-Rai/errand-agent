@@ -4,6 +4,7 @@
 //   pnpm observatory --traces <dir>        another run's trace directory (repeatable)
 //   pnpm observatory --fixtures            adds observatory/fixtures (503-then-retry, timeout-then-verify)
 //   pnpm observatory --claude-sessions     adds the Claude Code sessions that built this repo, redacted
+//                    [--claude-match <t>]  only project folders whose name contains <t> (repeatable)
 //   pnpm observatory --out <file.html>     somewhere other than observatory/out/dashboard.html
 //
 // The analyzer and the dashboard are Python stdlib and HTML in observatory/ (copied from
@@ -21,6 +22,7 @@ const { values } = parseArgs({
     traces: { type: "string", multiple: true },
     fixtures: { type: "boolean", default: false },
     "claude-sessions": { type: "boolean", default: false },
+    "claude-match": { type: "string", multiple: true },
     days: { type: "string" },
     out: { type: "string" },
   },
@@ -36,6 +38,7 @@ if (values.fixtures) traceDirs.push(path.join("observatory", "fixtures"));
 
 const analyzerArgs = ["--out", summary, ...traceDirs.flatMap((dir) => ["--traces", dir])];
 if (values["claude-sessions"]) analyzerArgs.push("--claude-sessions");
+for (const match of values["claude-match"] ?? []) analyzerArgs.push("--claude-match", match);
 if (values.days !== undefined) analyzerArgs.push("--days", values.days);
 
 function python(script: string, args: readonly string[]): void {
