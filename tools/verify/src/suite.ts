@@ -52,7 +52,7 @@ const STEP_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   key: [],
   wait: [...TARGET, "state"],
   assert: [...TARGET, "value", "count", "attr", "state", "url"],
-  api: ["body", "expect", "timeoutMs"],
+  api: ["body", "expect", "timeoutMs", "as", "status"],
   viewport: [],
   theme: [],
   screenshot: ["viewport"],
@@ -71,7 +71,8 @@ const ARG_COUNT: Readonly<Record<string, readonly [number, number]>> = {
   snapshot: [0, 1],
 };
 
-const isAssertion = (step: SuiteStep) => step.command === "assert" || (step.command === "api" && step.options?.expect !== undefined);
+const isAssertion = (step: SuiteStep) =>
+  step.command === "assert" || (step.command === "api" && (step.options?.expect !== undefined || step.options?.status !== undefined));
 
 function fail(message: string): never {
   throw new Error(`Invalid suite: ${message}`);

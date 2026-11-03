@@ -238,6 +238,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "events.0.name",

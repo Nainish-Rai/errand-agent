@@ -114,6 +114,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "totals.modelCalls",
@@ -132,13 +133,33 @@
           "note": "world state: four model calls, three tool calls, and the run's typed outcome in the trace"
         },
         {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Sign in"
+          }
+        },
+        {
           "command": "assert",
           "options": {
             "role": "complementary",
             "name": "Run trace",
             "text": "4 model calls · 3 tool calls"
           },
-          "note": "the trace panel shows the run stopped at the cap"
+          "note": "the operator console's trace panel shows the run stopped at the cap"
         },
         {
           "command": "api",
@@ -371,6 +392,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "totals.toolCalls",
@@ -389,13 +411,33 @@
           "note": "world state: nothing ran after the error, and the trace has the failed outcome"
         },
         {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Sign in"
+          }
+        },
+        {
           "command": "assert",
           "options": {
             "role": "region",
             "name": "Errand states",
             "text": "gathering → failed"
           },
-          "note": "the trace panel shows the errand failing"
+          "note": "the operator console's trace panel shows the errand failing"
         },
         {
           "command": "api",

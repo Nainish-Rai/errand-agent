@@ -52,6 +52,10 @@ Evidence
       Through packages/client, so bodies are parsed against the contracts. sessions/current/... is
       the page's chat session. --expect: {"path":"spans[*].name","includes":"..."} (or a list;
       equals, includes, atLeast, length); GET expectations retry, writes are sent once.
+      [--as person|operator|other-person] calls as the dev person (default), the run's operator (the
+      only caller the trace, context and /ops routes answer) or a second signed-in person.
+      [--status N] expects that HTTP status instead, e.g. 404 for a refused session.
+  fill --value "{{operator-token}}" types the run's operator token (it never appears in a log).
 
 Suites and history
   suite FILE.json [--report html]   Fresh browser context per scenario; PASS, FAIL or BLOCKED each.

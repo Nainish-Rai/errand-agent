@@ -78,6 +78,24 @@ const ROUTES: readonly Route[] = [
   },
   {
     method: "GET",
+    pattern: /^\/ops\/sessions$/,
+    route: "GET /api/v1/ops/sessions",
+    handle: async (client) => ({ sessions: await client.listOperatorSessions() }),
+  },
+  {
+    method: "GET",
+    pattern: /^\/ops\/sessions\/([^/]+)\/transcript$/,
+    route: "GET /api/v1/ops/sessions/:id/transcript",
+    handle: async (client, match) => await client.getSessionTranscript(decodeURIComponent(match[1] ?? "")),
+  },
+  {
+    method: "GET",
+    pattern: /^\/ops\/sessions\/([^/]+)\/reads$/,
+    route: "GET /api/v1/ops/sessions/:id/reads",
+    handle: async (client, match) => await client.listOperatorReads(decodeURIComponent(match[1] ?? "")),
+  },
+  {
+    method: "GET",
     pattern: /^\/sessions\/([^/]+)\/errand$/,
     route: "GET /api/v1/sessions/:id/errand",
     handle: async (client, match) => ({ errand: await client.getErrand(decodeURIComponent(match[1] ?? "")) }),
@@ -208,14 +226,16 @@ export function parseApiMethod(value: string | undefined): ApiMethod {
   throw new Error("api takes GET, POST, PUT, PATCH or DELETE");
 }
 
-/** Replaces `sessions/current/` with the session the page is chatting in. */
+/** Replaces `sessions/current/` (and the web app's `/chat/current`) with the session the page is chatting in. */
 export function resolveSession(path: string, currentSession: string | undefined): string {
-  if (!/\/sessions\/current(\/|$)/.test(path)) return path;
+  const current = /\/(sessions|chat)\/current(\/|\?|$)/;
+  if (!current.test(path)) return path;
   if (currentSession === undefined) throw new Error("No chat session in this browser context yet: open the chat first");
-  return path.replace(/\/sessions\/current(\/|$)/, `/sessions/${currentSession}$1`);
+  return path.replace(current, `/$1/${currentSession}$2`);
 }
 
-export async function callApi(backendUrl: string, call: ApiCall): Promise<ApiResult> {
+/** Calls the route as the dev person, or as whoever `accessToken` signs in (the operator, a second person). */
+export async function callApi(backendUrl: string, call: ApiCall, accessToken?: string): Promise<ApiResult> {
   if (!call.path.startsWith(`${API_PREFIX}/`)) throw new Error(`api paths start with ${API_PREFIX}/`);
   const url = new URL(call.path, "http://backend.invalid");
   const relative = url.pathname.slice(API_PREFIX.length);
@@ -223,7 +243,7 @@ export async function callApi(backendUrl: string, call: ApiCall): Promise<ApiRes
   if (route === undefined) {
     throw new Error(`packages/client has no ${call.method} ${url.pathname}; known routes: ${KNOWN_ROUTES.join(", ")}`);
   }
-  const client = new ApiClient({ baseUrl: backendUrl });
+  const client = new ApiClient({ baseUrl: backendUrl, ...(accessToken === undefined ? {} : { accessToken }) });
   try {
     const body = await route.handle(client, relative.match(route.pattern) ?? [], url, call.body);
     return { ok: true, method: call.method, route: route.route, status: 200, body };

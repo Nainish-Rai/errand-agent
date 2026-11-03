@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "title": "Trace panel: the toggle shows the waterfall with model and tool spans",
+  "title": "Trace panel: the operator console shows the waterfall with model and tool spans",
   "feature": "trace-panel",
-  "description": "Ticket 03. The run trace beside the chat: hidden and shown by its toggle, drawn as a waterfall of the turn's model and tool spans, read from GET /api/v1/sessions/:id/trace.",
+  "description": "Tickets 03 and 19. The run trace is for operators: the console at /ops/sessions/ID shows the session's transcript beside the trace panel, drawn as a waterfall of the turn's model and tool spans, read from GET /api/v1/sessions/:id/trace with the operator's token, and records every read in the access log. The person's chat no longer has a trace (operator-only-traces.json).",
   "scenarios": [
     {
-      "id": "toggle-shows-waterfall",
-      "title": "Hide trace, send a search, Show trace: the waterfall has the model calls and the tool call",
+      "id": "console-shows-waterfall",
+      "title": "A person searches; the operator signs in and sees the transcript beside the waterfall with the model calls and the tool call",
       "setup": [
         {
           "command": "api",
@@ -23,22 +23,6 @@
       "steps": [
         { "command": "goto", "args": ["/chat"] },
         {
-          "command": "assert",
-          "options": { "role": "complementary", "name": "Run trace", "text": "Send a message and the run shows up here." },
-          "note": "the panel opens empty"
-        },
-        { "command": "click", "options": { "role": "button", "name": "Hide trace" } },
-        {
-          "command": "assert",
-          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
-          "note": "Hide trace removes the panel"
-        },
-        {
-          "command": "assert",
-          "options": { "role": "button", "name": "Show trace", "attr": "aria-pressed=false" },
-          "note": "the toggle reads as off"
-        },
-        {
           "command": "fill",
           "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
         },
@@ -48,18 +32,20 @@
           "command": "assert",
           "args": ["role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"],
           "options": { "count": 8 },
-          "note": "the turn ran with the panel hidden"
+          "note": "the person's turn ran"
         },
-        { "command": "click", "options": { "role": "button", "name": "Show trace" } },
+        { "command": "goto", "args": ["/ops/sessions/current"] },
         {
           "command": "assert",
-          "options": { "role": "button", "name": "Hide trace", "attr": "aria-pressed=true" },
-          "note": "the toggle reads as on"
+          "options": { "role": "form", "name": "Operator sign-in", "state": "visible" },
+          "note": "the console opens only after an operator signs in"
         },
+        { "command": "fill", "options": { "label": "Operator token", "value": "{{operator-token}}" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
         {
           "command": "assert",
           "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" },
-          "note": "the summary counts the turn"
+          "note": "the summary counts the turn, with its tokens and estimated cost"
         },
         {
           "command": "assert",
@@ -79,9 +65,31 @@
           "note": "one tool span (search_providers)"
         },
         {
+          "command": "assert",
+          "options": { "role": "region", "name": "Errand states", "text": "searching → choosing" },
+          "note": "the errand's transitions show beside the waterfall"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Transcript", "text": "find a plumber in Koramangala this week" },
+          "note": "the read-only transcript sits beside the trace"
+        },
+        {
+          "command": "assert",
+          "args": ["role=list[name=\"Messages\"] >> role=listitem"],
+          "options": { "count": 2 },
+          "note": "the person's message and the agent's reply"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Operator access log", "text": "verify-operator" },
+          "note": "the operator's own reads are in the access log"
+        },
+        {
           "command": "api",
           "args": ["GET", "/api/v1/sessions/current/trace"],
           "options": {
+            "as": "operator",
             "expect": [
               { "path": "spans[*].kind", "includes": "model" },
               { "path": "spans[*].kind", "includes": "tool" },
@@ -90,128 +98,125 @@
             ]
           },
           "note": "world state: the backend's trace matches the waterfall"
-        }
-      ]
-    },
-    {
-      "id": "close-button-hides-panel",
-      "title": "The panel's close button hides it and the toggle brings it back",
-      "steps": [
-        { "command": "goto", "args": ["/chat"] },
-        { "command": "click", "options": { "role": "button", "name": "Close the trace" } },
-        {
-          "command": "assert",
-          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
-          "note": "close hides the panel"
         },
-        { "command": "click", "options": { "role": "button", "name": "Show trace" } },
         {
-          "command": "assert",
-          "options": { "role": "complementary", "name": "Run trace", "state": "visible" },
-          "note": "Show trace brings it back"
+          "command": "api",
+          "args": ["GET", "/api/v1/ops/sessions/current/reads"],
+          "options": {
+            "as": "operator",
+            "expect": [
+              { "path": "reads[*].kind", "includes": "trace" },
+              { "path": "reads[*].kind", "includes": "context" },
+              { "path": "reads[*].kind", "includes": "transcript" },
+              { "path": "reads[*].operatorId", "includes": "verify-operator" }
+            ]
+          },
+          "note": "world state: every read the console made is audited under the operator"
         }
       ]
     },
     {
-      "id": "open-panel-follows-first-message",
-      "title": "With the panel open before the first message, it shows the turn as soon as it runs",
+      "id": "console-lists-sessions",
+      "title": "The console's list shows the person's session and opens it",
       "setup": [
         {
           "command": "api",
           "args": ["PUT", "/api/v1/dev/model-script"],
-          "options": { "body": { "script": null } },
-          "note": "no scenario script: the scripted model's default search responder answers"
+          "options": { "body": { "script": null } }
         },
         {
           "command": "api",
-          "args": [
-            "POST",
-            "/api/v1/dev/scenario"
-          ],
-          "options": {
-            "body": {
-              "scenario": "default",
-              "seed": 42
-            }
-          }
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
         }
       ],
       "steps": [
-        {
-          "command": "goto",
-          "args": [
-            "/chat"
-          ]
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "complementary",
-            "name": "Run trace",
-            "text": "0 model calls · 0 tool calls"
-          },
-          "note": "open and empty before any message"
-        },
+        { "command": "goto", "args": ["/chat"] },
         {
           "command": "fill",
-          "options": {
-            "role": "textbox",
-            "name": "Message the errand agent",
-            "value": "find a plumber in Koramangala this week"
-          }
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Options for plumber in Koramangala", "state": "visible" },
+          "note": "the person's turn ran"
+        },
+        { "command": "goto", "args": ["/ops"] },
+        { "command": "fill", "options": { "label": "Operator token", "value": "{{operator-token}}" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
+        {
+          "command": "assert",
+          "args": ["role=list[name=\"Sessions\"] >> role=link >> nth=0"],
+          "options": { "text": "Plumber · Koramangala" },
+          "note": "the newest session is first, named by its errand"
+        },
+        { "command": "click", "args": ["role=list[name=\"Sessions\"] >> role=link >> nth=0"] },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" },
+          "note": "the link opens that session's trace"
+        }
+      ]
+    },
+    {
+      "id": "console-follows-a-new-turn",
+      "title": "After the person sends another message, the console shows the new turn",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } }
         },
         {
-          "command": "key",
-          "args": [
-            "Enter"
-          ]
-        },
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/chat"] },
         {
-          "command": "click",
-          "options": {
-            "role": "button",
-            "name": "See all 8"
-          },
-          "note": "ticket 17: every provider is behind See all, in a carousel"
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Options for plumber in Koramangala", "state": "visible" },
+          "note": "turn one ran"
+        },
+        { "command": "goto", "args": ["/ops/sessions/current"] },
+        { "command": "fill", "options": { "label": "Operator token", "value": "{{operator-token}}" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "text": "2 model calls · 1 tool calls" },
+          "note": "the console shows turn one"
+        },
+        { "command": "goto", "args": ["/chat/current"] },
+        {
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find an electrician in Jayanagar this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Options for electrician in Jayanagar", "state": "visible" },
+          "note": "turn two ran in the same chat"
+        },
+        { "command": "goto", "args": ["/ops/sessions/current"] },
+        {
+          "command": "assert",
+          "args": ["role=list[name=\"Messages\"] >> role=listitem"],
+          "options": { "count": 4, "timeoutMs": 5000 },
+          "note": "the operator is still signed in in this tab, and the transcript has both turns"
         },
         {
           "command": "assert",
-          "args": [
-            "role=region[name=\"Search results for plumber in Koramangala\"] >> role=listitem"
-          ],
-          "options": {
-            "count": 8
-          },
-          "note": "the turn ran"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "complementary",
-            "name": "Run trace",
-            "text": "2 model calls · 1 tool calls",
-            "timeoutMs": 3000
-          },
-          "note": "the open panel follows the session from its first message, within a poll"
-        },
-        {
-          "command": "assert",
-          "args": [
-            "role=tree[name=\"Steps\"] >> role=treeitem[name*=\"search_providers tool\"]"
-          ],
-          "options": {
-            "count": 1
-          },
-          "note": "the tool span is drawn"
-        },
-        {
-          "command": "assert",
-          "options": {
-            "role": "region",
-            "name": "Errand states",
-            "text": "searching → choosing"
-          },
-          "note": "the errand's transitions show beside the waterfall"
+          "args": ["role=tree[name=\"Steps\"] >> role=treeitem[name*=\"search_providers tool\"]"],
+          "options": { "count": 2, "timeoutMs": 5000 },
+          "note": "the waterfall has both searches"
         }
       ]
     }

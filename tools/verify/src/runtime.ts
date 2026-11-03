@@ -1,9 +1,10 @@
 import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
-import { ApiClient } from "@errand/client";
+import { ApiClient, mintAccessToken } from "@errand/client";
 
 import type { Redactor } from "./redaction";
 import { ensurePrivateDir, writePrivateJson, type RunPaths } from "./run-paths";
@@ -138,7 +139,7 @@ function minimaxKey(): string {
 }
 
 /** The environment the run's servers inherit: no keys unless live, and the run's own directories. */
-function serverEnvironment(state: RunState, key: string | undefined): NodeJS.ProcessEnv {
+function serverEnvironment(state: RunState, key: string | undefined, authSecret?: string): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = { ...process.env };
   for (const name of Object.keys(environment)) {
     if (name.startsWith("ERRAND_") || name.startsWith("NEXT_PUBLIC_") || ["MINIMAX_API_KEY", "ANTHROPIC_API_KEY", "PORT", "NODE_OPTIONS"].includes(name)) {
@@ -156,6 +157,8 @@ function serverEnvironment(state: RunState, key: string | undefined): NodeJS.Pro
   });
   if (state.clockStart !== null) environment.ERRAND_CLOCK_START = state.clockStart;
   if (key !== undefined) environment.MINIMAX_API_KEY = key;
+  // Only the backend gets the auth secret and the operator allow-list; the web app never does.
+  if (authSecret !== undefined) Object.assign(environment, { ERRAND_AUTH_SECRET: authSecret, ERRAND_OPERATOR_IDS: RUN_OPERATOR_ID });
   return environment;
 }
 
@@ -205,8 +208,23 @@ export function listenersOn(port: number): number[] {
   }
 }
 
+/** The run's operator, the only caller its backend lets read traces and context logs. */
+export const RUN_OPERATOR_ID = "verify-operator";
+/** A second person, for checking that one person never sees another's session. */
+export const RUN_OTHER_PERSON_ID = "verify-other-person";
+
+/**
+ * Access tokens for the run's backend, minted at launch from a secret made up for the run. They live
+ * only in the daemon's memory (never in state.json or a log) and die with the run.
+ */
+export interface RunCredentials {
+  readonly operatorToken: string;
+  readonly otherPersonToken: string;
+}
+
 export interface Runtime {
   readonly state: RunState;
+  readonly credentials: RunCredentials;
   readonly save: () => void;
   readonly childrenAlive: () => boolean;
   readonly cleanup: () => Promise<CleanupReport>;
@@ -369,7 +387,15 @@ export async function startRuntime(options: LaunchOptions, paths: RunPaths, reda
     ensurePrivateDir(paths.traces);
     save();
 
-    const environment = serverEnvironment(state, key);
+    const authSecret = randomBytes(32).toString("hex");
+    redactor.addSecret(authSecret);
+    const credentials: RunCredentials = {
+      operatorToken: await mintAccessToken({ secret: authSecret, subject: RUN_OPERATOR_ID, lifetimeSeconds: 24 * 60 * 60 }),
+      otherPersonToken: await mintAccessToken({ secret: authSecret, subject: RUN_OTHER_PERSON_ID, lifetimeSeconds: 24 * 60 * 60 }),
+    };
+    redactor.addSecret(credentials.operatorToken);
+    redactor.addSecret(credentials.otherPersonToken);
+    const environment = serverEnvironment(state, key, authSecret);
     const backend = start("backend", path.join(paths.snapshot, "node_modules/.bin/eve"), ["dev", "--no-ui", "--host", "127.0.0.1", "--port", String(backendPort)], paths.snapshot, environment, [backendPort]);
     const web = start(
       "web",
@@ -390,7 +416,7 @@ export async function startRuntime(options: LaunchOptions, paths: RunPaths, reda
     state.timings.webReadyMs = Date.now() - started;
     state.status = "ready";
     save();
-    return { state, save, childrenAlive, cleanup };
+    return { state, credentials, save, childrenAlive, cleanup };
   } catch (error) {
     state.error = redactor.redact(error instanceof Error ? error.message : String(error));
     await cleanup().catch(() => undefined);

@@ -83,7 +83,7 @@ export async function serve(runId: string): Promise<void> {
   try {
     runtime = await startRuntime(launch, paths, redactor);
     const started = Date.now();
-    host = await BrowserHost.launch(runtime.state, redactor);
+    host = await BrowserHost.launch(runtime.state, redactor, runtime.credentials);
     root = await host.newSession({ evidence: paths.evidence, theme: launch.theme });
     await root.goto("/");
     runtime.state.browser = { channel: "chrome", version: host.version, headless: !launch.headed };

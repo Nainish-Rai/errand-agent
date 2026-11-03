@@ -1189,6 +1189,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "events[*].name",
@@ -1369,6 +1370,7 @@
             "/api/v1/sessions/current/trace"
           ],
           "options": {
+            "as": "operator",
             "expect": {
               "path": "events[*].name",
               "includes": "present: unreadable"

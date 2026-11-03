@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "title": "Operator-only traces: the person's chat shows no trace, tokens or cost, and the trace API refuses the person",
+  "feature": "operator-only-traces",
+  "description": "Ticket 19. The person's chat has no trace toggle, waterfall, token count or cost, and an old ?rail=trace link opens nothing; Show memory stays. As the person, and as a second signed-in person, GET /api/v1/sessions/:id/trace and /context answer 404, as do the console's routes; the person's own errand still reads. A wrong token at /ops opens nothing.",
+  "scenarios": [
+    {
+      "id": "chat-has-no-trace",
+      "title": "After a search, the chat has no trace, token count or cost, and the memory panel still opens",
+      "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
+          "args": ["POST", "/api/v1/dev/scenario"],
+          "options": { "body": { "scenario": "default", "seed": 42 } }
+        }
+      ],
+      "steps": [
+        { "command": "goto", "args": ["/chat"] },
+        {
+          "command": "fill",
+          "options": { "role": "textbox", "name": "Message the errand agent", "value": "find a plumber in Koramangala this week" }
+        },
+        { "command": "key", "args": ["Enter"] },
+        {
+          "command": "assert",
+          "options": { "role": "region", "name": "Options for plumber in Koramangala", "state": "visible" },
+          "note": "the turn ran"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Show trace", "count": 0 },
+          "note": "no trace toggle"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
+          "note": "no trace panel or waterfall"
+        },
+        {
+          "command": "assert",
+          "args": ["text=/model calls|tool calls|tokens|\\$\\d+\\.\\d{4}|estimated/"],
+          "options": { "count": 0 },
+          "note": "no model-call count, token count or cost anywhere on the page"
+        },
+        { "command": "click", "options": { "role": "button", "name": "Show memory" } },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Memory", "state": "visible" },
+          "note": "Show memory still opens the memory panel"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/errand"],
+          "options": { "expect": { "path": "errand.area", "equals": "Koramangala" } },
+          "note": "world state: the person reads their own session's errand"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": { "status": 404 },
+          "note": "world state: the trace API refuses the person with 404"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/context"],
+          "options": { "status": 404 },
+          "note": "world state: so does the context log"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/ops/sessions/current/transcript"],
+          "options": { "status": 404 },
+          "note": "world state: and the console's transcript"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/errand"],
+          "options": { "as": "other-person", "status": 404 },
+          "note": "world state: a second person gets 404 for this session's errand"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": { "as": "other-person", "status": 404 },
+          "note": "world state: and for its trace"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/sessions/current/trace"],
+          "options": { "as": "operator", "expect": { "path": "totals.toolCalls", "equals": 1 } },
+          "note": "world state: only the operator reads it"
+        }
+      ]
+    },
+    {
+      "id": "old-trace-link-opens-no-trace",
+      "title": "An old ?rail=trace link opens the chat without a trace",
+      "steps": [
+        { "command": "goto", "args": ["/chat?rail=trace"] },
+        {
+          "command": "assert",
+          "options": { "role": "textbox", "name": "Message the errand agent", "state": "visible" },
+          "note": "the chat opens"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "complementary", "name": "Run trace", "count": 0 },
+          "note": "but no trace panel"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "button", "name": "Show memory", "attr": "aria-pressed=false" },
+          "note": "and the memory panel stays closed until asked"
+        }
+      ]
+    },
+    {
+      "id": "wrong-token-opens-nothing",
+      "title": "At /ops, a token that isn't an operator's opens nothing",
+      "steps": [
+        { "command": "goto", "args": ["/ops"] },
+        { "command": "fill", "options": { "label": "Operator token", "value": "not-an-operator-token" } },
+        { "command": "click", "options": { "role": "button", "name": "Sign in" } },
+        {
+          "command": "assert",
+          "options": { "role": "alert", "text": "That token doesn't open the console." },
+          "note": "the console refuses the token"
+        },
+        {
+          "command": "assert",
+          "options": { "role": "list", "name": "Sessions", "count": 0 },
+          "note": "and shows no sessions"
+        },
+        {
+          "command": "api",
+          "args": ["GET", "/api/v1/ops/sessions"],
+          "options": { "status": 404 },
+          "note": "world state: the person can't list sessions"
+        }
+      ]
+    }
+  ]
+}

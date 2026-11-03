@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "title": "Context budget: 53 memories and a long history, every turn's context in the trace panel",
+  "title": "Context budget: 53 memories and a long history, every turn's context in the operator console",
   "feature": "context-log",
-  "description": "Ticket 12. With 53 remembered facts (superseded, forgotten, an unconfirmed guess, three current) and a fifteen-message conversation, the trace panel's context log shows each turn's context: tokens against the 40k cap, the facts sent and every fact left out with its reason, and the history kept, dropped and summarised. Checked against GET /api/v1/sessions/:id/context. The seed equals evals/context-budget-seed.ts (a test keeps them equal).",
+  "description": "Ticket 12. With 53 remembered facts (superseded, forgotten, an unconfirmed guess, three current) and a fifteen-message conversation, the operator console's context log (ticket 19 moved it out of the person's chat) shows each turn's context: tokens against the 40k cap, the facts sent and every fact left out with its reason, and the history kept, dropped and summarised. Checked against GET /api/v1/sessions/:id/context. The seed equals evals/context-budget-seed.ts (a test keeps them equal).",
   "scenarios": [
     {
       "id": "context-log-shows-facts-and-reasons",
@@ -1137,13 +1137,33 @@
           "note": "message 15 of 15 answered"
         },
         {
+          "command": "goto",
+          "args": [
+            "/ops/sessions/current"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "label": "Operator token",
+            "value": "{{operator-token}}"
+          }
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Sign in"
+          }
+        },
+        {
           "command": "assert",
           "options": {
             "role": "region",
             "name": "Context log",
             "text": "Cap 40,000 tokens"
           },
-          "note": "the trace panel has the context log with the cap and the declared split"
+          "note": "the operator console's trace panel has the context log with the cap and the declared split"
         },
         {
           "command": "assert",
@@ -1285,6 +1305,7 @@
             "/api/v1/sessions/current/context"
           ],
           "options": {
+            "as": "operator",
             "expect": [
               {
                 "path": "calls",

@@ -11,6 +11,7 @@ import { appendPrivateLine, evidenceFile } from "./run-paths";
 import { listenersOn, ownedProcesses, type RunState } from "./runtime";
 import { sourceIdentity } from "./source-identity";
 import { describeTarget, hasTarget, locatorFor, type Target } from "./targets";
+import type { RunCredentials } from "./runtime";
 import { callApi, parseApiMethod, parseExpectations, resolveSession, unmetExpectation, type ApiResult } from "./world-api";
 
 // One owned Chrome per run. The daemon keeps a root context whose page every CLI command drives; a
@@ -27,6 +28,16 @@ export const VIEWPORTS = {
 } as const;
 export type Theme = "dark" | "light";
 const SESSION_PATH = /^\/eve\/v1\/session\/([A-Za-z0-9_-]{1,128})(\/|$)/;
+/** A suite's `fill` value that stands for the run's operator token. */
+export const OPERATOR_TOKEN_PLACEHOLDER = "{{operator-token}}";
+
+export type ApiCaller = "person" | "operator" | "other-person";
+
+/** Who an `api` call is made as: the dev person (default), the run's operator, or a second person. */
+export function parseApiCaller(value: string | undefined): ApiCaller {
+  if (value === undefined || value === "person" || value === "operator" || value === "other-person") return value ?? "person";
+  throw new Error("api --as takes person, operator or other-person");
+}
 const LIST_LIMIT = 200;
 
 /** An expected failure of the product under test (FAIL), as opposed to a broken setup (BLOCKED). */
@@ -87,17 +98,23 @@ export class BrowserHost {
   readonly #browser: Browser;
   readonly #state: RunState;
   readonly #redactor: Redactor;
+  readonly #credentials: RunCredentials;
   readonly #sessions = new Set<BrowserSession>();
 
-  private constructor(browser: Browser, state: RunState, redactor: Redactor) {
+  private constructor(browser: Browser, state: RunState, redactor: Redactor, credentials: RunCredentials) {
     this.#browser = browser;
     this.#state = state;
     this.#redactor = redactor;
+    this.#credentials = credentials;
   }
 
-  static async launch(state: RunState, redactor: Redactor): Promise<BrowserHost> {
+  static async launch(state: RunState, redactor: Redactor, credentials: RunCredentials): Promise<BrowserHost> {
     const browser = await chromium.launch({ channel: "chrome", headless: !state.headed, args: guardLaunchArgs() });
-    return new BrowserHost(browser, state, redactor);
+    return new BrowserHost(browser, state, redactor, credentials);
+  }
+
+  get credentials(): RunCredentials {
+    return this.#credentials;
   }
 
   get version(): string {
@@ -237,8 +254,11 @@ export class BrowserSession {
         await this.#unique(target).hover({ timeout: timeoutOf(options) });
         return { ok: true, target: describeTarget(target) };
       case "fill": {
-        const value = stringOption(options, "value");
-        if (value === undefined) throw new Error("fill needs --value TEXT");
+        const written = stringOption(options, "value");
+        if (written === undefined) throw new Error("fill needs --value TEXT");
+        // The run's operator token is typed where a suite asks for it, as an operator would paste
+        // theirs; the suite never holds it, and the redactor keeps it out of every log.
+        const value = written === OPERATOR_TOKEN_PLACEHOLDER ? this.#host.credentials.operatorToken : written;
         await this.#unique(target).fill(value, { timeout: timeoutOf(options) });
         return { ok: true, target: describeTarget(target), characters: value.length };
       }
@@ -290,7 +310,9 @@ export class BrowserSession {
 
   async goto(route: string | undefined): Promise<CommandResult> {
     if (route === undefined || !route.startsWith("/") || route.startsWith("//")) throw new Error("goto takes a route on the run's web app, e.g. / or /design");
-    const response = await this.#page.goto(new URL(route, this.#state.urls.web).href, { waitUntil: "load" });
+    // `/ops/sessions/current` and `/chat/current` open the session this context chatted in.
+    const resolved = resolveSession(route, this.#currentSession);
+    const response = await this.#page.goto(new URL(resolved, this.#state.urls.web).href, { waitUntil: "load" });
     return { ok: true, url: cleanUrl(this.#page.url()), status: response?.status() ?? null };
   }
 
@@ -522,22 +544,31 @@ export class BrowserSession {
     if (route === undefined) throw new Error("api needs METHOD /api/v1/PATH");
     const body = jsonOption(options, "body");
     const expectations = parseExpectations(jsonOption(options, "expect"));
+    const caller = parseApiCaller(stringOption(options, "as"));
+    const accessToken = caller === "operator" ? this.#host.credentials.operatorToken : caller === "other-person" ? this.#host.credentials.otherPersonToken : undefined;
+    // --status N expects that HTTP status (a refusal, say), checked once: a refusal is never retried into a pass.
+    const expectedStatus = integerOption(options, "status", 100, 599);
+    if (expectedStatus !== undefined && expectations.length > 0) throw new Error("api takes --status or --expect, not both");
     const timeout = timeoutOf(options);
     const started = Date.now();
     let result: ApiResult;
     let reason: string | undefined;
     do {
       const resolved = resolveSession(route, this.#currentSession);
-      result = await callApi(this.#state.urls.backend, { method, path: resolved, body });
+      result = await callApi(this.#state.urls.backend, { method, path: resolved, body }, accessToken);
+      if (expectedStatus !== undefined) {
+        reason = result.status === expectedStatus ? undefined : `HTTP ${result.status}, expected ${expectedStatus}`;
+        break;
+      }
       reason = !result.ok ? `HTTP ${result.status} ${result.error?.code ?? ""}`.trim() : expectations.map((expectation) => unmetExpectation(result.body, expectation)).find(Boolean);
       // A write is sent once: never replay an uncertain write to get a pass.
       if (reason === undefined || method !== "GET" || expectations.length === 0) break;
       await delay(250);
     } while (Date.now() - started < timeout);
-    if (reason !== undefined && (expectations.length > 0 || !result.ok)) {
-      throw new CommandFailure(`api ${method} ${result.route}: ${reason}`);
+    if (reason !== undefined && (expectations.length > 0 || expectedStatus !== undefined || !result.ok)) {
+      throw new CommandFailure(`api ${method} ${result.route} as ${caller}: ${reason}`);
     }
-    return { ...result, ok: true, checked: expectations.length };
+    return { ...result, ok: true, as: caller, checked: expectations.length + (expectedStatus === undefined ? 0 : 1) };
   }
 
   // Doctor: is this run what it claims to be, and is the guard actually blocking?
