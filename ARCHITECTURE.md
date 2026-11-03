@@ -35,7 +35,10 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
   | GET | `/alerts` | ListAlerts |
   | GET | `/events` | Server-sent events: `proposal.created`, `booking.updated`, `errand.state_changed`, `alert.created` |
   | GET | `/sessions/:id/errand` | GetErrand: the session's errand, its workflow state and what is still missing |
-  | GET | `/sessions/:id/trace`, `/sessions/:id/context` | Trace and context log for the trace panel |
+  | GET | `/sessions/:id/trace`, `/sessions/:id/context` | Operators only. Trace and context log for the operator console's trace panel; every read is recorded (RecordOperatorRead) |
+  | GET | `/ops/sessions` | Operators only. ListOperatorSessions: every session, its owner and errand, newest first |
+  | GET | `/ops/sessions/:id/transcript` | Operators only. The session's read-only transcript; the read is recorded |
+  | GET | `/ops/sessions/:id/reads` | Operators only. ListOperatorReads: who read the session's trace, context or transcript, and how often |
   | GET | `/assets/providers/:file` | Provider photos, served by the backend so every client gets the same images |
   | POST | `/dev/scenario`, `/dev/world-events/provider-cancelled` | Dev only. Switch a seeded scenario or fire a provider-cancel event |
   | PUT | `/dev/model-script` `{script}` | Dev only. Load a scenario's model turns into the offline model (`null` unloads) |
@@ -45,7 +48,17 @@ The backend serves these surfaces on one origin, with CORS enabled for the web a
 
   Every request and response body is a schema from **contracts**. The user comes from the channel's
   auth context, never from the body. Locally that is a fixed dev user; real auth later means swapping the
-  channel's auth function and nothing else.
+  channel's auth function and nothing else. The auth walk (`CALLER_AUTH`) takes an HS256 access token first
+  (signed with `ERRAND_AUTH_SECRET`), then the local-dev stand-in; a token that doesn't verify is refused.
+
+  **Sessions belong to their owner (ticket 19).** The first signed-in caller to reach a session through a
+  route that starts or continues it claims it (core `ClaimSession`, store `session_owners`). Every route
+  scoped to a session id, here and eve's `/eve/v1/session/:id/*`, checks `CheckSessionOwnership` and answers
+  **404**, never 403, when the session isn't the caller's, exactly as for an unknown id. **Operators** are
+  token callers on `ERRAND_OPERATOR_IDS`, decided only from the auth context (`agent/lib/operator.ts`), never
+  from a body, query flag, header or the client; the local-dev caller never is one. Operator-only routes
+  answer 404 to everyone else, and each operator read of a trace, context log or transcript is recorded
+  (`operator_reads`) and shown in the console at `/ops`.
 
 Mobile-readiness has a test. The **eval harness is a client too**: it drives `/eve/v1` and `/api/v1`
 through the same client package the web uses. If evals pass, any client that speaks the API works.

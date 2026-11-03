@@ -24,6 +24,7 @@
     "smoke:search": "tsx scripts/smoke-search-in-chat.ts",
     "verify": "control-errand",
     "verify:install-skill": "node tools/verify/bin/install-skill.js",
+    "operator-token": "tsx scripts/operator-token.ts",
     "observatory": "tsx scripts/export-observatory.ts",
     "images:fetch": "tsx scripts/fetch-stock-images.ts",
     "check:observatory": "python3 -I observatory/check_tokens.py observatory/dashboard.template.html && python3 -I observatory/test_harness_summary.py"
