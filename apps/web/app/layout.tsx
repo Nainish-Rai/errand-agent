@@ -6,8 +6,7 @@ import type { ReactNode } from "react";
 import { themeInitScript } from "@/components/theme-init-script";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { isDemo } from "@/features/chat/backend";
-import { DemoBanner } from "@/features/demo";
+import { DemoBanner } from "@/features/chat/backend";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,7 +27,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
         <ThemeProvider>
           <TooltipProvider>
             {children}
-            {isDemo && <DemoBanner />}
+            {DemoBanner !== undefined && <DemoBanner />}
           </TooltipProvider>
         </ThemeProvider>
       </body>

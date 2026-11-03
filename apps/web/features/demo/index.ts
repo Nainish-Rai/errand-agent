@@ -1,4 +1,5 @@
 import type { AppApi } from "@errand/client";
+import type { ComponentType } from "react";
 
 import type { ChatBackend } from "@/features/chat/chat-backend";
 
@@ -10,8 +11,7 @@ import { useScriptedRuntime, type DemoSession } from "./use-scripted-runtime";
 // no backend, no model and no key. The app API is answered in the browser from a recording of the real
 // backend, and the chat plays recorded turns of it in answer to keywords. See docs/DEPLOY-DEMO.md.
 
-export { DemoBanner } from "./demo-banner";
-export { resetDemo } from "./demo-world";
+import { DemoBanner } from "./demo-banner";
 
 function sessionOf(id: string): DemoSession {
   return { id, send: (text) => sendToChat(id, text) };
@@ -20,6 +20,7 @@ function sessionOf(id: string): DemoSession {
 export interface DemoBackend {
   readonly api: AppApi;
   readonly chat: ChatBackend<DemoSession>;
+  readonly Banner: ComponentType;
 }
 
 export function createDemoBackend(): DemoBackend {
@@ -33,5 +34,6 @@ export function createDemoBackend(): DemoBackend {
       },
       useRuntime: useScriptedRuntime,
     },
+    Banner: DemoBanner,
   };
 }

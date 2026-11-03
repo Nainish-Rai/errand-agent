@@ -182,7 +182,14 @@ export class MockApiClient implements AppApi {
     const pendingFacts = memory.facts.filter((fact) => fact.status === "pending_confirmation");
     const upcoming = [...base.upcoming, ...views.flatMap(({ view, intent }) => upcomingOf(view, intent) ?? [])].sort((a, b) => a.slot.start.localeCompare(b.slot.start));
     const rebooked = (alertProposal: string | null) => alertProposal !== null && demoState().proposals[alertProposal]?.phase === "executed";
-    const alerts = base.alerts.map((alert) => (alert.kind === "provider_cancelled" ? { ...alert, rebooked: alert.rebooked || rebooked(alert.proposalId) } : alert));
+    // The home screen counts an alert's age on the browser's clock, so each alert is as old here as it
+    // is on the demo clock (otherwise one raised at the pinned 09:00 reads 0:00 for ever before then).
+    const onBrowserClock = (at: string) => new Date(Date.parse(at) - demoNowMs() + Date.now()).toISOString();
+    const alerts = base.alerts.map((alert) => ({
+      ...alert,
+      at: onBrowserClock(alert.at),
+      ...(alert.kind === "provider_cancelled" ? { rebooked: alert.rebooked || rebooked(alert.proposalId) } : {}),
+    }));
     const booked = upcoming.filter((visit) => visit.kind === "booked" && !base.upcoming.includes(visit));
     const days = base.activity.days.map((day) => {
       const visits = booked.filter((visit) => visit.slot.start.startsWith(day.date));

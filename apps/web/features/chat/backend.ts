@@ -1,6 +1,5 @@
 import { ApiClient, DEFAULT_BACKEND_URL, type AppApi } from "@errand/client";
-
-import { createDemoBackend } from "@/features/demo";
+import type { ComponentType } from "react";
 
 import { eveChatBackend, type ChatBackend } from "./chat-backend";
 
@@ -14,7 +13,12 @@ import { eveChatBackend, type ChatBackend } from "./chat-backend";
  */
 export const isDemo = process.env.NEXT_PUBLIC_ERRAND_DEMO === "1";
 
-const demo = isDemo ? createDemoBackend() : undefined;
+// Loaded only behind the switch, which the build inlines, so a build without it drops the demo and its
+// recording entirely: a static import would ship them in every bundle.
+const demo = isDemo ? (require("@/features/demo") as typeof import("@/features/demo")).createDemoBackend() : undefined;
+
+/** The demo's always-visible banner; none outside demo mode. */
+export const DemoBanner: ComponentType | undefined = demo?.Banner;
 
 export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? DEFAULT_BACKEND_URL;
 
