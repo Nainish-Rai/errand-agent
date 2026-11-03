@@ -196,18 +196,47 @@ export function UpcomingBookings({ summary }: { readonly summary?: Summary }) {
   );
 }
 
+type ProviderAlertView = Extract<HomeAlertView, { kind: "provider_cancelled" }>;
+
+function replacementLine(alert: ProviderAlertView): string {
+  if (alert.rebooked) return "replacement booked";
+  if (alert.replacementsReady === 0) return "finding a replacement…";
+  return alert.replacementsReady === 1 ? "1 replacement ready · needs approval" : `${alert.replacementsReady} replacements ready · needs approval`;
+}
+
+/** The chat that handles a provider's cancellation, opened at its waiting card if there is one. */
+export function providerAlertHref(alert: ProviderAlertView): string {
+  if (alert.sessionId === null) return "/chat";
+  return chatHref(alert.sessionId, alert.proposalId === null || alert.rebooked ? {} : { proposal: alert.proposalId });
+}
+
 function alertRow(alert: HomeAlertView, nowMs: number) {
   const since = <span className="font-mono text-meta text-fg-meta tabular-nums">{sinceLabel(alert.at, nowMs)}</span>;
   switch (alert.kind) {
-    case "provider_cancelled":
-      return (
+    case "provider_cancelled": {
+      const row = (
         <ListRow
-          lead={<StatusMark kind="cancelled" label="Cancelled" className="w-20 flex-none" />}
+          lead={
+            alert.rebooked ? (
+              <StatusMark kind="ok" label="Rebooked" className="w-20 flex-none" />
+            ) : (
+              <StatusMark kind="cancelled" label="Cancelled" className="w-20 flex-none" />
+            )
+          }
           title={`${alert.providerName} cancelled ${slotLabel(alert.slot.start)}`}
-          meta={alert.replacementsReady > 0 ? `${alert.replacementsReady} replacements ready · needs approval` : "looking for a replacement"}
+          meta={replacementLine(alert)}
           action={since}
         />
       );
+      // The alert opens its chat, at the replacement's approval card when one is waiting.
+      return alert.sessionId === null ? (
+        row
+      ) : (
+        <Link href={providerAlertHref(alert)} className="block rounded-md hover:bg-surface-raised">
+          {row}
+        </Link>
+      );
+    }
     case "booking_recovered":
       return (
         <Link href={chatHref(alert.sessionId)} className="block rounded-md hover:bg-surface-raised">
