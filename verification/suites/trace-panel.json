@@ -10,6 +10,12 @@
       "setup": [
         {
           "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
           "args": ["POST", "/api/v1/dev/scenario"],
           "options": { "body": { "scenario": "default", "seed": 42 } }
         }
@@ -109,6 +115,12 @@
       "id": "open-panel-follows-first-message",
       "title": "With the panel open before the first message, it shows the turn as soon as it runs",
       "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
         {
           "command": "api",
           "args": [

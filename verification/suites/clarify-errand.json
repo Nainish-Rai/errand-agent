@@ -81,7 +81,7 @@
                         ]
                       },
                       {
-                        "text": "Here are three plumbers in Koramangala this week: the best match, the cheapest and the earliest."
+                        "text": "Here are the best match, the cheapest and the earliest plumber in Koramangala this week."
                       }
                     ]
                   }
@@ -215,9 +215,9 @@
             "role=region[name=\"Options for plumber in Koramangala\"] >> role=listitem"
           ],
           "options": {
-            "count": 3
+            "count": 2
           },
-          "note": "three options after the chip answered the question"
+          "note": "two options after the chip answered the question: one plumber is both best match and earliest in this world"
         },
         {
           "command": "assert",

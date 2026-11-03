@@ -33,7 +33,7 @@ export default defineScenario({
               { name: "search_providers", input: { service: "plumber", area: "Koramangala", date_range: THIS_WEEK } },
             ],
           },
-          { text: "Here are three plumbers in Koramangala this week: the best match, the cheapest and the earliest." },
+          { text: "Here are the best match, the cheapest and the earliest plumber in Koramangala this week." },
         ],
       },
     ],

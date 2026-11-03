@@ -10,6 +10,12 @@
       "setup": [
         {
           "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
+        {
+          "command": "api",
           "args": ["POST", "/api/v1/dev/scenario"],
           "options": { "body": { "scenario": "default", "seed": 42 } },
           "note": "seed the world: default scenario, seed 42"
@@ -71,6 +77,12 @@
       "id": "send-button-sends",
       "title": "The Send button sends a message too",
       "setup": [
+        {
+          "command": "api",
+          "args": ["PUT", "/api/v1/dev/model-script"],
+          "options": { "body": { "script": null } },
+          "note": "no scenario script: the scripted model's default search responder answers"
+        },
         {
           "command": "api",
           "args": ["POST", "/api/v1/dev/scenario"],
