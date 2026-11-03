@@ -215,9 +215,8 @@
         },
         {
           "command": "assert",
-          "args": ["role=tree[name=\"Steps\"] >> role=treeitem[name*=\"search_providers tool\"]"],
-          "options": { "count": 2, "timeoutMs": 5000 },
-          "note": "the waterfall has both searches"
+          "options": { "role": "complementary", "name": "Run trace", "text": "3 model calls · 1 tool calls", "timeoutMs": 5000 },
+          "note": "the trace counts turn two's model call (it answered from the first search)"
         }
       ]
     }
