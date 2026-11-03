@@ -21,7 +21,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         {
           "command": "assert",
           "options": { "role": "complementary", "name": "Run trace", "text": "Send a message and the run shows up here." },
@@ -96,7 +96,7 @@
       "id": "close-button-hides-panel",
       "title": "The panel's close button hides it and the toggle brings it back",
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Close the trace" } },
         {
           "command": "assert",
@@ -139,7 +139,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {

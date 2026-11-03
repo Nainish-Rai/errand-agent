@@ -65,7 +65,9 @@ export class ChatClient {
 
   /** An existing session, for a UI that reopens a chat (it replays the session's stream itself). */
   attachSession(sessionId: string): ClientSession {
-    return this.#sessions.get(sessionId) ?? this.#client.sessions.attach(sessionId);
+    const session = this.#sessions.get(sessionId) ?? this.#client.sessions.attach(sessionId);
+    this.#sessions.set(sessionId, session);
+    return session;
   }
 
   /** Starts a session with its first message and waits for the turn to settle. */

@@ -24,7 +24,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         {
           "command": "assert",
           "options": { "role": "complementary", "name": "Memory", "count": 0 },
@@ -93,7 +93,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
         { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Correct\"s]"] },
         {
@@ -142,7 +142,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
         { "command": "click", "args": ["role=listitem[name=\"Area · Koramangala\"s] >> role=button[name=\"Forget\"s]"] },
         {
@@ -191,7 +191,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
         { "command": "click", "args": ["role=listitem[name=\"Budget · ₹1,500\"s] >> role=button[name=\"Confirm\"s]"] },
         {
@@ -266,7 +266,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "fill", "options": { "role": "textbox", "name": "Message the errand agent", "value": "I need a plumber this week" } },
         { "command": "key", "args": ["Enter"] },
         {
@@ -318,7 +318,7 @@
         }
       ],
       "steps": [
-        { "command": "goto", "args": ["/"] },
+        { "command": "goto", "args": ["/chat"] },
         { "command": "click", "options": { "role": "button", "name": "Show memory" } },
         {
           "command": "assert",

@@ -191,7 +191,13 @@ function LiveApprovalCard({ card }: { readonly card: ProposalCard }) {
   );
 
   return (
-    <div id={cardElementId(card.proposalId)} className="my-3 flex flex-col gap-1.5">
+    // Addressable, so a "Waiting on you" link can open the chat at this card and focus it.
+    <div
+      id={cardElementId(card.proposalId)}
+      data-proposal-id={card.proposalId}
+      tabIndex={-1}
+      className="my-3 flex scroll-mt-16 flex-col gap-1.5 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+    >
       {proposal === undefined ? (
         <div className="flex items-center gap-2 text-label text-fg-meta">
           <Spinner /> Loading the approval card…

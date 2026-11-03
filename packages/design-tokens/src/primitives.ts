@@ -54,6 +54,11 @@ export const colorPrimitives = {
   "day-window": "#e4ebf5",
   "day-cloud": "#ffffff",
   "day-road": "#9aa7bf",
+  "night-star": "#cfd8ff",
+  "night-moon": "#f4ecd0",
+  "night-beam": "#ffe9a8",
+  "day-sun": "#ffd36b",
+  "van-glass": "#9fc3ff",
 } as const;
 
 export type ColorPrimitive = keyof typeof colorPrimitives;
