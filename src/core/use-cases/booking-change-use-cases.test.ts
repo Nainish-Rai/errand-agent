@@ -67,6 +67,7 @@ const PROVIDER: ProviderDetails = {
   cancellationTerms: "Free cancellation up to 4 hours before the visit; ₹149 after that.",
   cancellationPolicy: POLICY,
   reviews: [],
+  photos: [],
 };
 
 class StepClock implements Clock {
