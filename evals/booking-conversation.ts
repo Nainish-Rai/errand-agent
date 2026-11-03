@@ -34,6 +34,11 @@ export const HOLD_AND_PROPOSE_TURN: ModelScriptTurn = {
   ],
 };
 
+/** HOLD_AND_PROPOSE_TURN with its own closing line, for worlds where the held price isn't ₹399. */
+export function holdAndProposeTurn(reply: string): ModelScriptTurn {
+  return { steps: [...HOLD_AND_PROPOSE_TURN.steps.slice(0, -1), { text: reply }] };
+}
+
 /** The person said to go ahead (tapped, or typed): execute, then relay what core said. */
 export function executeTurn(reply: string): ModelScriptTurn {
   return { steps: [{ toolCalls: [{ name: "execute_proposal", input: {} }] }, { text: reply }] };
