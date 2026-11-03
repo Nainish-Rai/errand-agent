@@ -12,6 +12,7 @@ import { useAvailability, useGeneratedUiHost, useProviders, useSpend } from "./b
 // Charts where they help a decision. The model names the providers (or how many months); every
 // number drawn comes from the read-only API. Each chart also carries its values as a table for
 // screen readers, which is what the browser checks read.
+// Bars are plain ink, as Lime draws charts: no OpenUI internal highlight line.
 
 function ChartFrame({
   title,
@@ -61,7 +62,7 @@ export function PriceChart({ providerIds, title }: { readonly providerIds: reado
   const bars = bindPriceChart(providerIds, providers.data);
   return (
     <ChartFrame title={modelText(title) ?? "Price per visit"} label="Price chart" rows={bars.map((bar) => [bar.name, rupees(bar.priceInr)])}>
-      <BarChart data={bars.map((bar) => ({ name: bar.name, price: bar.priceInr }))} categoryKey="name" height={180} condensed legend={false} />
+      <BarChart data={bars.map((bar) => ({ name: bar.name, price: bar.priceInr }))} categoryKey="name" height={180} condensed legend={false} internalLine={false} />
     </ChartFrame>
   );
 }
@@ -81,6 +82,7 @@ export function SlotsPerDayChart({ providerIds, title }: { readonly providerIds:
         height={180}
         condensed
         legend={false}
+        internalLine={false}
         onClick={(row) => {
           if (!running) void send(dayMessage(String(row.day)));
         }}

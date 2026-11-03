@@ -1,7 +1,7 @@
 "use client";
 
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { ErrandSearchOutputSchema, type ErrandOption, type OptionTag } from "@errand/contracts";
+import { ErrandSearchOutputSchema, type ErrandOption, type ErrandSearchOutput, type OptionTag } from "@errand/contracts";
 
 import { Spinner } from "@/components/ui/spinner";
 import { ProviderChoiceCards, type ChoiceInput } from "@/features/generated-ui";
@@ -35,6 +35,25 @@ function exclusionsLine(overBudget: number, outsideTimeWindow: number): string |
   return parts.length === 0 ? undefined : `Left out: ${parts.join(", ")}.`;
 }
 
+type NotSearched = Exclude<ErrandSearchOutput["kind"], "found" | "no_options">;
+
+/** Why no search ran, in the person's words; never an outcome code. The agent's reply says what to do next. */
+function notSearchedLine(kind: NotSearched, label: string): string {
+  switch (kind) {
+    case "not_editable":
+      return "This errand is already booked, so it wasn't searched again.";
+    case "unknown_service":
+      return "That service isn't one we book yet.";
+    case "unknown_area":
+      return "That area isn't covered yet.";
+    case "missing_details":
+      return `The search for ${label} needs a few more details first.`;
+    case "invalid_date_range":
+    case "invalid_detail":
+      return `The search for ${label} needs a detail fixed first.`;
+  }
+}
+
 export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, status, isError }) => {
   const query = args as { service?: string; area?: string };
   const label = `${(query.service ?? "providers").replaceAll("_", " ")} in ${query.area ?? "your area"}`;
@@ -59,7 +78,7 @@ export const ProviderResults: ToolCallMessagePartComponent = ({ args, result, st
       </p>
     );
   }
-  if (output.kind !== "found") return <p className="my-2 text-xs text-fg-3">No search for {label}: {output.kind.replaceAll("_", " ")}.</p>;
+  if (output.kind !== "found") return <p className="my-2 text-xs text-fg-3">{notSearchedLine(output.kind, label)}</p>;
 
   const optionIds = new Set(output.options.map((option) => option.providerId));
   const choices = output.options.map(choiceFromOption);

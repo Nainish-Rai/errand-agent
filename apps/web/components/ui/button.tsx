@@ -62,6 +62,8 @@ type ButtonProps = React.ComponentProps<"button"> &
 
 function Button({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }: ButtonProps) {
   const Comp = asChild ? Slot.Root : "button";
+  // An icon button has room for one glyph, so the spinner takes the icon's place; its aria-label still names it.
+  const iconOnly = size?.startsWith("icon") === true;
 
   return (
     <Comp
@@ -78,7 +80,7 @@ function Button({ className, variant, size, asChild = false, loading = false, di
       ) : (
         <>
           {loading && <Spinner aria-hidden className="size-3 border-current border-r-transparent" />}
-          {children}
+          {loading && iconOnly ? null : children}
         </>
       )}
     </Comp>

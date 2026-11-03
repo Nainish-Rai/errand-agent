@@ -6,7 +6,7 @@
   "scenarios": [
     {
       "id": "choice-cards-choose-then-approve",
-      "title": "Photo choice cards; Choose Shiva holds the slot and shows the approval card; nothing is booked until Approve ₹399",
+      "title": "Photo choice cards; Choose Shiva holds the slot and shows the approval card; nothing is booked until Approve ₹399; a search after booking says it's already booked",
       "setup": [
         {
           "command": "api",
@@ -112,12 +112,34 @@
                         "text": "Booked: Shiva Sanitary Solutions, ₹399. Booking ID bkg_0002."
                       }
                     ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Your plumber is booked. To change the time, use Reschedule on the receipt."
+                      }
+                    ]
                   }
                 ]
               }
             }
           },
-          "note": "the booking script: search, then hold and propose, then execute"
+          "note": "the booking script: search, then hold and propose, then execute, then a search after the booking"
         }
       ],
       "steps": [
@@ -452,6 +474,50 @@
             ]
           },
           "note": "world state: exactly one new booking, after Approve"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "what other slots are there"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "This errand is already booked, so it wasn't searched again."
+          },
+          "note": "a search after booking says why in plain words"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=/not editable|not_editable/"
+          ],
+          "options": {
+            "count": 0
+          },
+          "note": "never the outcome code"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "body"
+          ],
+          "options": {
+            "text": "use Reschedule on the receipt"
+          },
+          "note": "the turn finished"
         }
       ]
     },
@@ -876,6 +942,33 @@
             "text": "Here are their prices and free slots side by side"
           },
           "note": "the turn finished"
+        },
+        {
+          "command": "hover",
+          "args": [
+            "role=figure[name=\"Free slots per day\"] >> path"
+          ],
+          "options": {
+            "nth": 2
+          },
+          "note": "hover a day's bar"
+        },
+        {
+          "command": "assert",
+          "args": [
+            ".openui-chart-tooltip"
+          ],
+          "options": {
+            "text": "slots"
+          },
+          "note": "the tooltip names the series and its count"
+        },
+        {
+          "command": "screenshot",
+          "args": [
+            "chart-tooltip-light.png"
+          ],
+          "note": "the tooltip is a light card with dark text, not black on black"
         },
         {
           "command": "theme",

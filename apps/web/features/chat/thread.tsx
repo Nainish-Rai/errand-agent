@@ -76,7 +76,10 @@ function AssistantMessage() {
 
 function Composer() {
   return (
-    <ComposerPrimitive.Root className="flex items-end gap-2 rounded-panel border border-line bg-surface p-2">
+    <ComposerPrimitive.Root
+      data-slot="chat-input"
+      className="flex items-end gap-2 rounded-panel border border-line-strong bg-field p-2 transition-[border-color] duration-(--dur-instant) ease-out focus-within:border-accent-line"
+    >
       <ComposerPrimitive.Input
         aria-label="Message the errand agent"
         autoFocus

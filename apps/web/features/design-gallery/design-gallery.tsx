@@ -2,7 +2,7 @@
 
 // The /design route: every foundation and trust component in every state, in both themes side by
 // side. The app-side twin of design-system/design-system-v3.html. Data here is sample data, not the API's.
-import { Bell, TriangleAlert } from "lucide-react";
+import { ArrowUp, Bell, TriangleAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { FilterChip, MemoryChip, SuggestionChip } from "@/components/chip";
@@ -162,6 +162,9 @@ function Panel({ theme }: { readonly theme: Theme }) {
           </Button>
           <Button variant="primary" loading>
             Saving…
+          </Button>
+          <Button variant="primary" size="icon-xs" aria-label="Sending" loading>
+            <ArrowUp />
           </Button>
           <Button size="sm">Review</Button>
           <IconButton label="Notifications" icon={<Bell />} badge={{ value: 2, tone: "count" }} />
