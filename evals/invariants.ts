@@ -31,7 +31,8 @@ export interface Invariant {
  * keeps a trace that lost a run from passing by having nothing to check.
  */
 async function everyRunEndsWithATypedOutcome(run: ScenarioRun): Promise<InvariantVerdict> {
-  const runs = await tracedRuns(run.api, run.sessionId);
+  // A scenario can span several sessions (a returning user); every one of their runs must end typed.
+  const runs = (await Promise.all(run.sessionIds.map((sessionId) => tracedRuns(run.api, sessionId)))).flat();
   if (runs.length < run.turns.length) {
     return { holds: false, detail: `${run.turns.length} turns but ${runs.length} runs in the trace` };
   }
