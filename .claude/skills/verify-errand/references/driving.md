@@ -79,6 +79,9 @@ $V api POST /api/v1/dev/scenario --body '{"scenario":"slot_taken","seed":42}'
   with `treeitem`s named `chat errand-script …` (model) and `search_providers tool …` (tool).
 - Approval card in chat (ticket 05): region `Approve booking`, buttons `Approve ₹PRICE`, `Other options`,
   `Decline`; after Approve the card reads `Approved` and the receipt is region `Booked`.
+- Approval invalidation (ticket 06): a voided card is `section[aria-label="Approve booking"]:has-text("voided")`
+  with `Price changed ₹OLD → ₹NEW` / `Time changed …` and button `Review new price` / `Review new time`;
+  an expired one `:has-text("Expired")`; the replaced card shows twice (in place, and beside the fresh card).
 - `/design`: heading `Errand design system`; `html[data-theme]`; approval cards are
   `region "Approve booking" | "Approve cancellation" | "Approve reschedule"` (each state in both panels).
 
