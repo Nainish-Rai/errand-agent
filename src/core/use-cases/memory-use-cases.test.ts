@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { CONTEXT_BUDGET } from "../context/context-budget";
+import { estimateMessageTokens } from "../context/token-estimate";
 import type { Errand } from "../errand/errand";
+import type { ContextSelection } from "../memory/context-selection";
 import type { MemoryEvidence, MemoryFact, OwnerMemory } from "../memory/memory-fact";
 import type { Clock } from "../ports/clock";
 import type { ErrandChange, ErrandStore } from "../ports/errand-store";
@@ -306,6 +309,10 @@ describe("prefilling the errand from memory", () => {
   });
 });
 
+function renderFacts(selection: ContextSelection): string {
+  return selection.included.map(({ fact }) => `- ${fact.key}: ${fact.value}`).join("\n");
+}
+
 describe("building the model's context", () => {
   it("includes only usable facts and traces every exclusion with its reason", async () => {
     const { deps, errandDeps, sink, clock } = world();
@@ -316,8 +323,8 @@ describe("building the model's context", () => {
     await forgetMemoryFact(deps, { ownerId: OWNER, key: "favourite_technician", evidence: said("forget my technician") });
 
     const context = await buildModelContext(
-      { memory: deps.memory, errands: errandDeps.errands, traceSink: sink, clock, wallClock: clock },
-      { ownerId: OWNER, place: { traceId: "s3", sessionId: "s3" }, turnId: "turn_1" },
+      { memory: deps.memory, errands: errandDeps.errands, traceSink: sink, budget: CONTEXT_BUDGET, clock, wallClock: clock },
+      { ownerId: OWNER, place: { traceId: "s3", sessionId: "s3" }, turnId: "turn_1", render: renderFacts },
     );
     expect(context.selection.included.map(({ fact }) => [fact.key, fact.value])).toEqual([["area", "HSR Layout"]]);
     expect(context.selection.excluded.map(({ fact, reason }) => [fact.value, reason])).toEqual([
@@ -329,11 +336,35 @@ describe("building the model's context", () => {
     expect(event?.attributes["errand.context.facts"]).toBe(1);
   });
 
+  it("packs the best-ranked facts into the memory share of the context budget and logs the rest as over budget", async () => {
+    const { deps, errandDeps, sink, clock } = world();
+    await rememberFact(deps, { ownerId: OWNER, key: "area", value: "Koramangala", source: "explicit", evidence: said("Koramangala") });
+    await rememberFact(deps, { ownerId: OWNER, key: "budget", value: "1500", source: "explicit", evidence: said("1500") });
+    await rememberFact(deps, { ownerId: OWNER, key: "favourite_technician", value: "Ravi", source: "explicit", evidence: said("Ravi") });
+    // Room for exactly one rendered fact: the area, which fills a missing detail and ranks first.
+    const oneLine = estimateMessageTokens("- area: Koramangala");
+    const budget = { capTokens: 100 + oneLine, split: { instructions: 50, memory: oneLine, history: 50 } };
+
+    const context = await buildModelContext(
+      { memory: deps.memory, errands: errandDeps.errands, traceSink: sink, budget, clock, wallClock: clock },
+      { ownerId: OWNER, place: { traceId: "s3", sessionId: "s3" }, turnId: "turn_1", render: renderFacts },
+    );
+    expect(context.selection.included.map(({ fact }) => fact.key)).toEqual(["area"]);
+    expect(context.selection.excluded.map(({ fact, reason }) => [fact.key, reason])).toEqual([
+      ["budget", "over_budget"],
+      ["favourite_technician", "over_budget"],
+    ]);
+    expect(context.tokens).toBeLessThanOrEqual(budget.split.memory);
+    const [event] = sink.eventsOf("context");
+    expect(event?.attributes["errand.memory.text"]).toBe(context.text);
+    expect(event?.attributes["errand.memory.tokens"]).toBe(context.tokens);
+  });
+
   it("says nothing and traces nothing for a person nothing was ever stored about", async () => {
     const { deps, errandDeps, sink, clock } = world();
     const context = await buildModelContext(
-      { memory: deps.memory, errands: errandDeps.errands, traceSink: sink, clock, wallClock: clock },
-      { ownerId: OWNER, place: { traceId: "s3", sessionId: "s3" }, turnId: "turn_1" },
+      { memory: deps.memory, errands: errandDeps.errands, traceSink: sink, budget: CONTEXT_BUDGET, clock, wallClock: clock },
+      { ownerId: OWNER, place: { traceId: "s3", sessionId: "s3" }, turnId: "turn_1", render: renderFacts },
     );
     expect(context.remembersAnything).toBe(false);
     expect(sink.records).toEqual([]);

@@ -2,6 +2,7 @@ import type { ModelScript } from "@errand/contracts";
 import type { LanguageModel } from "ai";
 import { mockModel, type MockModelRequest, type MockModelResponse } from "eve/evals";
 
+import { personsMessagesLeftOutIn } from "../../core/context/context-budget";
 import { MEMORY_CONTEXT_HEADING } from "../../core/use-cases/build-model-context";
 import { AREAS, resolveArea, resolveService, SERVICES } from "../world/seed/catalog";
 
@@ -81,14 +82,20 @@ function isRememberedContext(text: string): boolean {
   return text.includes(MEMORY_CONTEXT_HEADING);
 }
 
+/** Neither is the summary the context budget puts in place of older messages; it says how many of the person's it replaced. */
+function isPersonSpeaking(text: string): boolean {
+  return !isRememberedContext(text) && personsMessagesLeftOutIn(text) === undefined;
+}
+
 /**
  * Read from the conversation itself, not a counter, so a retried or replayed model call gets the
  * same step and two sessions can't push each other's script forward.
  */
 export function positionIn(request: Pick<MockModelRequest, "messages" | "userMessages">): ScriptPosition {
-  const lastUser = request.messages.findLastIndex((message) => message.role === "user" && !isRememberedContext(message.text));
+  const lastUser = request.messages.findLastIndex((message) => message.role === "user" && isPersonSpeaking(message.text));
   const step = request.messages.slice(lastUser + 1).filter((message) => message.role === "assistant").length;
-  const said = request.userMessages.filter((text) => !isRememberedContext(text)).length;
+  const leftOut = request.userMessages.map((text) => personsMessagesLeftOutIn(text) ?? 0).reduce((total, count) => total + count, 0);
+  const said = request.userMessages.filter(isPersonSpeaking).length + leftOut;
   return { turn: Math.max(0, said - 1), step };
 }
 

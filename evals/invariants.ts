@@ -3,6 +3,7 @@ import { equals } from "eve/evals/expect";
 
 import { isTypedOutcome, tracedRuns } from "./run-outcomes";
 import { bookingChanges, executionsIn, fingerprintOfBooking } from "./approval-checks";
+import { factsLeakedIntoContext } from "./context-checks";
 import { factsNotFromTheUser, memoryWritesFromToolOutput } from "./memory-checks";
 import type { ScenarioRun } from "./scenario-run";
 
@@ -118,6 +119,7 @@ export const INVARIANTS: readonly Invariant[] = [
     id: "no-forgotten-fact-in-context",
     statement: "No forgotten or unconfirmed-inferred fact in any logged context",
     realIn: "12",
+    check: async (run) => holds(await factsLeakedIntoContext(run)),
   },
   {
     id: "memory-only-from-the-user",

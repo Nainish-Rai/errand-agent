@@ -1,0 +1,370 @@
+{
+  "scenario": "scenarios/memory/context-budget",
+  "recordedAt": "2026-11-03T01:53:53.429Z",
+  "evalRunId": "63ae4afd-bc6e-4b63-92c5-f1a957660c8d",
+  "model": "anthropic/MiniMax-M3",
+  "clockStart": "2026-11-04T09:00:00+05:30",
+  "world": {
+    "scenario": "default",
+    "seed": 42
+  },
+  "user": [
+    {
+      "say": "Hi, I need plumbers in Koramangala. Can you show me options?"
+    },
+    {
+      "say": "This week, but not before 10 am please."
+    },
+    {
+      "say": "Thanks, let me also check electricians in Indiranagar."
+    },
+    {
+      "say": "Can I also see AC servicing in Whitefield?"
+    },
+    {
+      "say": "What about carpenters in Jayanagar?"
+    },
+    {
+      "say": "Can you show me cleaners in BTM Layout?"
+    },
+    {
+      "say": "Show me plumbers in Malleshwaram please."
+    },
+    {
+      "say": "I'd like to see electricians in Electronic City."
+    },
+    {
+      "say": "Let me check AC servicing in Koramangala too."
+    },
+    {
+      "say": "What about carpenters in Indiranagar?"
+    }
+  ],
+  "modelScript": {
+    "turns": [
+      {
+        "steps": [
+          {
+            "text": "I'll get that started — but I need a time window before I can pull options.",
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala"
+                }
+              }
+            ]
+          },
+          {
+            "text": "Using your usual budget, up to ₹1,500.\n\nWhen should the plumber visit? (Today, tomorrow morning, this weekend, or this week?)"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "time_window": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10",
+                    "earliest_hour": 10
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the plumbers available for this week, starting no earlier than 10 am:\n\n- **Venkatesh Sanitary Solutions** — *best match* — ₹499, rated 4.8 — earliest Wed, 4 Nov, 10:00 am IST\n- **Shiva Sanitary Solutions** — *cheapest* — ₹399, rated 4.5 — earliest Thu, 5 Nov, 12:00 pm IST\n\nWhich one would you like to book?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "electrician",
+                  "area": "Indiranagar"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "electrician",
+                  "area": "Indiranagar",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the electricians in Indiranagar for this week, starting no earlier than 10 am:\n\n- **Royal Electricals** — *best match* — ₹449, rated 4.8 — earliest Wed, 4 Nov, 3:00 pm IST\n- **Venkatesh Electricals** — *earliest* — ₹1,049, rated 3.9 — earliest Wed, 4 Nov, 10:00 am IST\n\nWould you like me to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "Whitefield"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "Whitefield",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the AC servicing options in Whitefield for this week, starting no earlier than 10 am:\n\n- **Lakshmi Cooling Services** — *best match* — ₹599, rated 4.7 — earliest Wed, 4 Nov, 10:00 am IST\n- **Sri Ganesh HVAC Services** — *runner-up* — ₹1,099, rated 3.8 — earliest Wed, 4 Nov, 12:00 pm IST\n\nTwo other providers were excluded because they were over budget. Would you like to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "carpenter",
+                  "area": "Jayanagar"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "carpenter",
+                  "area": "Jayanagar",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the carpenter options in Jayanagar for this week, starting no earlier than 10 am:\n\n- **Basava Interiors** — *best match* — ₹1,049, rated 4.9 — earliest Wed, 4 Nov, 12:00 pm IST\n- **Anand Woodworks** — *cheapest* — ₹499, rated 4.1 — earliest Wed, 4 Nov, 11:00 am IST\n- **Prestige Furniture Fixers** — *earliest* — ₹1,249, rated 4.3 — earliest Wed, 4 Nov, 10:00 am IST\n\nWould you like to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "cleaner",
+                  "area": "BTM Layout"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "cleaner",
+                  "area": "BTM Layout",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the cleaner options in BTM Layout for this week, starting no earlier than 10 am:\n\n- **Anand Home Cleaning** — *best match* — ₹1,349, rated 4.7 — earliest Wed, 4 Nov, 10:00 am IST\n\nThree other providers were excluded because they were over budget. Would you like to book Anand Home Cleaning?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "plumber",
+                  "area": "Malleshwaram"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "plumber",
+                  "area": "Malleshwaram",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the plumber options in Malleshwaram for this week, starting no earlier than 10 am:\n\n- **Kaveri Plumbing Services** — *best match* — ₹899, rated 4.9 — earliest Wed, 4 Nov, 5:00 pm IST\n- **Prestige Pipe Fixers** — *cheapest* — ₹499, rated 4.1 — earliest Wed, 4 Nov, 10:00 am IST\n- **Royal Plumbing Works** — *earliest* — ₹1,099, rated 4.8 — earliest Wed, 4 Nov, 10:00 am IST\n\nWould you like to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "electrician",
+                  "area": "Electronic City"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "electrician",
+                  "area": "Electronic City",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the electrician options in Electronic City for this week, starting no earlier than 10 am:\n\n- **Shiva Electric Works** — *best match* — ₹399, rated 4.8 — earliest Wed, 4 Nov, 3:00 pm IST\n- **Urban Hands Wiring Services** — *earliest* — ₹599, rated 3.6 — earliest Wed, 4 Nov, 10:00 am IST\n\nWould you like to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "Koramangala"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "ac_servicing",
+                  "area": "Koramangala",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the AC servicing options in Koramangala for this week, starting no earlier than 10 am:\n\n- **Prestige AC Care** — *best match* — ₹999, rated 4.6 — earliest Wed, 4 Nov, 2:00 pm IST\n- **Kaveri Cooling Services** — *cheapest* — ₹949, rated 3.6 — earliest Wed, 4 Nov, 11:00 am IST\n- **Ravi Aircon Experts** — *earliest* — ₹999, rated 4.0 — earliest Wed, 4 Nov, 10:00 am IST\n\nThree other providers were excluded because they were over budget. Would you like to book one of these?"
+          }
+        ]
+      },
+      {
+        "steps": [
+          {
+            "toolCalls": [
+              {
+                "name": "update_errand",
+                "input": {
+                  "service": "carpenter",
+                  "area": "Indiranagar"
+                }
+              }
+            ]
+          },
+          {
+            "toolCalls": [
+              {
+                "name": "search_providers",
+                "input": {
+                  "service": "carpenter",
+                  "area": "Indiranagar",
+                  "date_range": {
+                    "from": "2026-11-04",
+                    "to": "2026-11-10"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "text": "Here are the carpenter options in Indiranagar for this week, starting no earlier than 10 am:\n\n- **QuickFix Interiors** — *best match* — ₹849, rated 4.9 — earliest Wed, 4 Nov, 2:00 pm IST\n- **Prestige Carpentry** — *cheapest* — ₹699, rated 4.6 — earliest Wed, 4 Nov, 12:00 pm IST\n- **Manjunath Interiors** — *earliest* — ₹1,249, rated 4.9 — earliest Wed, 4 Nov, 10:00 am IST\n\nThree other providers were excluded because they were over budget. Would you like to book one of these?"
+          }
+        ]
+      }
+    ]
+  },
+  "costUsd": {
+    "agent": 0.05753063999999999,
+    "simulatedUser": 0.29104610000000003
+  }
+}

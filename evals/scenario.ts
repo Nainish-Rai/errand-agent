@@ -45,6 +45,8 @@ export interface ScenarioDefinition {
   readonly memory?: readonly SeedFact[];
   /** Cap on the simulated user's messages (default 3). */
   readonly maxSimulatedMessages?: number;
+  /** A live trial's own time limit, for a scenario with more messages than the config's limit allows */
+  readonly liveTimeoutMs?: number;
   /** The offline model's turns: turn n answers the nth user message. */
   readonly model: ModelScript;
   /** The expected end state in one line, for the eval table. */
@@ -193,6 +195,7 @@ export function defineScenario(definition: ScenarioDefinition): EveEvalDefinitio
     description: definition.description,
     tags: ["scenario"],
     metadata: { scenario: definition.id, expected: definition.expected, goal: definition.goal },
+    ...(evalMode() === "live" && definition.liveTimeoutMs !== undefined ? { timeoutMs: definition.liveTimeoutMs } : {}),
     test: (t) => runScenario(t, definition),
   });
 }

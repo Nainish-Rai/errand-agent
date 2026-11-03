@@ -71,6 +71,12 @@ const ROUTES: readonly Route[] = [
   },
   {
     method: "GET",
+    pattern: /^\/sessions\/([^/]+)\/context$/,
+    route: "GET /api/v1/sessions/:id/context",
+    handle: async (client, match) => await client.getSessionContext(decodeURIComponent(match[1] ?? "")),
+  },
+  {
+    method: "GET",
     pattern: /^\/sessions\/([^/]+)\/errand$/,
     route: "GET /api/v1/sessions/:id/errand",
     handle: async (client, match) => ({ errand: await client.getErrand(decodeURIComponent(match[1] ?? "")) }),

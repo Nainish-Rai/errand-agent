@@ -63,6 +63,22 @@ describe("the script player", () => {
     ).toEqual({ turn: 0, step: 1 });
   });
 
+  it("counts the person's messages a context-budget summary replaced, so a trimmed history keeps its place in the script", () => {
+    expect(
+      positionIn(
+        requestAfter([
+          {
+            role: "user",
+            text: 'Earlier in this conversation: 6 older messages were left out to fit the context budget, 3 of them from the person. What the person said then, oldest first:\n- "a"',
+          },
+          { role: "user", text: "and an electrician" },
+          { role: "assistant", text: "" },
+          { role: "tool", text: "{}" },
+        ]),
+      ),
+    ).toEqual({ turn: 3, step: 1 });
+  });
+
   it("plays the loaded script step by step", () => {
     const player = new ModelScriptPlayer();
     player.load(script);

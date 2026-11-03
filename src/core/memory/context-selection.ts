@@ -4,7 +4,8 @@ import { MEMORY_KEYS, type MemoryFact, type MemoryKey } from "./memory-fact";
 // Context selection: which remembered facts the model sees this turn, and why each other fact
 // doesn't. Filter first, then rank: a fact that fails the filter (superseded, forgotten, unconfirmed,
 // outside its validity window) is excluded before ranking runs, so no ranking can bring it back.
-// Ticket 12 packs the ranked facts into a token budget; this function stays pure for it.
+// Then pack: the ranked facts go into the memory share of the context budget, best first, and the
+// ones that don't fit are excluded as over budget.
 
 export type InclusionReason =
   /** The errand doesn't have this detail yet, so the fact can fill it. */
@@ -22,7 +23,9 @@ export type ExclusionReason =
   /** Its validity window doesn't contain now. */
   | "outside_validity"
   /** The person said something else for this errand, which wins over the remembered value. */
-  | "overridden_by_errand";
+  | "overridden_by_errand"
+  /** Usable and relevant, but ranked below the facts that filled the memory share of the context budget. */
+  | "over_budget";
 
 export interface IncludedFact {
   readonly fact: MemoryFact;
@@ -90,11 +93,25 @@ function relevanceTo(fact: MemoryFact, details: ErrandDetails | undefined): Incl
   return sameText(inErrand, fact.value) ? "matches_errand" : "overridden_by_errand";
 }
 
+/** Orders the facts that passed the filter, most useful first. */
+export type FactRanking = (a: IncludedFact, b: IncludedFact) => number;
+
+/** Facts that fill a missing detail first, then standing preferences, then ones the errand already says; newest first within a key. */
+export const relevanceRanking: FactRanking = (a, b) =>
+  RANK_OF_REASON[a.reason] - RANK_OF_REASON[b.reason] ||
+  MEMORY_KEYS.indexOf(a.fact.key) - MEMORY_KEYS.indexOf(b.fact.key) ||
+  b.fact.validFromMs - a.fact.validFromMs;
+
 /**
  * Selects the facts for the model's context. `details` is the session's errand, or undefined before
- * the person has asked for anything.
+ * the person has asked for anything. The ranking only ever sees facts that passed the filter.
  */
-export function selectContext(facts: readonly MemoryFact[], details: ErrandDetails | undefined, nowMs: number): ContextSelection {
+export function selectContext(
+  facts: readonly MemoryFact[],
+  details: ErrandDetails | undefined,
+  nowMs: number,
+  ranking: FactRanking = relevanceRanking,
+): ContextSelection {
   const included: IncludedFact[] = [];
   const excluded: ExcludedFact[] = [];
   for (const fact of facts) {
@@ -107,11 +124,26 @@ export function selectContext(facts: readonly MemoryFact[], details: ErrandDetai
     if (relevance === "overridden_by_errand") excluded.push({ fact, reason: relevance });
     else included.push({ fact, reason: relevance });
   }
-  included.sort(
-    (a, b) =>
-      RANK_OF_REASON[a.reason] - RANK_OF_REASON[b.reason] ||
-      MEMORY_KEYS.indexOf(a.fact.key) - MEMORY_KEYS.indexOf(b.fact.key) ||
-      b.fact.validFromMs - a.fact.validFromMs,
-  );
+  included.sort(ranking);
   return { included, excluded };
+}
+
+/** The best `count` included facts; the rest are excluded as over budget. */
+function keepingBest(selection: ContextSelection, count: number): ContextSelection {
+  return {
+    included: selection.included.slice(0, count),
+    excluded: [...selection.excluded, ...selection.included.slice(count).map(({ fact }) => ({ fact, reason: "over_budget" as const }))],
+  };
+}
+
+/**
+ * Keeps the longest best-first run of included facts whose rendering `fits`; the rest are excluded
+ * as over budget. Ranking decides who goes first, so a lower-ranked fact never pushes out a better one.
+ */
+export function packSelection(selection: ContextSelection, fits: (selection: ContextSelection) => boolean): ContextSelection {
+  for (let count = selection.included.length; count > 0; count -= 1) {
+    const packed = keepingBest(selection, count);
+    if (fits(packed)) return packed;
+  }
+  return keepingBest(selection, 0);
 }

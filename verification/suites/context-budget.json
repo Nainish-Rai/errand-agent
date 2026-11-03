@@ -1,0 +1,1320 @@
+{
+  "version": 1,
+  "title": "Context budget: 53 memories and a long history, every turn's context in the trace panel",
+  "feature": "context-log",
+  "description": "Ticket 12. With 53 remembered facts (superseded, forgotten, an unconfirmed guess, three current) and a fifteen-message conversation, the trace panel's context log shows each turn's context: tokens against the 40k cap, the facts sent and every fact left out with its reason, and the history kept, dropped and summarised. Checked against GET /api/v1/sessions/:id/context. The seed equals evals/context-budget-seed.ts (a test keeps them equal).",
+  "scenarios": [
+    {
+      "id": "context-log-shows-facts-and-reasons",
+      "title": "After fifteen messages, the last turn sent only the budget and earliest start; 51 facts are left out with reasons; the oldest history was dropped and summarised",
+      "viewport": "desktop",
+      "setup": [
+        {
+          "command": "api",
+          "args": [
+            "POST",
+            "/api/v1/dev/scenario"
+          ],
+          "options": {
+            "body": {
+              "scenario": "default",
+              "seed": 42
+            }
+          }
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/memory"
+          ],
+          "options": {
+            "body": {
+              "facts": [
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 400
+                },
+                {
+                  "key": "area",
+                  "value": "Indiranagar",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 393
+                },
+                {
+                  "key": "area",
+                  "value": "Whitefield",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 386
+                },
+                {
+                  "key": "area",
+                  "value": "Jayanagar",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 379
+                },
+                {
+                  "key": "area",
+                  "value": "BTM Layout",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 372
+                },
+                {
+                  "key": "area",
+                  "value": "Malleshwaram",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 365
+                },
+                {
+                  "key": "area",
+                  "value": "Electronic City",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 358
+                },
+                {
+                  "key": "area",
+                  "value": "Koramangala",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 351
+                },
+                {
+                  "key": "area",
+                  "value": "Indiranagar",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 344
+                },
+                {
+                  "key": "area",
+                  "value": "Whitefield",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 337
+                },
+                {
+                  "key": "area",
+                  "value": "Jayanagar",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 330
+                },
+                {
+                  "key": "area",
+                  "value": "BTM Layout",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 323
+                },
+                {
+                  "key": "area",
+                  "value": "Malleshwaram",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 316
+                },
+                {
+                  "key": "area",
+                  "value": "Electronic City",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 309
+                },
+                {
+                  "key": "area",
+                  "value": "HSR Layout",
+                  "source": "explicit",
+                  "status": "active",
+                  "ageDays": 10
+                },
+                {
+                  "key": "budget",
+                  "value": "500",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 400
+                },
+                {
+                  "key": "budget",
+                  "value": "600",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 393
+                },
+                {
+                  "key": "budget",
+                  "value": "700",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 386
+                },
+                {
+                  "key": "budget",
+                  "value": "800",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 379
+                },
+                {
+                  "key": "budget",
+                  "value": "900",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 372
+                },
+                {
+                  "key": "budget",
+                  "value": "1000",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 365
+                },
+                {
+                  "key": "budget",
+                  "value": "1100",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 358
+                },
+                {
+                  "key": "budget",
+                  "value": "1200",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 351
+                },
+                {
+                  "key": "budget",
+                  "value": "1300",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 344
+                },
+                {
+                  "key": "budget",
+                  "value": "1400",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 337
+                },
+                {
+                  "key": "budget",
+                  "value": "1500",
+                  "source": "explicit",
+                  "status": "active",
+                  "ageDays": 9
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "7",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 400
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "8",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 393
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "11",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 386
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "12",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 379
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "13",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 372
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "14",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 365
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "15",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 358
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "16",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 351
+                },
+                {
+                  "key": "earliest_hour",
+                  "value": "9",
+                  "source": "explicit",
+                  "status": "active",
+                  "ageDays": 8
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Ravi",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 400
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Suresh",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 393
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Anil",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 386
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Manjunath",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 379
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Prakash",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 372
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Vinod",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 365
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Kiran",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 358
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Naveen",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 351
+                },
+                {
+                  "key": "favourite_technician",
+                  "value": "Raju",
+                  "source": "explicit",
+                  "status": "forgotten",
+                  "ageDays": 344
+                },
+                {
+                  "key": "preferences",
+                  "value": "no pets",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 400
+                },
+                {
+                  "key": "preferences",
+                  "value": "cash only",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 393
+                },
+                {
+                  "key": "preferences",
+                  "value": "parts included",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 386
+                },
+                {
+                  "key": "preferences",
+                  "value": "female technician",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 379
+                },
+                {
+                  "key": "preferences",
+                  "value": "no weekends",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 372
+                },
+                {
+                  "key": "preferences",
+                  "value": "call first",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 365
+                },
+                {
+                  "key": "preferences",
+                  "value": "bring a ladder",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 358
+                },
+                {
+                  "key": "preferences",
+                  "value": "Kannada speaking",
+                  "source": "explicit",
+                  "status": "superseded",
+                  "ageDays": 351
+                },
+                {
+                  "key": "preferences",
+                  "value": "weekend visits only",
+                  "source": "inferred",
+                  "status": "pending_confirmation",
+                  "ageDays": 2
+                }
+              ]
+            }
+          },
+          "note": "seed the 53 facts of the context-budget world"
+        },
+        {
+          "command": "api",
+          "args": [
+            "PUT",
+            "/api/v1/dev/model-script"
+          ],
+          "options": {
+            "body": {
+              "script": {
+                "turns": [
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best plumber options in Koramangala this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "electrician",
+                              "area": "Indiranagar",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best electrician options in Indiranagar this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "ac_servicing",
+                              "area": "Whitefield",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best ac servicing options in Whitefield this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "carpenter",
+                              "area": "Jayanagar",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best carpenter options in Jayanagar this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "cleaner",
+                              "area": "BTM Layout",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best cleaner options in BTM Layout this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Malleshwaram",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best plumber options in Malleshwaram this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "electrician",
+                              "area": "Electronic City",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best electrician options in Electronic City this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "ac_servicing",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best ac servicing options in Koramangala this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "carpenter",
+                              "area": "Indiranagar",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best carpenter options in Indiranagar this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "cleaner",
+                              "area": "Whitefield",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best cleaner options in Whitefield this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "plumber",
+                              "area": "Electronic City",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best plumber options in Electronic City this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "electrician",
+                              "area": "BTM Layout",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best electrician options in BTM Layout this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "ac_servicing",
+                              "area": "Malleshwaram",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best ac servicing options in Malleshwaram this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "carpenter",
+                              "area": "Koramangala",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best carpenter options in Koramangala this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  },
+                  {
+                    "steps": [
+                      {
+                        "toolCalls": [
+                          {
+                            "name": "search_providers",
+                            "input": {
+                              "service": "electrician",
+                              "area": "Jayanagar",
+                              "date_range": {
+                                "from": "2026-11-04",
+                                "to": "2026-11-10"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "text": "Here are the best electrician options in Jayanagar this week, with prices and the earliest free slots."
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "note": "the scenario's scripted model: one search and one answer per message"
+        }
+      ],
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/chat"
+          ]
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Find a plumber in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best plumber options in Koramangala this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 1 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "What about an electrician in Indiranagar this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best electrician options in Indiranagar this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 2 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Show me AC servicing in Whitefield this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best ac servicing options in Whitefield this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 3 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Any carpenters in Jayanagar this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best carpenter options in Jayanagar this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 4 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "I also need a cleaner in BTM Layout this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best cleaner options in BTM Layout this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 5 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Back to plumbers: what is there in Malleshwaram this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best plumber options in Malleshwaram this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 6 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "And electricians in Electronic City this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best electrician options in Electronic City this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 7 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Check AC servicing in Koramangala this week too"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best ac servicing options in Koramangala this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 8 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Carpenters in Indiranagar this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best carpenter options in Indiranagar this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 9 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Cleaners in Whitefield this week please"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best cleaner options in Whitefield this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 10 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "How about plumbers in Electronic City this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best plumber options in Electronic City this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 11 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Electricians in BTM Layout this week?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best electrician options in BTM Layout this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 12 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "AC servicing in Malleshwaram this week, what do you have?"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best ac servicing options in Malleshwaram this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 13 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "Last one: carpenters in Koramangala this week"
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best carpenter options in Koramangala this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 14 of 15 answered"
+        },
+        {
+          "command": "fill",
+          "options": {
+            "role": "textbox",
+            "name": "Message the errand agent",
+            "value": "OK, I'll go with an electrician in Jayanagar this week, within my usual budget and not before my usual time."
+          }
+        },
+        {
+          "command": "key",
+          "args": [
+            "Enter"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "text=Here are the best electrician options in Jayanagar this week"
+          ],
+          "options": {
+            "count": 1,
+            "timeoutMs": 30000
+          },
+          "note": "message 15 of 15 answered"
+        },
+        {
+          "command": "assert",
+          "options": {
+            "role": "region",
+            "name": "Context log",
+            "text": "Cap 40,000 tokens"
+          },
+          "note": "the trace panel has the context log with the cap and the declared split"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=list[name=\"Model calls\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "the last turn made two model calls, each with its tokens against the cap"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=list[name=\"Facts sent\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 2
+          },
+          "note": "only two facts were sent in the last turn"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=listitem[name=\"Budget · ₹1,500\"]"
+          ],
+          "options": {
+            "text": "matches the errand"
+          },
+          "note": "the usual budget, current and relevant"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=listitem[name=\"Earliest start · 09:00\"]"
+          ],
+          "options": {
+            "text": "fills a missing detail"
+          },
+          "note": "the usual earliest start fills a missing detail"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=region[name=\"Facts left out\"]"
+          ],
+          "options": {
+            "text": "superseded (40)"
+          },
+          "note": "40 superseded facts were left out"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=region[name=\"Facts left out\"]"
+          ],
+          "options": {
+            "text": "overridden by this errand (1)"
+          },
+          "note": "the usual area is irrelevant: the person named Jayanagar for this errand"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=button[name=\"forgotten (9)\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=list[name=\"Left out: forgotten\"] >> role=listitem"
+          ],
+          "options": {
+            "count": 9
+          },
+          "note": "all nine forgotten technicians are listed as left out, never sent"
+        },
+        {
+          "command": "click",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=button[name=\"inferred, not confirmed (1)\"]"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=list[name=\"Left out: inferred, not confirmed\"] >> role=listitem[name=\"Preferences · weekend visits only\"]"
+          ],
+          "options": {
+            "text": "inferred"
+          },
+          "note": "the unconfirmed guess is left out"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=region[name=\"History sent\"]"
+          ],
+          "options": {
+            "text": "oldest"
+          },
+          "note": "the oldest history was dropped to fit the budget"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 15 context\"] >> role=blockquote[name=\"Summary of the dropped messages\"]"
+          ],
+          "options": {
+            "text": "Earlier in this conversation"
+          },
+          "note": "a deterministic summary replaced the dropped messages"
+        },
+        {
+          "command": "screenshot",
+          "note": "the last turn's context, settled"
+        },
+        {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Turn 1 context"
+          }
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Turn 1 context\"] >> role=listitem[name=\"Area · HSR Layout\"]"
+          ],
+          "options": {
+            "text": "fills a missing detail"
+          },
+          "note": "in the first turn, before any area was named, the usual area was relevant and sent"
+        },
+        {
+          "command": "api",
+          "args": [
+            "GET",
+            "/api/v1/sessions/current/context"
+          ],
+          "options": {
+            "expect": [
+              {
+                "path": "calls",
+                "atLeast": 30
+              },
+              {
+                "path": "calls[*].outcome",
+                "includes": "sent"
+              },
+              {
+                "path": "calls[*].history.dropped[*].fromPerson",
+                "includes": true
+              },
+              {
+                "path": "calls[*].memory.excluded[*].reason",
+                "includes": "forgotten"
+              },
+              {
+                "path": "calls[*].memory.excluded[*].reason",
+                "includes": "unconfirmed"
+              },
+              {
+                "path": "calls[*].capTokens",
+                "includes": 40000
+              }
+            ]
+          },
+          "note": "world state: the backend's context log has every call, with history dropped and facts excluded"
+        }
+      ]
+    }
+  ]
+}

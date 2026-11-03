@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ErrandDetails } from "../errand/errand";
-import { selectContext } from "./context-selection";
+import { packSelection, selectContext, type FactRanking } from "./context-selection";
 import type { MemoryFact } from "./memory-fact";
 
 const NOW = Date.parse("2026-11-04T09:00:00+05:30");
@@ -62,5 +62,39 @@ describe("context selection", () => {
       ["technician", "standing_preference"],
       ["same-area", "matches_errand"],
     ]);
+  });
+
+  it("filters before it ranks: a ranking that favours a forgotten fact still can't include it", () => {
+    const facts = [
+      fact({ id: "forgotten", key: "budget", value: "900", status: "forgotten", validToMs: NOW - 1 }),
+      fact({ id: "guess", key: "favourite_technician", value: "Ravi", source: "inferred", status: "pending_confirmation" }),
+      fact({ id: "kept-area", key: "area", value: "HSR Layout" }),
+      fact({ id: "kept-hour", key: "earliest_hour", value: "10" }),
+    ];
+    // Puts the forgotten and the unconfirmed fact first, ahead of everything else.
+    const favoursExcluded: FactRanking = (a, b) =>
+      Number(["forgotten", "guess"].includes(b.fact.id)) - Number(["forgotten", "guess"].includes(a.fact.id)) || a.fact.id.localeCompare(b.fact.id);
+    const selection = selectContext(facts, empty, NOW, favoursExcluded);
+    expect(selection.included.map(({ fact: { id } }) => id)).toEqual(["kept-area", "kept-hour"]);
+    expect(selection.excluded.map(({ fact: { id }, reason }) => [id, reason])).toEqual([
+      ["forgotten", "forgotten"],
+      ["guess", "unconfirmed"],
+    ]);
+    // Even with room for a single fact, the one that goes in is a usable one.
+    const packed = packSelection(selection, (candidate) => candidate.included.length <= 1);
+    expect(packed.included.map(({ fact: { id } }) => id)).toEqual(["kept-area"]);
+  });
+
+  it("packs the best-ranked facts that fit and excludes the rest as over budget", () => {
+    const facts = [
+      fact({ id: "area", key: "area", value: "HSR Layout" }),
+      fact({ id: "budget", key: "budget", value: "1500" }),
+      fact({ id: "technician", key: "favourite_technician", value: "Ravi" }),
+    ];
+    const selection = selectContext(facts, { ...empty, area: "HSR Layout" }, NOW);
+    const packed = packSelection(selection, (candidate) => candidate.included.length <= 2);
+    expect(packed.included.map(({ fact: { id } }) => id)).toEqual(["budget", "technician"]);
+    expect(packed.excluded.map(({ fact: { id }, reason }) => [id, reason])).toEqual([["area", "over_budget"]]);
+    expect(packSelection(selection, () => false).included).toEqual([]);
   });
 });
