@@ -528,7 +528,7 @@
           "command": "assert",
           "options": {
             "role": "textbox",
-            "name": "Message the errand agent",
+            "name": "Describe your errand",
             "value": "AC servicing this week"
           },
           "note": "the tile puts its errand in the composer"
