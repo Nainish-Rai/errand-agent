@@ -103,7 +103,7 @@ components below wear the Lime tokens.
 | Popover, menu, select, dialog | shadcn (Radix), agents-ui | `--raised`, `--radius-panel` (dialogs `--radius-sheet`), `--shadow-menu` / `--shadow-overlay`, enter from `--scale-enter` |
 | Fields | shadcn | `--field` fill, `--line-strong` edge, `--radius-field`, Lime's focus ring |
 | Monogram | custom | a provider's initials on `--surface`, the fallback where a photo is missing |
-| Photo, provider thumbnail | custom | `apps/web/features/images`: a bundled photo by image key at 1:1, 4:3 or 16:9 on a still `--surface-2` placeholder of the same size, fading in over `--dur-base`; an unknown key or a failed file shows initials or a line icon on `--surface` |
+| Photo, provider thumbnail | custom | `apps/web/features/images`: a bundled photo by image key at 1:1, 4:3 or 16:9 on a still `--surface-2` placeholder of the same size, fading in over `--dur-base`; an unknown key or a failed file shows initials or a line icon on `--surface`. `providerMedia(key, name)` fills the `media` slot of ApprovalRequest and ActionReceipt only for a registered key, so otherwise they keep their own initials |
 | Widget, mini bar chart | custom | `--surface` panel; bars in ink |
 | Trace waterfall | agents-ui | operator console only: no glow, no hue, bars in ink steps, waiting dashed |
 | Fixed trust components | custom | approval card, booking receipt, verification banner, provider-cancelled alert, memory fact row, inferred-fact prompt (`apps/web/features/trust`) |

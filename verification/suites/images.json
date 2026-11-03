@@ -392,6 +392,23 @@
           ]
         },
         {
+          "command": "click",
+          "options": {
+            "role": "button",
+            "name": "Switch to dark theme"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "the chat is in dark"
+        },
+        {
           "command": "fill",
           "options": {
             "role": "textbox",
@@ -519,6 +536,16 @@
           "args": [
             "approval-and-receipt-dark.png"
           ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "attr": "data-theme=dark"
+          },
+          "args": [
+            "html"
+          ],
+          "note": "still dark at the receipt"
         },
         {
           "command": "network",
