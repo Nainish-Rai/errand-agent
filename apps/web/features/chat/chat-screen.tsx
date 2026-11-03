@@ -79,7 +79,7 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
                 {error.message}
               </p>
             )}
-            <div className="absolute top-3 left-3 z-10">
+            <div className="absolute top-3 left-3 z-10 rounded-md bg-background">
               <Button asChild size="sm" variant="ghost">
                 <Link href="/">
                   <House />
@@ -87,7 +87,7 @@ function BoundThread({ session, entry }: { readonly session: ClientSession; read
                 </Link>
               </Button>
             </div>
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+            <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md bg-background">
               <ThemeToggle />
               {/* One rail, two views: pressing the other view switches the rail, pressing the open one closes it. */}
               <ButtonGroup aria-label="Side panel">
