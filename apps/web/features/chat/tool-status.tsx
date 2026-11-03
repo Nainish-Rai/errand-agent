@@ -2,16 +2,22 @@
 
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 
-import { Spinner } from "@/components/ui/spinner";
+import { ToolCall } from "@/components/tool-call";
 
-// What the person sees for a tool that has no card of its own: a human status line while it runs
-// ("Checking your errand…"), nothing once it is done, and a plain line if it failed. Raw tool names
-// ("get errand") never reach the chat.
+// What the person sees for a tool that has no card of its own: a quiet ToolCall row, present tense
+// while it runs ("Checking your errand"), past tense once done, and a plain line if it failed. Never
+// "Thinking", and raw tool names ("get errand") never reach the chat.
 
 const RUNNING: Readonly<Record<string, string>> = {
-  get_errand: "Checking your errand…",
-  update_errand: "Noting your errand…",
-  hold_slot: "Holding the slot…",
+  get_errand: "Checking your errand",
+  update_errand: "Noting your errand",
+  hold_slot: "Holding the slot",
+};
+
+const DONE: Readonly<Record<string, string>> = {
+  get_errand: "Checked your errand",
+  update_errand: "Noted your errand",
+  hold_slot: "Held the slot",
 };
 
 const FAILED: Readonly<Record<string, string>> = {
@@ -21,11 +27,9 @@ const FAILED: Readonly<Record<string, string>> = {
 };
 
 export const ToolStatus: ToolCallMessagePartComponent = ({ toolName, status, isError }) => {
-  if (isError === true) return <p className="my-1 text-xs text-fg-3">{FAILED[toolName] ?? "One step didn't work."}</p>;
-  if (status.type !== "running") return null;
-  return (
-    <p className="my-1 flex items-center gap-2 text-xs text-fg-3" role="status">
-      <Spinner /> {RUNNING[toolName] ?? "Working on it…"}
-    </p>
-  );
+  if (isError === true) return <ToolCall className="my-1" state="failed" label={FAILED[toolName] ?? "One step didn't work."} />;
+  if (status.type === "running") return <ToolCall className="my-1" state="running" label={RUNNING[toolName] ?? "Working on it"} />;
+  // A step with no words of its own leaves no row once it is done.
+  const done = DONE[toolName];
+  return done === undefined ? null : <ToolCall className="my-1" state="done" label={done} />;
 };

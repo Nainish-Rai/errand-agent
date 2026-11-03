@@ -6,6 +6,10 @@ import { StreamPacer } from "./stream-pacer";
 
 // Drives a StreamPacer from the chat runtime's text and the browser's frames. Text that was already
 // complete when it first rendered (a replayed conversation) shows at once, with nothing to animate.
+//
+// Under reduced motion the pacing stays, as v3 specifies: it is reading speed, not decoration. What is
+// reduced is each word's arrival: --dur-stream-word is 0 and the keyframes are opacity only (globals.css),
+// so the frames here only decide when a word appears, never how it moves.
 
 /** The phases of one answer: words still arriving, the last words still blurring in, then plain text. */
 export type StreamPhase = "streaming" | "settling" | "done";

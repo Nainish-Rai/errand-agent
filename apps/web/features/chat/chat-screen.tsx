@@ -125,7 +125,8 @@ function Unreachable({ failure }: { readonly failure: string }) {
   );
 }
 
-function Loading() {
+/** The chat's loading frame: the page's Suspense fallback and the wait for a new session, the same size as the chat. */
+export function ChatLoading() {
   return (
     <div className="flex h-dvh items-center justify-center text-fg-3">
       <Spinner />
@@ -160,6 +161,6 @@ export function NewChatScreen({ entry }: { readonly entry: ChatEntry }) {
   }, []);
 
   if (failure !== undefined) return <Unreachable failure={failure} />;
-  if (session === undefined) return <Loading />;
+  if (session === undefined) return <ChatLoading />;
   return <BoundThread session={session} entry={entry} />;
 }

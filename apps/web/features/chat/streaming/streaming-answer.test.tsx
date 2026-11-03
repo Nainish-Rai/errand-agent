@@ -8,6 +8,8 @@ import { StreamingAnswer } from "./streaming-answer";
 
 // The answer component in a DOM, fed by the same fake bursty model (bursty-stream.ts) as the pacer test, frame by frame on
 // a fake clock: what the reader's browser would get from Streamdown with the word plugin.
+// The frames are faked (requestAnimationFrame on the fake clock); nothing here animates, so the reduced
+// motion rules don't apply to this file. The reduced-motion look is CSS, proven in the browser.
 
 const FRAME_MS = 16;
 

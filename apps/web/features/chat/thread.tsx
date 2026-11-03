@@ -10,20 +10,22 @@ import {
 import { PROVIDER_UPDATE_PREFIX } from "@errand/contracts";
 import { ArrowUp, Square } from "lucide-react";
 
-import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
 import { GeneratedUiPart } from "@/features/generated-ui";
 import { ProviderUpdateNotice } from "@/features/trust";
 
-import { ExecutionPart, ProposalCardPart } from "./approval-card-part";
+import { ExecutionPart, ProposalCardPart, useHasPendingApproval } from "./approval-card-part";
 import { ProviderInsight } from "./provider-insight";
 import { ProviderResults } from "./provider-results";
 import { QuickReplies } from "./quick-replies";
+import { StreamingAnswer } from "./streaming/streaming-answer";
 import { ToolStatus } from "./tool-status";
 
-const AssistantText: TextMessagePartComponent = ({ text, status }) => (
-  <Markdown isAnimating={status.type === "running"}>{text}</Markdown>
-);
+// The chat as v3's Message and Chat input sections draw it: the person's words in a --surface-2 bubble
+// on the right, Errand's answers as plain text up to 65ch, the agent's steps as quiet ToolCall rows,
+// and every message arriving with a 4px rise over --dur-base.
+
+const AssistantText: TextMessagePartComponent = ({ text, status }) => <StreamingAnswer text={text} isRunning={status.type === "running"} />;
 
 /** The message's text, so a provider update the backend wrote can be told from the person's own words. */
 function useMessageText(): string {
@@ -42,8 +44,9 @@ function UserMessage() {
     );
   }
   return (
-    <MessagePrimitive.Root className="flex justify-end py-2">
-      <div className="max-w-[80%] rounded-panel bg-surface-2 px-4 py-2 text-fg">
+    <MessagePrimitive.Root data-slot="message" data-from="user" className="flex animate-rise justify-end">
+      <div className="max-w-[85%] rounded-panel rounded-ee-sm bg-surface-2 px-4 py-2.5 text-base leading-normal text-fg [overflow-wrap:break-word]">
+        <span className="sr-only">You: </span>
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -51,8 +54,16 @@ function UserMessage() {
 }
 
 function AssistantMessage() {
+  // Screen readers get the answer once: the message is busy while it streams, and read when it settles.
+  const isRunning = useAuiState(({ message }) => message.status?.type === "running");
   return (
-    <MessagePrimitive.Root className="flex flex-col py-2">
+    <MessagePrimitive.Root
+      data-slot="message"
+      data-from="assistant"
+      aria-busy={isRunning || undefined}
+      className="flex max-w-[65ch] min-w-0 animate-rise flex-col gap-2 text-base leading-normal"
+    >
+      <span className="sr-only">Errand: </span>
       <MessagePrimitive.Parts
         components={{
           Text: AssistantText,
@@ -74,31 +85,36 @@ function AssistantMessage() {
   );
 }
 
+/**
+ * v3's ChatInput. Send lights lime only once there is text (it is disabled, so unlit, while empty), and
+ * stays quiet ink while an approval card waits, so Approve is the view's one lime action. Stop is ink.
+ */
 function Composer() {
+  const approvalWaiting = useHasPendingApproval();
   return (
     <ComposerPrimitive.Root
       data-slot="chat-input"
       data-focus-shell
-      className="flex items-end gap-2 rounded-panel border border-line-strong bg-field p-2 transition-[border-color] duration-(--dur-instant) ease-out focus-within:border-accent-line"
+      className="flex w-full cursor-text items-end gap-1 rounded-sheet border border-line-strong bg-field p-1.5 transition-[border-color] duration-(--dur-instant) ease-out focus-within:border-accent-line"
     >
       <ComposerPrimitive.Input
         aria-label="Message the errand agent"
         autoFocus
-        className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 outline-none placeholder:text-fg-3"
-        placeholder="Find a plumber in Koramangala this week…"
+        className="block max-h-50 min-h-8 min-w-0 flex-1 resize-none bg-transparent py-1 pl-2.5 text-base leading-6 text-fg outline-none placeholder:text-fg-3"
+        placeholder="Ask Errand to book, move or cancel"
         rows={1}
       />
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <Button aria-label="Send" size="icon">
+          <Button aria-label="Send" size="icon-sm" variant={approvalWaiting ? "solid" : "primary"} className={approvalWaiting ? undefined : "glow-subtle"}>
             <ArrowUp />
           </Button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <Button aria-label="Stop" size="icon" variant="secondary">
-            <Square />
+          <Button aria-label="Stop" size="icon-sm" variant="solid">
+            <Square className="fill-current" />
           </Button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
@@ -110,7 +126,7 @@ export function Thread() {
   return (
     <ThreadPrimitive.Root className="flex h-dvh flex-col bg-page">
       <ThreadPrimitive.Viewport className="flex flex-1 flex-col overflow-y-auto px-4">
-        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col pt-8">
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 pt-14">
           <ThreadPrimitive.Empty>
             <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
               <h1 className="text-2xl font-medium">What do you need done?</h1>

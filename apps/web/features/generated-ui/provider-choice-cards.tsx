@@ -64,9 +64,10 @@ function ChoiceCard({ choice, onDetails, detailsOpen }: { readonly choice: Bound
         <p className="m-0 text-xs text-fg-2">{slot === undefined ? "No free slot this week" : `Earliest: ${slot}`}</p>
         {choice.reason !== undefined && <p className="m-0 text-xs text-fg-3">{choice.reason}</p>}
         <div className="mt-auto flex gap-1.5 pt-1.5">
+          {/* Not lime: a row of cards holds several Choose buttons, and the view's one lime is the approval card's Approve. */}
           <Button
             size="sm"
-            variant="primary"
+            variant="outline"
             disabled={running || chosen}
             onClick={() => {
               setChosen(true);

@@ -63,7 +63,8 @@ function useSignOutWhenRefused(reads: readonly OperatorRead<unknown>[], signOut:
   }, [refused, signOut, onRefused]);
 }
 
-function Waiting() {
+/** The console's loading frame, also the page's Suspense fallback, so the swap moves nothing. */
+export function OperatorConsoleLoading() {
   return (
     <div className="flex min-h-dvh items-center justify-center text-fg-3">
       <Spinner aria-label="Loading" />
@@ -117,7 +118,7 @@ export function OperatorConsole({ sessionId }: { readonly sessionId?: string }) 
   const access = useOperatorAccess();
   const [refused, setRefused] = useState(false);
   const markRefused = useState(() => () => setRefused(true))[0];
-  if (!access.ready) return <Waiting />;
+  if (!access.ready) return <OperatorConsoleLoading />;
   if (access.api === undefined) {
     return (
       <OperatorSignIn
