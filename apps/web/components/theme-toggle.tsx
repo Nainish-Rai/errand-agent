@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 
-/** Switches between dark and light and saves the choice; until then the theme follows the system. */
+/** Switches between light (the default) and dark; a dark choice is saved. */
 export function ThemeToggle({ className }: { readonly className?: string }) {
   const { theme, toggleTheme } = useTheme();
   // Unknown until mounted; the icons follow data-theme through CSS, so nothing flashes.

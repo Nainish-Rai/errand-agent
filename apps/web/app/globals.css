@@ -1,14 +1,15 @@
 /* The web app's only colour source is the generated design tokens. This file maps them onto Tailwind
  * and the UI libraries; it introduces no colours, durations or roles of its own (`pnpm check:tokens`).
- * Fonts (Geist, Geist Mono) are loaded in app/layout.tsx under the family names the tokens use. */
+ * Hanken Grotesk is loaded in app/layout.tsx under the family name the tokens use; mono is the system's. */
 /* OpenUI's styles sit in their own layer: above Tailwind's reset, below our components and utilities. */
 @layer theme, base, openui, components, utilities;
 @import "tailwindcss";
 @import "@openuidev/react-ui/layered/styles/index.css";
 @import "@errand/design-tokens/tokens.css";
+@import "./lime.css";
 @source "../node_modules/streamdown/dist/*.js";
 
-/* Dark is the default theme; data-theme on <html> or on any subtree picks one. agents-ui uses dark:. */
+/* Light is the default theme; data-theme on <html> or on any subtree picks one. agents-ui uses dark:. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *:not([data-theme="light"], [data-theme="light"] *)));
 
 /* No stock palette or shadows: every colour and shadow goes through a token. The few stock names the
@@ -32,7 +33,8 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
+  /* Lime's --accent is the lime; v2's shadcn accent (a quiet highlight) became --accent-wash. */
+  --color-accent: var(--accent-wash);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
@@ -45,7 +47,7 @@
   --color-chart-5: var(--chart-5);
   /* agents-ui status names. */
   --color-success: var(--ok);
-  --color-warning: var(--warn);
+  --color-warning: var(--warn-text);
   --color-info: var(--info);
 
   /* Semantic roles, for our own components: bg-surface-card, text-fg-meta, border-edge, text-ok … */
@@ -65,7 +67,8 @@
   --color-interactive-tint: var(--interactive-tint);
   --color-ok: var(--ok);
   --color-ok-tint: var(--ok-tint);
-  --color-warn: var(--warn);
+  /* Lime's --warn is a mark (3.5:1); v2's text tone is --warn-text. */
+  --color-warn: var(--warn-text);
   --color-warn-tint: var(--warn-tint);
   --color-warn-fill: var(--warn-fill);
   --color-on-warn-fill: var(--on-warn-fill);
