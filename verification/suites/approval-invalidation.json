@@ -235,7 +235,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\")"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\")"
           ],
           "options": {
             "count": 2
@@ -245,7 +245,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
           ],
           "options": {
             "text": "Price changed ₹479"
@@ -255,7 +255,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
           ],
           "options": {
             "text": "₹575"
@@ -265,7 +265,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
           ],
           "options": {
             "text": "Nothing was booked."
@@ -736,7 +736,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\")"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\")"
           ],
           "options": {
             "count": 2
@@ -746,7 +746,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
           ],
           "options": {
             "text": "Time changed Thu, 5 Nov, 8:00 am IST"
@@ -756,7 +756,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"voided\") >> nth=1"
           ],
           "options": {
             "text": "12:00 pm IST"
@@ -1200,7 +1200,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"Expired\")"
+            "section[aria-label=\"Approve booking\"]:has-text(\"Expired\")"
           ],
           "options": {
             "count": 2
@@ -1210,7 +1210,7 @@
         {
           "command": "assert",
           "args": [
-            "role=region[name=\"Approve booking\"]:has-text(\"Expired\") >> nth=1"
+            "section[aria-label=\"Approve booking\"]:has-text(\"Expired\") >> nth=1"
           ],
           "options": {
             "text": "Nothing was booked."
