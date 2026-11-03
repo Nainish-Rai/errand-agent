@@ -128,7 +128,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
@@ -352,6 +352,22 @@
           "note": "the trace has the status check and the ledger's transitions"
         },
         {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Upcoming bookings\"] >> text=Shiva Sanitary Solutions"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "home: Upcoming bookings shows the booking exactly once"
+        },
+        {
           "command": "api",
           "args": [
             "PUT",
@@ -509,7 +525,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
@@ -678,6 +694,22 @@
           "note": "world state: the proposal executed once, its grant used"
         },
         {
+          "command": "goto",
+          "args": [
+            "/"
+          ]
+        },
+        {
+          "command": "assert",
+          "args": [
+            "role=region[name=\"Upcoming bookings\"] >> text=Shiva Sanitary Solutions"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "home: Upcoming bookings shows the booking exactly once"
+        },
+        {
           "command": "api",
           "args": [
             "PUT",
@@ -820,7 +852,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
