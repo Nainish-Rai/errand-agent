@@ -94,7 +94,33 @@
     },
     {
       "id": "standalone-field-keeps-the-ring",
-      "title": "A field that is its own shell (the home composer) still shows Lime's focus ring",
+      "title": "A field that is its own shell (the operator token) still shows Lime's focus ring",
+      "steps": [
+        {
+          "command": "goto",
+          "args": [
+            "/ops"
+          ]
+        },
+        {
+          "command": "click",
+          "options": {
+            "label": "Operator token"
+          }
+        },
+        {
+          "command": "assert",
+          "options": {
+            "label": "Operator token",
+            "style": "outline-style=solid"
+          },
+          "note": "the hook is opt-in: focus never disappears elsewhere (ticket 23 made the home composer a v3 ChatInput shell, so this standalone field stands in for it)"
+        }
+      ]
+    },
+    {
+      "id": "home-composer-is-a-shell",
+      "title": "The home composer (v3's ChatInput, ticket 23) shows focus on its border, not a second ring on its textarea",
       "steps": [
         {
           "command": "goto",
@@ -114,9 +140,19 @@
           "options": {
             "role": "textbox",
             "name": "Describe your errand",
-            "style": "outline-style=solid"
+            "style": "outline-style=none"
           },
-          "note": "the hook is opt-in: focus never disappears elsewhere"
+          "note": "no square ring inside the rounded field"
+        },
+        {
+          "command": "assert",
+          "args": [
+            "form[data-focus-shell]:focus-within"
+          ],
+          "options": {
+            "count": 1
+          },
+          "note": "the shell holds focus, so its border shows it"
         }
       ]
     }
