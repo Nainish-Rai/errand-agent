@@ -11,7 +11,7 @@
 
 **Blocked by:** 06, 07, 08, 09, 10, 12, 14, 15, 17
 
-**Status:** in review (PR pending)
+**Status:** in review (PR #29)
 
 - [ ] A fresh clone runs end to end by following only the README
 - [x] The design note fits on one page and its trace excerpt matches the committed raw trace
