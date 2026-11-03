@@ -20,6 +20,7 @@ Built for the Orange Invest founding AI engineer assignment. **49 of 49 evals pa
 | [Repository map](#repository-map) | Where everything lives |
 | [docs/DESIGN.md](docs/DESIGN.md) | The one-page design note |
 | [docs/REFERENCE.md](docs/REFERENCE.md) | Every route, table, rule and command in detail |
+| [docs/DEPLOY-DEMO.md](docs/DEPLOY-DEMO.md) | A hosted demo on Vercel: the same UI, scripted, with no backend or key |
 
 ## Run it
 
