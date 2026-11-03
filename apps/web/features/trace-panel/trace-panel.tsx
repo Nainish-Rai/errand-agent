@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TraceWaterfall } from "@/components/agents/trace-waterfall";
 import { Button } from "@/components/ui/button";
 
+import { ContextLog } from "./context-log";
 import { ErrandStates } from "./errand-states";
 import { toWaterfallTrace, type WaterfallTrace } from "./waterfall-spans";
 
@@ -169,6 +170,9 @@ export function TracePanel({
         </p>
       )}
       {fetched !== undefined && <ErrandStates trace={fetched.trace} />}
+      {fetched !== undefined && (
+        <ContextLog api={api} sessionId={sessionId} contextEvents={fetched.trace.events.filter((event) => event.kind === "context").length} />
+      )}
       {waterfall !== undefined && waterfall.spans.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Send a message and the run shows up here.</p>
       ) : (

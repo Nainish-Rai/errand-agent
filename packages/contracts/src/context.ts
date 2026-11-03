@@ -8,7 +8,11 @@ import { z } from "zod";
 export const ContextFactSchema = z.object({
   id: z.string(),
   key: z.string(),
+  /** The key in words, e.g. "Area". */
+  label: z.string(),
   value: z.string(),
+  /** The value as the person reads it, e.g. "₹1,500". */
+  display: z.string(),
   source: z.string(),
   status: z.string(),
   /** Why it was included (`fills_missing_detail`, ...) or excluded (`forgotten`, `unconfirmed`, `over_budget`, ...). */

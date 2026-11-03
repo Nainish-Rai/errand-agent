@@ -160,7 +160,7 @@ const GUESS = fact({ id: "f_budget", key: "budget", display: "₹900", source: "
 const LATER = fact({ id: "f_hour", key: "earliest_hour", display: "10:00", status: "forgotten", validTo: ISO(NOW_MS + 60_000) });
 
 function logged(entry: MemoryFactView, reason: string) {
-  return { id: entry.id, key: entry.key, value: entry.value, source: entry.source, status: entry.status, reason };
+  return { id: entry.id, key: entry.key, label: entry.label, value: entry.value, display: entry.display, source: entry.source, status: entry.status, reason };
 }
 
 function contextCall(included: readonly MemoryFactView[], text: string): ModelCallContext {
