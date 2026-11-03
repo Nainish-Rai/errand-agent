@@ -9,7 +9,7 @@ Use Streamdown's animation and assistant-ui's smoothing where they fit; build on
 
 **Blocked by:** 20
 
-**Status:** ready-for-agent
+**Status:** done (PR #25)
 
 - [x] A bursty stream (uneven chunk sizes and gaps) reveals evenly: an automated test drives a fake stream and asserts the lag bound, that no already-shown word re-renders, and that nothing is left wrapped at the end
 - [x] Under reduced motion, words appear with no blur or rise
