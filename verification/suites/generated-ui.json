@@ -680,7 +680,7 @@
     },
     {
       "id": "charts-show-world-numbers",
-      "title": "Price, free-slots-per-day and spend charts render with the world's numbers (light theme)",
+      "title": "Price, free-slots-per-day and spend charts render with the world's numbers (light, then dark)",
       "theme": "light",
       "setup": [
         {
@@ -876,6 +876,20 @@
             "text": "Here are their prices and free slots side by side"
           },
           "note": "the turn finished"
+        },
+        {
+          "command": "theme",
+          "args": [
+            "dark"
+          ]
+        },
+        {
+          "command": "assert",
+          "options": {
+            "testid": "generated-chart",
+            "count": 3
+          },
+          "note": "the same three charts in the dark theme"
         }
       ]
     },
