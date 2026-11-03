@@ -32,6 +32,8 @@ import {
   type ApprovalProvider,
 } from "@/features/trust";
 
+import { StreamingSpecimen } from "./streaming-specimen";
+
 const ravi: ApprovalProvider = { name: "Ravi Plumbing", initials: "RP", tone: 1, rating: 4.7 };
 const booking: ApprovalProposal = {
   kind: "book",
@@ -246,6 +248,13 @@ function Panel({ theme }: { readonly theme: Theme }) {
           </Line>
           <MiniBarChart values={bookingsPerDay} label="Bookings per day over the last 14 days" />
         </Widget>
+      </Section>
+
+      <Section title="Streaming answer">
+        <Caption>paced reveal, each word blurs in</Caption>
+        <StreamingSpecimen label="Streaming answer" />
+        <Caption>reduced motion · words appear with no blur or rise</Caption>
+        <StreamingSpecimen label="Streaming answer, reduced motion" reduced />
       </Section>
 
       <Section title="Approval card · fixed, never generated">

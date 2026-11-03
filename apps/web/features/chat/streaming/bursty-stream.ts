@@ -1,4 +1,4 @@
-// A fake model for the streaming tests: an answer cut into chunks of uneven size (1 to 140 characters,
+// A fake model for the streaming tests and the /design gallery: an answer cut into chunks of uneven size (1 to 140 characters,
 // cut anywhere, even mid-word) with uneven gaps (10 ms to 800 ms, a quarter of them long pauses), from a
 // seeded generator so every run is the same.
 
