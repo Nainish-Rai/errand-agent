@@ -112,6 +112,7 @@ describe("suite manifests", () => {
       "approval-invalidation.json",
       "chat-search.json",
       "clarify-errand.json",
+      "context-budget.json",
       "design-system.json",
       "home.json",
       "memory.json",
