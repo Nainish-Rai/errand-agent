@@ -15,6 +15,8 @@ export interface BookingTrace {
   readonly worldCalls: readonly string[];
   /** The idempotency key each `book` call sent, in order. */
   readonly bookKeys: readonly string[];
+  /** The idempotency key each `cancel` or `reschedule` call sent, in order. */
+  readonly changeKeys: readonly string[];
   /** `recorded → pending`, `pending → confirmed`, ... */
   readonly ledger: readonly string[];
   /** World calls the trace marks as a retry (`errand.retry`). */
@@ -36,6 +38,9 @@ export async function bookingTrace(api: ApiClient, sessionId: string): Promise<B
   return {
     worldCalls: calls.map((span) => `${callName(span)} ${resultKind(span.attributes["gen_ai.tool.call.result"])}`.trim()),
     bookKeys: calls.filter((span) => callName(span) === "book").map((span) => text(span.attributes["errand.ledger.key"])),
+    changeKeys: calls
+      .filter((span) => callName(span) === "cancel" || callName(span) === "reschedule")
+      .map((span) => text(span.attributes["errand.ledger.key"])),
     ledger: trace.events.filter((event) => event.kind === "ledger_transition").map((event) => event.name.replace(/^ledger /, "")),
     retries: calls.filter((span) => span.attributes["errand.retry"] === true).length,
   };

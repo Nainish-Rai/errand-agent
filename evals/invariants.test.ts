@@ -220,6 +220,12 @@ describe("no-side-effect-without-grant for cancel and reschedule", () => {
     expect((await verdict("no-side-effect-without-grant", runWith([wrongKind], [], [UPCOMING], [changeIntent("cancel")]))).holds).toBe(false);
   });
 
+  it("one-booking-per-grant holds for a confirmed change to a booking the world has, and fails for one it doesn't", async () => {
+    expect(await verdict("one-booking-per-grant", runWith([CANCELLED], [], [UPCOMING], [changeIntent("cancel")]))).toEqual({ holds: true });
+    const elsewhere = changeIntent("cancel", { targetBookingId: "bkg_9999" });
+    expect((await verdict("one-booking-per-grant", runWith([CANCELLED], [], [UPCOMING], [elsewhere]))).holds).toBe(false);
+  });
+
   it("fails when the ledger never confirmed the change", async () => {
     const run = runWith([CANCELLED], [], [UPCOMING], [changeIntent("cancel", { state: "pending" })]);
     expect((await verdict("no-side-effect-without-grant", run)).holds).toBe(false);

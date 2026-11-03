@@ -125,6 +125,13 @@ async function oneBookingPerGrant(run: ScenarioRun): Promise<InvariantVerdict> {
   }
   for (const [grant, count] of perGrant) if (count > 1) problems.push(`grant ${grant} made ${count} bookings`);
   for (const intent of intents) {
+    // A confirmed cancel or reschedule made no booking: it must name one the world has.
+    if (intent.action !== "book") {
+      if (intent.state === "confirmed" && (intent.targetBookingId === null || !worldIds.has(intent.targetBookingId))) {
+        problems.push(`intent ${intent.idempotencyKey} is confirmed for ${intent.targetBookingId ?? "no booking"}, which the world doesn't have`);
+      }
+      continue;
+    }
     if (intent.state === "confirmed" && (intent.bookingId === null || !worldIds.has(intent.bookingId))) {
       problems.push(`intent ${intent.idempotencyKey} is confirmed for ${intent.bookingId ?? "no booking"}, which the world doesn't have`);
     }
