@@ -87,6 +87,8 @@ export const ErrandViewSchema = z.object({
   /** What to ask next, or null when nothing is missing. */
   question: ErrandQuestionSchema.nullable(),
   transitions: z.array(ErrandTransitionViewSchema),
+  /** The booking this errand replaces after its provider cancelled it (ticket 14); that provider is never offered. */
+  replacing: z.object({ bookingId: z.string(), providerId: z.string(), providerName: z.string() }).nullable().optional(),
 });
 
 export const UpdateErrandOutputSchema = z.discriminatedUnion("kind", [

@@ -33,15 +33,18 @@ import type { SettleRunDependencies } from "../core/use-cases/settle-run";
 import { startModelTurn } from "../core/use-cases/start-model-turn";
 import type { ReviewReader } from "../core/ports/review-reader";
 import type { ProviderInsightDependencies } from "../core/use-cases/get-provider-insight";
+import type { ProviderEventDependencies } from "../core/use-cases/handle-provider-cancelled";
+import type { PersonNotifier } from "../core/ports/person-notifier";
+import type { ProviderEventLog } from "../core/ports/provider-event-log";
 import { clockStartingAt } from "../adapters/clock/clock-starting-at";
 import { randomIds, sha256Hasher } from "../adapters/crypto/node-crypto";
 import { databasePath, openDatabase, type Database } from "../adapters/sqlite/database";
 import { InMemoryErrandStore } from "../adapters/memory/in-memory-errand-store";
-import { EmptyAlertFeed } from "../adapters/alerts/empty-alert-feed";
 import { gatedModel } from "../adapters/models/run-budget-gate";
 import { SqliteActionLedger } from "../adapters/sqlite/sqlite-action-ledger";
 import { SqliteProposalStore } from "../adapters/sqlite/sqlite-proposal-store";
 import { SqliteMemoryStore } from "../adapters/sqlite/sqlite-memory-store";
+import { SqliteProviderEventLog } from "../adapters/sqlite/sqlite-provider-event-log";
 import { SqliteWorldStateStore } from "../adapters/sqlite/sqlite-world-state-store";
 import { ModelScriptPlayer } from "../adapters/models/scripted";
 import { MINIMAX_MODEL_ID } from "../adapters/models/minimax";
@@ -53,7 +56,7 @@ import { PriceTable } from "../adapters/tracing/price-table";
 import { Sanitizer } from "../adapters/tracing/sanitize";
 import { SqliteRunBudgetStore } from "../adapters/sqlite/run-budget-store";
 import { faultyWorld, WorldPause, type WorldFault } from "../adapters/world/faulty-world";
-import { DEV_USER_ID, MockProviderWorld } from "../adapters/world/mock-provider-world";
+import { DEV_USER_ID, MockProviderWorld, type ProviderCancellationOutcome } from "../adapters/world/mock-provider-world";
 import { isScenarioName, scenarioNamed, type ScenarioName } from "../adapters/world/scenarios/scenarios";
 import { worldCatalog } from "../adapters/world/world-catalog";
 import { PROVIDER_PHOTO_DIRECTORY, providerPhotoFilesIn } from "../adapters/world/provider-photos";
@@ -110,8 +113,6 @@ class Container {
   readonly modelCallPlaces = new ModelCallPlaces();
   readonly #errandRecords = new InMemoryErrandStore();
   readonly errands: ErrandStore = this.#errandRecords;
-  /** Provider alerts for the home screen; empty until ticket 14 raises them. */
-  readonly alertFeed: AlertFeed = new EmptyAlertFeed();
   readonly catalog: ServiceCatalog = worldCatalog;
   #world: MockProviderWorld;
   #settings: WorldSettings;
@@ -126,6 +127,7 @@ class Container {
   #reviewReaders: readonly ReviewReader[] | undefined;
   #ledger: ActionLedger | undefined;
   #worldStates: SqliteWorldStateStore | undefined;
+  #providerEvents: SqliteProviderEventLog | undefined;
 
   constructor(settings: WorldSettings) {
     ({ clock: this.clock, isPinned: this.isClockPinned } = processClock());
@@ -182,7 +184,46 @@ class Container {
     await this.proposals.discardAll();
     this.#errandRecords.discardAll();
     await this.ledger.discardAll();
+    await this.#providerEventStore.discardAll();
     return settings;
+  }
+
+  /** Provider events the backend received, each handled once (ticket 14). */
+  get providerEvents(): ProviderEventLog {
+    return this.#providerEventStore;
+  }
+
+  /** Provider alerts for the home screen: the provider cancellations the person was told about. */
+  get alertFeed(): AlertFeed {
+    return this.#providerEventStore;
+  }
+
+  get #providerEventStore(): SqliteProviderEventLog {
+    this.#providerEvents ??= new SqliteProviderEventLog(this.database);
+    return this.#providerEvents;
+  }
+
+  /**
+   * Dev only: a provider cancels a booking and the world emits the event (or redelivers one it
+   * already sent). The caller hands the event to HandleProviderCancelled.
+   */
+  simulateProviderCancellation(request: { readonly bookingId: string; readonly eventId?: string; readonly note?: string }): ProviderCancellationOutcome {
+    return this.#world.simulateProviderCancellation(request);
+  }
+
+  /** What handling a provider event needs; the notifier speaks into eve's chats, so the agent layer passes it. */
+  providerEventDependencies(notifier: PersonNotifier): ProviderEventDependencies {
+    return {
+      events: this.providerEvents,
+      world: this.world,
+      proposals: this.proposals,
+      errands: this.errands,
+      memory: this.memory,
+      notifier,
+      traceSink: this.traceSink,
+      worldClock: this.clock,
+      wallClock: this.wallClock,
+    };
   }
 
   /** Persisted run budgets, so a restart keeps every run's counts (see src/core/budget). */

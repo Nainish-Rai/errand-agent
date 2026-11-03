@@ -52,6 +52,8 @@ function transcriptOf(turns: readonly ChatTurn[], said: readonly string[]): stri
 
 export interface SimulatedUserOptions {
   readonly goal: string;
+  /** World events the scenario fires before the person says anything (the agent speaks first). */
+  readonly opening?: readonly UserStep[];
   /** Approval clicks the scenario makes once the conversation ends. */
   readonly clicks: readonly ApproveClick[];
   /** Cap on the messages the simulator sends, so a chatty simulator can't run up a bill. */
@@ -64,12 +66,14 @@ export class SimulatedUser implements User {
   readonly #pricing = new PriceTable();
   readonly #said: string[] = [];
   readonly #clicks: ApproveClick[];
+  readonly #opening: UserStep[];
   #conversing = true;
   #costUsd = 0;
 
   constructor(options: SimulatedUserOptions) {
     this.#options = options;
     this.#clicks = [...options.clicks];
+    this.#opening = [...(options.opening ?? [])];
     const role = parseModelSelection(process.env.ERRAND_MODELS).user_simulator;
     this.#model = createModel(role, { minimaxApiKey: process.env.MINIMAX_API_KEY, scriptPlayer: new ModelScriptPlayer() });
   }
@@ -79,6 +83,12 @@ export class SimulatedUser implements User {
   }
 
   async nextStep(turns: readonly ChatTurn[]): Promise<UserStep | undefined> {
+    const opening = this.#opening.shift();
+    if (opening !== undefined) {
+      // The world acts, not the person; the agent's turn on it gets no message from them.
+      this.#said.push("(you wrote nothing: the assistant messaged you first)");
+      return opening;
+    }
     if (this.#conversing) {
       const next = this.#said.length < (this.#options.maxMessages ?? DEFAULT_SIMULATED_MESSAGES)
         ? await this.#nextMove(turns)

@@ -4,9 +4,9 @@
 
 **Blocked by:** 07, 11, 13
 
-**Status:** ready-for-agent
+**Status:** done (PR #18)
 
-- [ ] Eval "proactive cancellation": the user is notified, the replacement fits stored preferences, the cancelling provider isn't offered, and no rebooking happens without a new click
-- [ ] Eval: a duplicate event gives one notification and one proposal
-- [ ] Eval: a cancellation event for a past booking produces no notification
-- [ ] The Alerts widget and the bell show the cancellation and link to the chat
+- [x] Eval "proactive cancellation": the user is notified, the replacement fits stored preferences, the cancelling provider isn't offered, and no rebooking happens without a new click
+- [x] Eval: a duplicate event gives one notification and one proposal
+- [x] Eval: a cancellation event for a past booking produces no notification
+- [x] The Alerts widget and the bell show the cancellation and link to the chat

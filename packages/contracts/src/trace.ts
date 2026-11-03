@@ -17,6 +17,7 @@ export const TraceEventKindSchema = z.enum([
   "errand_drafted",
   "ledger_transition",
   "generated_ui",
+  "provider_event",
 ]);
 
 const TraceAttributesSchema = z.record(z.string(), z.json());

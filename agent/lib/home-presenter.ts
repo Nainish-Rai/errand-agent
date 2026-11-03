@@ -53,7 +53,9 @@ function presentAlert(alert: HomeAlert): HomeAlertView {
       providerName: raised.providerName,
       service: raised.service,
       slot: { start: raised.slot.start, end: raised.slot.end },
-      replacementsReady: raised.replacementsReady,
+      replacementsReady: alert.replacement.ready,
+      proposalId: alert.replacement.proposalId ?? null,
+      rebooked: alert.replacement.rebooked,
       sessionId: raised.sessionId ?? null,
       at: iso(alert.atMs),
     };

@@ -14,3 +14,4 @@ export { BookingReceipt, type ReceiptBooking, type ReceiptState } from "./bookin
 export { ForgottenFactRow, InferredFactPrompt, MemoryFactRow, type MemoryFact } from "./memory-fact-row";
 export { ProviderCancelledAlert } from "./provider-cancelled-alert";
 export { VerificationBanner } from "./verification-banner";
+export { ProviderUpdateNotice } from "./provider-update-notice";

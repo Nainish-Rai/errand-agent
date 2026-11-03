@@ -77,6 +77,25 @@ export class ChatClient {
     return await settle(session.id, delivery, options.signal);
   }
 
+  /**
+   * Waits for a turn the backend started itself (a provider update sent into the chat) and returns
+   * it like any other turn: the events from the delivery's admission to its settlement.
+   */
+  async followDelivery(sessionId: string, deliveryId: string, options: { readonly signal?: AbortSignal } = {}): Promise<ChatTurn> {
+    const session = this.#sessions.get(sessionId) ?? this.#client.sessions.attach(sessionId);
+    this.#sessions.set(sessionId, session);
+    const events: SessionStreamEvent[] = [];
+    for await (const event of session.stream({ startIndex: 0, signal: options.signal })) {
+      const data = event.data as { readonly deliveryId?: unknown } | undefined;
+      const admitted = event.type === "delivery.admitted" && data?.deliveryId === deliveryId;
+      if (events.length > 0 || admitted) events.push(event);
+      // The delivery's settlement ends its response (the turn settled in the same commit, before it).
+      if (events.length > 0 && event.type === "delivery.settled" && data?.deliveryId === deliveryId) break;
+    }
+    const { messages } = conversationOf(events);
+    return { sessionId, events, messages, toolCalls: toolCallsIn(messages), reply: replyIn(messages) };
+  }
+
   /** Sends a follow-up in an existing session and waits for that turn to settle; the turn holds only its own events. */
   async sendMessage(sessionId: string, text: string, options: { readonly signal?: AbortSignal } = {}): Promise<ChatTurn> {
     const session = this.#sessions.get(sessionId) ?? this.#client.sessions.attach(sessionId);

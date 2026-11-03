@@ -1,4 +1,11 @@
-import type { Booking, BookingStatusOutcome, CancelOutcome, Hold, RescheduleOutcome } from "../../core/ports/provider-world";
+import type {
+  Booking,
+  BookingStatusOutcome,
+  CancelOutcome,
+  Hold,
+  ProviderCancelledEvent,
+  RescheduleOutcome,
+} from "../../core/ports/provider-world";
 import type { ScenarioName } from "./scenarios/scenarios";
 
 // The mock world stands in for an outside provider network, and a provider doesn't forget a
@@ -35,6 +42,8 @@ export interface WorldState {
   readonly takenSlots: readonly string[];
   /** `hold_expires_once` has let its one hold lapse (absent in state saved before it existed). */
   readonly holdLapsed?: boolean;
+  /** Provider-cancelled events the world has emitted, so a redelivery is the same event (ticket 14). */
+  readonly providerEvents?: readonly ProviderCancelledEvent[];
 }
 
 /** Saves synchronously: once `save` returns, the state is on disk. */

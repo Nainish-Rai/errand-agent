@@ -12,6 +12,7 @@ import {
   SeedMemoryRequestSchema,
   SessionIdSchema,
   SetRunLimitsRequestSchema,
+  SimulateProviderCancellationRequestSchema,
   SwitchScenarioRequestSchema,
   type ApiError,
   type ApproveProposalResponse,
@@ -32,6 +33,7 @@ import {
   type ListActionIntentsResponse,
   type LoadModelScriptResponse,
   type SetRunLimitsResponse,
+  type SimulateProviderCancellationResponse,
   type SwitchScenarioResponse,
 } from "@errand/contracts";
 import { defineChannel, DELETE, GET, PATCH, POST, PUT } from "eve/channels";
@@ -47,6 +49,7 @@ import { draftErrand } from "../../src/core/use-cases/draft-errand";
 import { getAvailability } from "../../src/core/use-cases/get-availability";
 import { getErrand } from "../../src/core/use-cases/get-errand";
 import { getHomeSummary } from "../../src/core/use-cases/get-home-summary";
+import { handleProviderCancelled } from "../../src/core/use-cases/handle-provider-cancelled";
 import { listMemoryFacts } from "../../src/core/use-cases/list-memory-facts";
 import { seedMemory } from "../../src/core/use-cases/seed-memory";
 import { getProviders } from "../../src/core/use-cases/get-providers";
@@ -60,7 +63,9 @@ import { presentActionIntent, presentBooking, presentProposalView } from "../lib
 import { appUserOf } from "../lib/app-user";
 import { presentErrand } from "../lib/errand-presenter";
 import { draftOf, presentDraftRefusal, presentHomeSummary } from "../lib/home-presenter";
-import { memoryOwnerOfRequest } from "../lib/memory-owner";
+import { CALLER_AUTH, memoryOwnerOf, memoryOwnerOfRequest } from "../lib/memory-owner";
+import { presentProviderEventOutcome } from "../lib/provider-update-presenter";
+import { EveSessionNotifier } from "../lib/session-notifier";
 import { presentConfirmOutcome, presentCorrectOutcome, presentFact, presentMemory, presentTombstone } from "../lib/memory-presenter";
 import { presentSessionContext } from "../lib/context-presenter";
 import { presentSessionTrace } from "../lib/trace-presenter";
@@ -436,6 +441,36 @@ export default defineChannel({
       const parsed = InjectWorldFaultRequestSchema.safeParse(await request.json().catch(() => undefined));
       if (!parsed.success) return invalidBody(parsed.error.issues);
       const body: InjectWorldFaultResponse = { fault: container().injectWorldFault(parsed.data.fault) };
+      return Response.json(body);
+    }),
+
+    // A provider cancels a booking: the mock world emits the event (or redelivers one it sent), and the
+    // backend handles it as it would one from a real provider network: once per event id, deciding
+    // whether the person needs to hear about it. The body is untrusted world data: only the ids are
+    // used, and the provider's note is never read. Locally the booking's person is the caller.
+    POST(`${API_PREFIX}/dev/world-events/provider-cancelled`, async (request, { from, attachSession }) => {
+      if (!isDevelopment()) return failure(404, "not_found", "Dev routes are off in production.");
+      const auth = await routeAuth(request, CALLER_AUTH);
+      if (auth instanceof Response) return auth;
+      const userId = appUserOf(auth);
+      const ownerId = memoryOwnerOf(auth);
+      if (userId === undefined || ownerId === undefined) return failure(401, "unauthorized", "Sign in first.");
+      const parsed = SimulateProviderCancellationRequestSchema.safeParse(await request.json().catch(() => undefined));
+      if (!parsed.success) return invalidBody(parsed.error.issues);
+      const emitted = container().simulateProviderCancellation(parsed.data);
+      if (emitted.kind === "booking_not_found") return failure(404, "booking_not_found", "The world has no booking with that id.");
+      const { event } = emitted;
+      const notifier = new EveSessionNotifier({ from, attachSession }, auth);
+      const outcome = await handleProviderCancelled(container().providerEventDependencies(notifier), {
+        eventId: event.eventId,
+        bookingId: event.bookingId,
+        userId,
+        ownerId,
+      });
+      const body: SimulateProviderCancellationResponse = {
+        event: { eventId: event.eventId, bookingId: event.bookingId, providerId: event.providerId, occurredAt: event.occurredAt },
+        outcome: presentProviderEventOutcome(outcome),
+      };
       return Response.json(body);
     }),
 

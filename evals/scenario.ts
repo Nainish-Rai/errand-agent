@@ -14,7 +14,7 @@ import { settledTrace } from "./session-trace";
 import { ScriptedUser } from "./users/scripted-user";
 import { ReturningUser } from "./users/returning-user";
 import { DEFAULT_SIMULATED_MESSAGES, SimulatedUser } from "./users/simulated-user";
-import { isApprove, type ApproveClick, type User, type UserStep } from "./users/user";
+import { isApprove, openingWorldEvents, type ApproveClick, type User, type UserStep } from "./users/user";
 
 // A scenario is one eval in the eval table, run the same way in all three modes. It declares the
 // world (seed and fault profile), the scripted user, a goal for the simulated user, the scripted
@@ -91,7 +91,12 @@ async function planFor(t: EveEvalContext, mode: EvalMode, definition: ScenarioDe
       if (definition.goal === undefined) return t.skip("No goal for the simulated user.");
       const maxMessages = definition.maxSimulatedMessages ?? DEFAULT_SIMULATED_MESSAGES;
       const later = (definition.laterGoals ?? []).map((goal) => new SimulatedUser({ goal, clicks: [], maxMessages }));
-      const first = new SimulatedUser({ goal: definition.goal, clicks: clicksIn(definition.user), maxMessages });
+      const first = new SimulatedUser({
+        goal: definition.goal,
+        clicks: clicksIn(definition.user),
+        maxMessages,
+        opening: openingWorldEvents(definition.user),
+      });
       return { user: later.length === 0 ? first : new ReturningUser([first, ...later]), script: null, world: definition.world };
     }
   }

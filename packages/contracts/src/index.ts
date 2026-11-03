@@ -10,3 +10,4 @@ export * from "./insight";
 export * from "./home";
 export * from "./context";
 export * from "./ui";
+export * from "./provider-events";

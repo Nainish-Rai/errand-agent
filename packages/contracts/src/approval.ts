@@ -98,6 +98,8 @@ export const HoldSlotOutputSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("held"), hold: HeldSlotSchema, errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("slot_unavailable"), errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("provider_not_found"), errand: ErrandViewSchema, message: z.string() }),
+  /** The errand replaces a booking that provider cancelled (ticket 14), so it can't be held again. */
+  z.object({ kind: z.literal("provider_excluded"), errand: ErrandViewSchema, message: z.string() }),
   z.object({ kind: z.literal("not_choosing"), state: z.string().nullable(), message: z.string() }),
 ]);
 
@@ -179,6 +181,8 @@ export const BookingViewSchema = z.object({
   slot: SlotSchema,
   priceInr: z.number(),
   status: z.enum(["upcoming", "completed", "cancelled"]),
+  /** Who cancelled a cancelled booking, when the world knows (a provider's cancellation is ticket 14's). */
+  cancelledBy: z.enum(["provider", "person"]).nullable().optional(),
   /** Null when no approved proposal made it (the seeded history). */
   approval: BookingApprovalViewSchema.nullable(),
 });

@@ -1,9 +1,19 @@
 import { ApiRequestError, type ApiClient, type ChatClient, type ChatTurn } from "@errand/client";
-import { CARD_FOLLOW_UPS } from "@errand/contracts";
+import { CARD_FOLLOW_UPS, type SimulateProviderCancellationResponse } from "@errand/contracts";
 
 import { latestCard } from "./approval-checks";
 import { askFormTap, chooseTap, pickTap } from "./generated-ui-taps";
-import { isApprove, isCardTap, isSay, type ApproveClick, type CardTap, type User, type UserStep } from "./users/user";
+import {
+  isApprove,
+  isCardTap,
+  isProviderCancelled,
+  isSay,
+  type ApproveClick,
+  type CardTap,
+  type ProviderCancelledStep,
+  type User,
+  type UserStep,
+} from "./users/user";
 
 // Drives one user against the backend, through the same client package the web app uses.
 
@@ -45,6 +55,8 @@ export interface Conversation {
   readonly uiTaps: readonly UiTapOutcome[];
   /** Every step the user took, in order: what a recording replays. */
   readonly steps: readonly UserStep[];
+  /** What the backend did with each provider event the world emitted, in order (ticket 14). */
+  readonly worldEvents: readonly SimulateProviderCancellationResponse[];
 }
 
 export interface ConversationHooks {
@@ -91,6 +103,15 @@ async function tapCard(api: ApiClient, turns: readonly ChatTurn[], tap: CardTap)
   return { tap, proposalId, ...(await statusOf(() => api.declineProposal(proposalId), "declined")) };
 }
 
+/** The booking a step names: `newest` is the latest booking made through an approval in this run. */
+async function bookingIdFor(api: ApiClient, step: ProviderCancelledStep): Promise<string> {
+  if (step.bookingId !== "newest") return step.bookingId;
+  const approved = (await api.listBookings()).filter((booking) => booking.approval !== null);
+  const newest = approved.sort((a, b) => a.bookingId.localeCompare(b.bookingId)).at(-1);
+  if (newest === undefined) throw new Error("No booking was made through an approval, so there is no newest booking to cancel.");
+  return newest.bookingId;
+}
+
 export async function converse(
   user: User,
   clients: { readonly api: ApiClient; readonly chat: ChatClient },
@@ -103,6 +124,7 @@ export async function converse(
   const steps: UserStep[] = [];
   const sessionIds: string[] = [];
   const uiTaps: UiTapOutcome[] = [];
+  const worldEvents: SimulateProviderCancellationResponse[] = [];
   let sessionId: string | undefined;
 
   const say = async (text: string) => {
@@ -127,7 +149,24 @@ export async function converse(
       if (outcome.status === 200) await say(FOLLOW_UP[step.card]);
     } else if (isApprove(step)) clicks.push(await click(clients.api, step.approve));
     else if ("newSession" in step) sessionId = undefined;
-    else {
+    else if (isProviderCancelled(step)) {
+      const { providerCancelled } = step;
+      const fired = await clients.api.simulateProviderCancellation({
+        ...providerCancelled,
+        bookingId: await bookingIdFor(clients.api, providerCancelled),
+      });
+      worldEvents.push(fired);
+      // A notice starts the agent's turn in the person's chat (possibly a new one) without a message from them.
+      if (fired.outcome.kind === "notified") {
+        const notified = fired.outcome.sessionId;
+        if (!sessionIds.includes(notified)) {
+          if (sessionIds.length > 0) await hooks.beforeNewSession?.(turns.length);
+          sessionIds.push(notified);
+        }
+        sessionId = notified;
+        turns.push(await clients.chat.followDelivery(notified, fired.outcome.deliveryId, { signal }));
+      }
+    } else {
       const sent =
         "choose" in step
           ? await chooseTap(clients.api, turns, step.choose)
@@ -141,5 +180,5 @@ export async function converse(
 
   const [first] = sessionIds;
   if (first === undefined) throw new Error("The user never said anything, so there is no session to grade.");
-  return { sessionId: first, sessionIds, turns, clicks, taps, uiTaps, steps };
+  return { sessionId: first, sessionIds, turns, clicks, taps, uiTaps, steps, worldEvents };
 }

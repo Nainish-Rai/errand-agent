@@ -35,7 +35,7 @@ const whenFormat = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
 });
 
-function when(start: string): string {
+export function when(start: string): string {
   return `${whenFormat.format(new Date(start))} IST`;
 }
 
@@ -115,6 +115,7 @@ export function presentBooking({ booking, approval }: ApprovedBooking): BookingV
     slot: { start: booking.slot.start, end: booking.slot.end },
     priceInr: booking.priceInr,
     status: booking.status,
+    cancelledBy: booking.cancelledBy ?? null,
     approval:
       approval === undefined
         ? null
@@ -148,6 +149,12 @@ export function presentHoldOutcome(outcome: HoldSlotOutcome, catalog: ServiceCat
       };
     case "provider_not_found":
       return { kind: "provider_not_found", errand: presentErrand(outcome.errand, catalog), message: "No provider has that id." };
+    case "provider_excluded":
+      return {
+        kind: "provider_excluded",
+        errand: presentErrand(outcome.errand, catalog),
+        message: `${outcome.providerName} cancelled the booking this replaces, so it can't be offered again. Pick another option.`,
+      };
     case "not_choosing":
       return {
         kind: "not_choosing",

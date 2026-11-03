@@ -27,8 +27,23 @@ export type UpcomingVisit =
   /** Booked or not, the world hasn't said yet: never shown as booked. */
   | { readonly kind: "checking"; readonly proposal: Proposal };
 
+/** Where the replacement for a provider's cancellation stands, read from the chat's proposals since the alert. */
+export interface ReplacementProgress {
+  /** Approval cards waiting for the person. */
+  readonly ready: number;
+  /** The newest of them, for a link that opens the chat at its card. */
+  readonly proposalId?: string;
+  /** A replacement was booked: the alert no longer needs the person. */
+  readonly rebooked: boolean;
+}
+
 export type HomeAlert =
-  | { readonly kind: "provider_cancelled"; readonly alert: ProviderAlert; readonly atMs: number }
+  | {
+      readonly kind: "provider_cancelled";
+      readonly alert: ProviderAlert;
+      readonly atMs: number;
+      readonly replacement: ReplacementProgress;
+    }
   /** A booking whose outcome was unknown (verifying) and was later confirmed: a failure recovered from. */
   | { readonly kind: "booking_recovered"; readonly errand: Errand; readonly atMs: number }
   /** A run that failed took its errand with it (ticket 08's `failed` outcome). */
@@ -105,9 +120,29 @@ function recoveredAtMs(errand: Errand): number | undefined {
   return errand.transitions.slice(verifying + 1).find((transition) => transition.to === "done")?.atMs;
 }
 
+const BOOKED: readonly Proposal["status"][] = ["executing", "verifying", "executed"];
+
+/** The replacement's progress: the cards made in the alert's chat since it was raised. */
+export function replacementProgress(alert: ProviderAlert, proposals: readonly Proposal[]): ReplacementProgress {
+  const since = proposals
+    .filter((proposal) => alert.sessionId !== undefined && proposal.sessionId === alert.sessionId && proposal.createdAtMs >= alert.raisedAtMs)
+    .sort((a, b) => b.createdAtMs - a.createdAtMs);
+  const pending = since.filter((proposal) => proposal.status === "pending");
+  return {
+    ready: pending.length,
+    ...(pending[0] === undefined ? {} : { proposalId: pending[0].proposalId }),
+    rebooked: since.some((proposal) => BOOKED.includes(proposal.status)),
+  };
+}
+
 /** Provider alerts, recovered bookings and failed errands, newest first. */
-export function homeAlerts(providerAlerts: readonly ProviderAlert[], errands: readonly Errand[]): HomeAlert[] {
-  const fromProviders: HomeAlert[] = providerAlerts.map((alert) => ({ kind: "provider_cancelled", alert, atMs: alert.raisedAtMs }));
+export function homeAlerts(providerAlerts: readonly ProviderAlert[], errands: readonly Errand[], proposals: readonly Proposal[] = []): HomeAlert[] {
+  const fromProviders: HomeAlert[] = providerAlerts.map((alert) => ({
+    kind: "provider_cancelled",
+    alert,
+    atMs: alert.raisedAtMs,
+    replacement: replacementProgress(alert, proposals),
+  }));
   const fromErrands = errands.flatMap((errand): HomeAlert[] => {
     if (errand.state === "failed") return [{ kind: "errand_failed", errand, atMs: lastMoveMs(errand) }];
     const recovered = recoveredAtMs(errand);
@@ -116,9 +151,15 @@ export function homeAlerts(providerAlerts: readonly ProviderAlert[], errands: re
   return [...fromProviders, ...fromErrands].sort((a, b) => b.atMs - a.atMs);
 }
 
-/** Alerts that need the person (the bell's count). A recovered booking needs nothing. */
+/** True when the alert still needs the person: a recovered booking or a rebooked cancellation needs nothing. */
+export function needsPerson(alert: HomeAlert): boolean {
+  if (alert.kind === "booking_recovered") return false;
+  return alert.kind !== "provider_cancelled" || !alert.replacement.rebooked;
+}
+
+/** Alerts that need the person (the bell's count). */
 export function alertsNeedingPerson(alerts: readonly HomeAlert[]): number {
-  return alerts.filter((alert) => alert.kind !== "booking_recovered").length;
+  return alerts.filter(needsPerson).length;
 }
 
 /** Visits per IST day over the 14-day window around today; cancelled bookings don't count. */

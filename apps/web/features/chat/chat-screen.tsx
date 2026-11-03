@@ -32,27 +32,39 @@ export interface ChatEntry {
   readonly proposalId?: string;
 }
 
+/** How long the card keeps its focus through re-renders before the page settles. */
+const SETTLE_MS = 5_000;
+
 /**
  * Scrolls to the proposal's approval card and focuses it once the replayed conversation has
- * rendered it: a link from "Waiting on you" opens the chat at the card.
+ * rendered it: a link from "Waiting on you" opens the chat at the card. The replay can render the
+ * card more than once, so until the page settles (or the person acts) a replaced card is focused again.
  */
 function useFocusProposal(proposalId: string | undefined) {
   useEffect(() => {
     if (proposalId === undefined) return;
     const selector = `[data-proposal-id="${CSS.escape(proposalId)}"]`;
-    const focus = (): boolean => {
+    let focused: HTMLElement | null = null;
+    const focus = () => {
       const card = document.querySelector<HTMLElement>(selector);
-      if (card === null) return false;
-      card.scrollIntoView({ block: "center" });
+      if (card === null || (card === focused && document.activeElement === card)) return;
+      if (focused === null) card.scrollIntoView({ block: "center" });
       card.focus({ preventScroll: true });
-      return true;
+      focused = card;
     };
-    if (focus()) return;
-    const observer = new MutationObserver(() => {
-      if (focus()) observer.disconnect();
-    });
+    const observer = new MutationObserver(focus);
+    const stop = () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      window.removeEventListener("pointerdown", stop, true);
+      window.removeEventListener("keydown", stop, true);
+    };
+    const timer = window.setTimeout(stop, SETTLE_MS);
+    window.addEventListener("pointerdown", stop, true);
+    window.addEventListener("keydown", stop, true);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    focus();
+    return stop;
   }, [proposalId]);
 }
 

@@ -67,7 +67,11 @@ export async function getHomeSummary(
     deps.memory.read(request.ownerId),
     deps.alerts.listAlerts(request.userId),
   ]);
-  const alerts = homeAlerts(providerAlerts, errands);
+  const alerts = homeAlerts(
+    providerAlerts,
+    errands,
+    standings.map((standing) => standing.proposal),
+  );
   const usable = selectContext(memory.facts, undefined, nowMs).included.map(({ fact }) => fact);
   return {
     working: errandsAtWork(errands),

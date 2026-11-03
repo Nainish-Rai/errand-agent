@@ -118,6 +118,7 @@ describe("suite manifests", () => {
       "generated-ui.json",
       "home.json",
       "memory.json",
+      "provider-cancellation.json",
       "review-insight.json",
       "run-budget.json",
       "trace-panel.json",

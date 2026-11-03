@@ -1,11 +1,19 @@
 "use client";
 
-import { ComposerPrimitive, MessagePrimitive, ThreadPrimitive, type TextMessagePartComponent } from "@assistant-ui/react";
+import {
+  ComposerPrimitive,
+  MessagePrimitive,
+  ThreadPrimitive,
+  useAuiState,
+  type TextMessagePartComponent,
+} from "@assistant-ui/react";
+import { PROVIDER_UPDATE_PREFIX } from "@errand/contracts";
 import { ArrowUp, Square } from "lucide-react";
 
 import { Markdown } from "@/components/chat/markdown";
 import { Button } from "@/components/ui/button";
 import { GeneratedUiPart } from "@/features/generated-ui";
+import { ProviderUpdateNotice } from "@/features/trust";
 
 import { ExecutionPart, ProposalCardPart } from "./approval-card-part";
 import { ProviderInsight } from "./provider-insight";
@@ -17,7 +25,22 @@ const AssistantText: TextMessagePartComponent = ({ text, status }) => (
   <Markdown isAnimating={status.type === "running"}>{text}</Markdown>
 );
 
+/** The message's text, so a provider update the backend wrote can be told from the person's own words. */
+function useMessageText(): string {
+  return useAuiState(({ message }) =>
+    message.content.map((part) => (part.type === "text" ? part.text : "")).join(""),
+  );
+}
+
 function UserMessage() {
+  const text = useMessageText();
+  if (text.startsWith(PROVIDER_UPDATE_PREFIX)) {
+    return (
+      <MessagePrimitive.Root className="py-2">
+        <ProviderUpdateNotice update={text.slice(PROVIDER_UPDATE_PREFIX.length).trim()} />
+      </MessagePrimitive.Root>
+    );
+  }
   return (
     <MessagePrimitive.Root className="flex justify-end py-2">
       <div className="max-w-[80%] rounded-2xl bg-secondary px-4 py-2 text-secondary-foreground">

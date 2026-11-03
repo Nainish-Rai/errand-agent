@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { errandTitle, stepLabel } from "./errand-words";
+import { providerAlertHref } from "./widgets";
 
 // The bar over the hero: the home switcher, search (a command menu, ⌘K), the theme toggle and the
 // notification bell. The bell counts alerts that need the person; ticket 14 adds the live feed.
@@ -136,7 +137,9 @@ function CommandMenu({ open, onOpenChange, summary, onNewErrand }: {
 
 function NotificationBell({ summary }: { readonly summary?: Summary }) {
   const count = summary?.counts.alerts ?? 0;
-  const needing = (summary?.alerts ?? []).filter((alert) => alert.kind !== "booking_recovered");
+  const needing = (summary?.alerts ?? []).filter(
+    (alert) => alert.kind === "errand_failed" || (alert.kind === "provider_cancelled" && !alert.rebooked),
+  );
   return (
     <Popover>
       <PopoverTrigger
@@ -158,11 +161,16 @@ function NotificationBell({ summary }: { readonly summary?: Summary }) {
           <ul className="m-0 grid list-none gap-1 p-0">
             {needing.map((alert) => (
               <li key={alert.kind === "provider_cancelled" ? alert.alertId : alert.errandId} className="text-fg-body">
-                {alert.kind === "provider_cancelled"
-                  ? `${alert.providerName} cancelled a booking`
-                  : alert.service === null
-                    ? "An errand stopped"
-                    : `${errandTitle(alert)} stopped`}
+                <Link
+                  href={alert.kind === "provider_cancelled" ? providerAlertHref(alert) : `/chat/${encodeURIComponent(alert.sessionId)}`}
+                  className={cn("block rounded-sm px-1 py-0.5 hover:bg-surface-raised", focusRing)}
+                >
+                  {alert.kind === "provider_cancelled"
+                    ? `${alert.providerName} cancelled a booking`
+                    : alert.service === null
+                      ? "An errand stopped"
+                      : `${errandTitle(alert)} stopped`}
+                </Link>
               </li>
             ))}
           </ul>

@@ -51,6 +51,14 @@ export interface Errand {
   readonly transitions: readonly ErrandTransition[];
   /** The slot the world is holding for the person, from holding until the booking or a decline. */
   readonly hold?: Hold;
+  /** The booking this errand replaces after its provider cancelled it; that provider is never offered again. */
+  readonly replacing?: ReplacedBooking;
+}
+
+export interface ReplacedBooking {
+  readonly bookingId: string;
+  readonly providerId: string;
+  readonly providerName: string;
 }
 
 export type InvalidDetailReason =
