@@ -130,7 +130,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
@@ -636,7 +636,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
@@ -1103,7 +1103,7 @@
         {
           "command": "goto",
           "args": [
-            "/"
+            "/chat"
           ]
         },
         {
