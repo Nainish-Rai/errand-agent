@@ -11,7 +11,7 @@ import { ACTUAL_LABEL, type ScenarioRun } from "./scenario-run";
 import { settledTrace } from "./session-trace";
 import { ScriptedUser } from "./users/scripted-user";
 import { DEFAULT_SIMULATED_MESSAGES, SimulatedUser } from "./users/simulated-user";
-import { isSay, type ApproveClick, type User, type UserStep } from "./users/user";
+import type { ApproveClick, User, UserStep } from "./users/user";
 
 // A scenario is one eval in the eval table, run the same way in all three modes. It declares the
 // world (seed and fault profile), the scripted user, a goal for the simulated user, the scripted
@@ -54,7 +54,7 @@ interface Plan {
 }
 
 function clicksIn(steps: readonly UserStep[]): ApproveClick[] {
-  return steps.flatMap((step) => (isSay(step) ? [] : [step.approve]));
+  return steps.flatMap((step) => ("approve" in step ? [step.approve] : []));
 }
 
 async function planFor(t: EveEvalContext, mode: EvalMode, definition: ScenarioDefinition): Promise<Plan> {
@@ -101,7 +101,8 @@ function describeToolCall(call: ToolCallView): string {
 export function describeRun(run: ScenarioRun): string {
   const tools = run.toolCalls.length === 0 ? ["no tool calls"] : run.toolCalls.map(describeToolCall);
   const clicks = run.clicks.map((click) => `approve ${click.proposalId} → ${click.status} ${click.code}`);
-  return [`${run.turns.length} turn${run.turns.length === 1 ? "" : "s"}`, ...tools, ...clicks].join("; ");
+  const taps = run.taps.map((tap) => `card ${tap.tap} → ${tap.status} ${tap.code}`);
+  return [`${run.turns.length} turn${run.turns.length === 1 ? "" : "s"}`, ...tools, ...taps, ...clicks].join("; ");
 }
 
 async function agentCostUsd(api: ApiClient, sessionId: string): Promise<number> {
@@ -119,6 +120,7 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
   if (definition.runLimits !== undefined) await api.setRunLimits({ limits: definition.runLimits });
   if (definition.worldFault !== undefined) await api.injectWorldFault({ fault: definition.worldFault });
   await api.loadModelScript({ script: plan.script });
+  const bookingsBefore = await api.listBookings();
   const conversation = await converse(plan.user, { api, chat }, t.abortSignal);
 
   // Hand every turn to eve so its run-level assertions (succeeded, calledTool, ...) see them all.
@@ -129,6 +131,7 @@ async function runScenario(t: EveEvalContext, definition: ScenarioDefinition): P
     ...conversation,
     mode,
     api,
+    bookingsBefore,
     toolCalls: conversation.turns.flatMap((turn) => turn.toolCalls),
   };
   const costUsd = { agent: await agentCostUsd(api, run.sessionId), simulatedUser: plan.user.costUsd };

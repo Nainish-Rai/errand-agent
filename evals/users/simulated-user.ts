@@ -5,17 +5,22 @@ import { z } from "zod";
 import { ModelScriptPlayer } from "../../src/adapters/models/scripted";
 import { createModel, parseModelSelection } from "../../src/adapters/models/select-model";
 import { PriceTable } from "../../src/adapters/tracing/price-table";
-import type { ApproveClick, User, UserStep } from "./user";
+import { cardsIn, latestCard } from "../approval-checks";
+import type { ApproveClick, CardTap, User, UserStep } from "./user";
 
 // The live-mode user: a model (the user_simulator role, Claude Code CLI by default) plays a person
-// with the scenario's goal. It only chats. The scenario's approval clicks still happen, after the
-// conversation, until ticket 05 gives the simulator pending proposals to see and click itself.
+// with the scenario's goal. It chats, and when the chat shows an approval card it sees the card's
+// details and buttons and may tap one, exactly as the web app's card would. A scenario's
+// hand-made approve requests still happen after the conversation.
 
 export const DEFAULT_SIMULATED_MESSAGES = 3;
 
 const SimulatorReplySchema = z.object({
   done: z.boolean().describe("true when the goal is met or the assistant can't help further; then message is empty"),
-  message: z.string().describe("Your next chat message as the user, one or two short sentences"),
+  tap: z
+    .enum(["none", "approve", "decline", "other_options"])
+    .describe("A button to tap on the approval card on screen instead of typing; none to type a message"),
+  message: z.string().describe("Your next chat message as the user, one or two short sentences; empty when you tap"),
 });
 
 function instructionsFor(goal: string): string {
@@ -27,13 +32,22 @@ function instructionsFor(goal: string): string {
     "`message` is the literal text you send. Never describe or narrate what you are doing or waiting for.",
     "Never play the assistant, never invent the assistant's replies, never mention you are simulated.",
     "Answer the assistant's questions from your goal. Set done to true once the goal is met or the assistant can't help.",
+    "When an approval card is on screen you may tap one of its buttons by setting tap; typing in the chat is not a tap.",
   ].join("\n");
+}
+
+function cardLine(turn: ChatTurn): string[] {
+  return cardsIn(turn).map(
+    ({ terms }) =>
+      `[Approval card on screen: ${terms.providerName}, ${terms.slot.start}, ₹${terms.priceInr}, ${terms.area}. ` +
+      `Buttons: "Approve ₹${terms.priceInr}", "Other options", "Decline"]`,
+  );
 }
 
 function transcriptOf(turns: readonly ChatTurn[], said: readonly string[]): string {
   if (turns.length === 0) return "The chat is empty. Write your opening message.";
-  const lines = turns.flatMap((turn, index) => [`User: ${said[index] ?? ""}`, `Assistant: ${turn.reply}`]);
-  return `The chat so far:\n${lines.join("\n")}\n\nWrite your next message, or set done to true.`;
+  const lines = turns.flatMap((turn, index) => [`User: ${said[index] ?? ""}`, `Assistant: ${turn.reply}`, ...cardLine(turn)]);
+  return `The chat so far:\n${lines.join("\n")}\n\nWrite your next message or tap a card button, or set done to true.`;
 }
 
 export interface SimulatedUserOptions {
@@ -66,12 +80,17 @@ export class SimulatedUser implements User {
 
   async nextStep(turns: readonly ChatTurn[]): Promise<UserStep | undefined> {
     if (this.#conversing) {
-      const message = this.#said.length < (this.#options.maxMessages ?? DEFAULT_SIMULATED_MESSAGES)
-        ? await this.#nextMessage(turns)
+      const next = this.#said.length < (this.#options.maxMessages ?? DEFAULT_SIMULATED_MESSAGES)
+        ? await this.#nextMove(turns)
         : undefined;
-      if (message !== undefined) {
-        this.#said.push(message);
-        return { say: message };
+      if (next !== undefined && "card" in next) {
+        // A tap sends the card's follow-up as the user's message, so it takes a message's place.
+        this.#said.push(`(tapped ${next.card.replace("_", " ")} on the card)`);
+        return next;
+      }
+      if (next !== undefined) {
+        this.#said.push(next.say);
+        return next;
       }
       this.#conversing = false;
     }
@@ -79,7 +98,7 @@ export class SimulatedUser implements User {
     return click === undefined ? undefined : { approve: click };
   }
 
-  async #nextMessage(turns: readonly ChatTurn[]): Promise<string | undefined> {
+  async #nextMove(turns: readonly ChatTurn[]): Promise<{ readonly say: string } | { readonly card: CardTap } | undefined> {
     const result = await generateText({
       model: this.#model,
       system: instructionsFor(this.#options.goal),
@@ -98,7 +117,9 @@ export class SimulatedUser implements User {
     });
     this.#costUsd += cost?.usd ?? 0;
     const reply = SimulatorReplySchema.parse(result.output);
+    if (reply.done) return undefined;
+    if (reply.tap !== "none" && latestCard(turns) !== undefined) return { card: reply.tap };
     const message = reply.message.trim();
-    return reply.done || message === "" ? undefined : message;
+    return message === "" ? undefined : { say: message };
   }
 }

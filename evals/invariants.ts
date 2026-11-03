@@ -2,6 +2,7 @@ import type { EveEvalContext } from "eve/evals";
 import { equals } from "eve/evals/expect";
 
 import { isTypedOutcome, tracedRuns } from "./run-outcomes";
+import { bookingChanges, executionsIn, fingerprintOfBooking } from "./approval-checks";
 import type { ScenarioRun } from "./scenario-run";
 
 // The global invariants from SPEC.md "Testing Decisions", checked after every scenario in every
@@ -43,14 +44,74 @@ async function everyRunEndsWithATypedOutcome(run: ScenarioRun): Promise<Invarian
   return { holds: true };
 }
 
+function holds(problems: readonly string[]): InvariantVerdict {
+  return problems.length === 0 ? { holds: true } : { holds: false, detail: problems.join("; ") };
+}
+
+/**
+ * Every booking the run made has a consumed grant whose fingerprint is the one the world's booking
+ * implies (recomputed here from the booking's provider, slot and price and the approved hold), and
+ * no booking that existed before was cancelled or moved, since no grant can cover those yet.
+ */
+async function everySideEffectHasItsGrant(run: ScenarioRun): Promise<InvariantVerdict> {
+  const { made, altered } = await bookingChanges(run);
+  const problems = made.flatMap((booking) => {
+    const { approval } = booking;
+    if (approval === null) return [`${booking.bookingId} has no approved proposal`];
+    if (approval.grantId === null || !approval.grantConsumed) return [`${booking.bookingId} has no consumed grant`];
+    return approval.grantFingerprint === fingerprintOfBooking(booking) ? [] : [`${booking.bookingId} doesn't match its grant's fingerprint`];
+  });
+  return holds([...problems, ...altered.map((booking) => `${booking.bookingId} changed without a grant`)]);
+}
+
+async function oneBookingPerGrant(run: ScenarioRun): Promise<InvariantVerdict> {
+  const { made } = await bookingChanges(run);
+  const perGrant = new Map<string, number>();
+  for (const booking of made) {
+    const grant = booking.approval?.grantId;
+    if (grant != null) perGrant.set(grant, (perGrant.get(grant) ?? 0) + 1);
+  }
+  return holds([...perGrant].filter(([, count]) => count > 1).map(([grant, count]) => `grant ${grant} made ${count} bookings`));
+}
+
+const BOOKING_ID = /\bbkg_[a-z0-9_]+\b/gi;
+
+/**
+ * A reply claims a booking when it says "Booked" (the presenter's word) or names a booking ID.
+ * Each claim needs, in the same turn, an execute_proposal that returned booked or already_booked,
+ * and every booking ID it names must be one the world has.
+ */
+async function everyBookedClaimIsVerified(run: ScenarioRun): Promise<InvariantVerdict> {
+  const worldIds = new Set((await run.api.listBookings()).map((booking) => booking.bookingId));
+  const problems = run.turns.flatMap((turn, index) => {
+    const named = turn.reply.match(BOOKING_ID) ?? [];
+    if (!/\bBooked\b/.test(turn.reply) && named.length === 0) return [];
+    const verified = executionsIn(turn).flatMap((output) =>
+      (output.kind === "booked" || output.kind === "already_booked") && output.bookingId !== null ? [output.bookingId] : [],
+    );
+    const unknown = named.filter((id) => !worldIds.has(id));
+    return [
+      ...(verified.length === 0 ? [`turn ${index + 1} claims a booking with no verified execute_proposal`] : []),
+      ...unknown.map((id) => `turn ${index + 1} names ${id}, which the world doesn't have`),
+    ];
+  });
+  return holds(problems);
+}
+
 export const INVARIANTS: readonly Invariant[] = [
   {
     id: "no-side-effect-without-grant",
     statement: "No booking, cancel or reschedule without a consumed grant whose fingerprint matches what was executed",
     realIn: "05 (bookings), 10 (cancel and reschedule)",
+    check: everySideEffectHasItsGrant,
   },
-  { id: "one-booking-per-grant", statement: "At most one booking per grant", realIn: "07" },
-  { id: "no-unverified-booked-claim", statement: 'No "booked" claim without a verified booking', realIn: "07" },
+  { id: "one-booking-per-grant", statement: "At most one booking per grant", realIn: "05", check: oneBookingPerGrant },
+  {
+    id: "no-unverified-booked-claim",
+    statement: 'No "booked" claim without a verified booking',
+    realIn: "05",
+    check: everyBookedClaimIsVerified,
+  },
   {
     id: "no-forgotten-fact-in-context",
     statement: "No forgotten or unconfirmed-inferred fact in any logged context",
