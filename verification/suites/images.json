@@ -614,7 +614,7 @@
                           {
                             "name": "ask_ui",
                             "input": {
-                              "ui": "root = Stack([q])\nq = ServiceChoices(\"Which AC service?\", [ServiceChoice(\"https://images.example.com/option.png\", \"Gas refill\"), ServiceChoice(\"data:image/png;base64,iVBORw0KGgo=\", \"Deep clean\"), ServiceChoice(\"ac_repair\", \"<img src=/hostile/label.webp> Repair\")])"
+                              "ui": "root = Stack([q])\nq = ServiceChoices(\"Which AC service?\", [ServiceChoice(\"https://images.example.com/option.png\", \"Gas refill\"), ServiceChoice(\"data:image/png;base64,iVBORw0KGgo=\", \"<img src=/hostile/label.webp> Deep clean\"), ServiceChoice(\"ac_repair\", \"Repair\")])"
                             }
                           }
                         ]
@@ -791,12 +791,12 @@
         {
           "command": "assert",
           "options": {
-            "text": "<img src=/hostile/label.webp> Repair"
+            "text": "<img src=/hostile/label.webp> Deep clean"
           },
           "args": [
             "role=region[name=\"Which AC service?\"]"
           ],
-          "note": "markup in a label is text"
+          "note": "markup in a model label (for an id the world doesn't have) is shown as text"
         },
         {
           "command": "screenshot",
